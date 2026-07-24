@@ -82,3 +82,28 @@ input[type='checkbox']:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
+
+/* 
+ * Extra SCSS styles for the Access to Credit System
+ * Add your custom SCSS overrides, mixins, and classes here 
+ */
+
+// Example: Custom scrollbar styles using SCSS
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+  
+  &:hover {
+    background: #94a3b8;
+  }
+}

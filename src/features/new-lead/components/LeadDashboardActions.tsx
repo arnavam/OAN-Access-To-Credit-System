@@ -120,7 +120,7 @@ export function LeadDashboardActions({ leadId, status }: LeadDashboardActionsPro
             size: 'default' as const,
             disabled: isFinalized || status?.toLowerCase() === 'verified',
             onClick: () => setModalAction('verify'),
-            visible: true,
+            visible: !(isFinalized || status?.toLowerCase() === 'verified'),
         },
         {
             key: 'application',

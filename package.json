@@ -1,8 +1,7 @@
 {
   "name": "a2c-react-project",
+  "version": "0.1.0",
   "private": true,
-  "version": "0.0.0",
-  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -41,10 +40,7 @@
       "public"
     ]
   },
-
-  "pnpm": {
-    "overrides": {
-      "postcss": "^8.5.10"
-    }
+  "overrides": {
+    "postcss": "^8.5.10"
   }
 }

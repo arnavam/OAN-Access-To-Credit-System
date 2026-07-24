@@ -1,12 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { useAppDispatch } from '@/store/hooks'
+import { useAppDispatch } from '@/store/hooks';
 import { ListChecks, Users, LayoutDashboard } from 'lucide-react';
 import Sidebar, { NavSection } from '@/components/Sidebar';
 import TopHeader from '@/components/TopHeader';
 import { logout as logoutAction } from '@/features/auth/store/authSlice';
+import FarmerSidebar from '@/components/siderbar/FarmerSidebar';
+import FarmerHeader from '@/components/header/farmerHeader';
 
 import '@/styles/main-layout.scss';
 
@@ -47,12 +49,18 @@ const PAGE_TITLES: Record<string, string> = {
 };
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  // Dev Agent specific state
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  
+  // Farmer specific state
+  const [isFarmerSidebarExpanded, setIsFarmerSidebarExpanded] = useState(true);
+
   const pathname = usePathname();
   const router = useRouter();
   const dispatch = useAppDispatch();
 
+  // ----- DEV AGENT LOGIC -----
   const activeItem = navigationSections
     .flatMap((section) => section.items)
     .find((item) => 
@@ -62,8 +70,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
 
   const pageTitle = activeItem?.label ?? PAGE_TITLES[pathname] ?? 'Dashboard';
-
-
 
   // update the title of the page
   useEffect(() => {
@@ -100,34 +106,70 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return true;
   });
 
+  // ----- ROUTING LOGIC -----
+
+  // Check if we should pass through without wrapper (Bank Admin / Agent / etc)
+  if (
+    pathname === '/dashboard' || 
+    pathname === '/agent-dashboard' || 
+    pathname === '/loan-products' || 
+    pathname === '/agent-loan-products' || 
+    pathname === '/product-approvals' || 
+    pathname === '/kyc-compliance'
+  ) {
+    return <>{children}</>;
+  }
+
+  // Check if Dev Agent route
+  const isDevAgentRoute = 
+    pathname.startsWith('/leads') || 
+    pathname.startsWith('/loan-application-dashboard') || 
+    pathname.startsWith('/update-loan-application-status') || 
+    pathname.startsWith('/loans/new-loan-application');
+
+  if (isDevAgentRoute) {
+    return (
+      <div
+        id="dashboard-shell"
+        className={`dashboard-shell ${isSidebarCollapsed ? 'dashboard-shell--collapsed' : ''}`}
+      >
+        {isMobileOpen && (
+          <div
+            className="dashboard-sidebar-overlay"
+            aria-hidden="true"
+            onClick={() => setIsMobileOpen(false)}
+          />
+        )}
+        <Sidebar isCollapsed={isSidebarCollapsed} isMobileOpen={isMobileOpen} sections={filteredNavigationSections} />
+        <main id="dashboard-main" className="dashboard-main">
+          <TopHeader
+            isSidebarCollapsed={isSidebarCollapsed}
+            onToggleSidebar={handleToggleSidebar}
+            onLogout={async () => {
+              await fetch('/api/auth/logout', { method: 'POST' }).catch(() => { });
+              dispatch(logoutAction());
+              router.push('/login');
+            }}
+            pageTitle={pageTitle}
+          />
+          <div id="dashboard-content" className="dashboard-content">
+            {children}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Default to Farmer Layout
   return (
-    <div
-      id="dashboard-shell"
-      className={`dashboard-shell ${isSidebarCollapsed ? 'dashboard-shell--collapsed' : ''}`}
-    >
-      {isMobileOpen && (
-        <div
-          className="dashboard-sidebar-overlay"
-          aria-hidden="true"
-          onClick={() => setIsMobileOpen(false)}
-        />
-      )}
-      <Sidebar isCollapsed={isSidebarCollapsed} isMobileOpen={isMobileOpen} sections={filteredNavigationSections} />
-      <main id="dashboard-main" className="dashboard-main">
-        <TopHeader
-          isSidebarCollapsed={isSidebarCollapsed}
-          onToggleSidebar={handleToggleSidebar}
-          onLogout={async () => {
-            await fetch('/api/auth/logout', { method: 'POST' }).catch(() => { });
-            dispatch(logoutAction());
-            router.push('/login');
-          }}
-          pageTitle={pageTitle}
-        />
-        <div id="dashboard-content" className="dashboard-content">
+    <div className="flex min-h-screen bg-[#F8F9fa] font-sans">
+      <FarmerSidebar isExpanded={isFarmerSidebarExpanded} setIsExpanded={setIsFarmerSidebarExpanded} />
+      <div className="flex-1 flex flex-col min-w-0 transition-all duration-300">
+        <FarmerHeader onMenuClick={() => setIsFarmerSidebarExpanded(!isFarmerSidebarExpanded)} />
+        <main className="flex-1 p-6 md:p-10 overflow-x-hidden">
           {children}
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }

@@ -2,6 +2,7 @@ import type { Config } from 'tailwindcss';
 
 const config: Config = {
   content: [
+    './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/features/**/*.{js,ts,jsx,tsx,mdx}',
@@ -23,6 +24,8 @@ const config: Config = {
         success: 'var(--success)',
         button: 'var(--button-bg)',
         'button-hover': 'var(--button-bg-hover)',
+        background: 'var(--background)',
+        foreground: 'var(--foreground)',
       },
       spacing: {
         'table-cell': '151.71px',

@@ -71,42 +71,7 @@ export function LoginClient() {
 
   return (
     <div className="relative flex min-h-screen flex-col items-center bg-[linear-gradient(0deg,#F9FAFB,#F9FAFB),#FFFFFF] font-sans">
-      <header className="sticky top-0 w-full z-50">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white px-4 sm:px-6 py-4 sm:py-0 h-auto sm:h-[80px] border-b border-[#D4D4D4] shadow-[0px_4px_20px_rgba(0,0,0,0.05)] gap-4 sm:gap-0">
-          <div className="flex items-center gap-0 sm:gap-0">
-            <Image
-              src="/logo.png"
-              alt="Ethiopia OpenAgriNet Logo"
-              width={220}
-              height={56}
-              className="h-[48px] sm:h-[56px] shrink-0"
-              style={{ width: 'auto' }}
-            />
-            <div className="flex flex-col">
-              <span className="font-semibold text-[#16335A] text-[14px] sm:text-[16px] leading-[14px] sm:leading-[16px]">Ethiopia OpenAgriNet</span>
-              <span className="font-normal mt-[2px] sm:mt-[6px] uppercase text-[#65768E] text-[10px] sm:text-[12px] leading-[12px] tracking-[1px]">Access to Credit</span>
-            </div>
-          </div>
 
-          <div className="flex items-center gap-4 sm:gap-4 w-full sm:w-auto justify-between sm:justify-start font-semibold" aria-label="Header actions">
-            <button
-              className="inline-flex items-center justify-center gap-2 font-medium transition-colors duration-200 ease-out rounded-lg h-[44px] min-w-0 flex-1 sm:flex-none px-3 py-2 sm:px-5 sm:py-[10px] text-[14px] sm:text-[16px] sm:leading-[24px] bg-[#16A34A] text-white shadow-[0px_1px_2px_rgba(0,0,0,0.05)] hover:bg-[#10883c] focus-visible:outline-2 focus-visible:outline-[rgba(3,164,79,0.22)] focus-visible:outline-offset-2"
-              type="button"
-              aria-pressed={true}
-            >
-              Login
-            </button>
-            <button
-              className="inline-flex items-center justify-center gap-2 font-medium transition-colors duration-200 ease-out rounded-lg h-[44px] min-w-0 flex-1 sm:flex-none px-3 py-2 sm:px-5 sm:py-[10px] text-[14px] sm:text-[16px] sm:leading-[24px] bg-white border border-[#E9E9E9] text-[#16335A] shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.1),0px_2px_4px_-2px_rgba(0,0,0,0.1)] hover:bg-[#f9fafb] focus-visible:outline-2 focus-visible:outline-[rgba(3,164,79,0.22)] focus-visible:outline-offset-2"
-              type="button"
-              aria-pressed={false}
-            >
-              <span>Get Started</span>
-              <ArrowRight size={18} strokeWidth={2.2} />
-            </button>
-          </div>
-        </div>
-      </header>
 
       <main className="flex flex-1 items-center justify-center w-full">
         <section className="mx-auto flex flex-1 items-center justify-center py-8 lg:py-12 w-full px-4 sm:px-6 lg:px-8">

@@ -15,8 +15,8 @@ export function Step1ConsentDocs({ leadId }: { leadId?: string | undefined }) {
   const dispatch = useDispatch<AppDispatch>();
   const { applicationId } = useSelector(selectLoanFormState);
 
-  const [faydaId, setFaydaId] = useState('**********');
-  const [showFaydaId, setShowFaydaId] = useState(false);
+  const [faydaId, setFaydaId] = useState('');
+  const [showFaydaId, setShowFaydaId] = useState(true);
   const [showConsentPopup, setShowConsentPopup] = useState(false);
   const [showConsentDocumentPopup, setShowConsentDocumentPopup] = useState(false);
 
@@ -31,7 +31,10 @@ export function Step1ConsentDocs({ leadId }: { leadId?: string | undefined }) {
   useEffect(() => {
     if (leadId) {
       newLeadService.getLeadDetails(leadId)
-        .then(res => setFarmerDetails(res))
+        .then(res => {
+          setFarmerDetails(res);
+          if (res.faydaId) setFaydaId(res.faydaId);
+        })
         .catch(err => logger.error('Failed to get lead details', err));
     }
   }, [leadId]);
@@ -385,7 +388,7 @@ export function Step1ConsentDocs({ leadId }: { leadId?: string | undefined }) {
         {/* Supporting Documents Section */}
         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <h2 className="mb-6 text-lg font-bold text-gray-900 pb-4 border-b border-gray-200">
-            Supporting Documents <span className="text-red-500">*</span>
+            Supporting Documents
           </h2>
 
           {/* Drag & Drop Area */}

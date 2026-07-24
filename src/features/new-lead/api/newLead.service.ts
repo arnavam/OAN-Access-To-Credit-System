@@ -33,6 +33,7 @@ export interface FarmerDetails {
   farmer_profile_created?: boolean | undefined;
   consent_request_status?: string | undefined;
   consent_request_otp_verified?: boolean | undefined;
+  faydaId?: string | undefined;
 }
 
 export interface ConsentReason {
@@ -201,7 +202,9 @@ export interface BasicProfileBackendData {
     name?: string;
     status?: string;
     otp_verified?: boolean;
+    farmer_fayda_id?: string;
   };
+  fayda_id?: string;
 }
 
 const cleanId = (id: string): string => normalizeLeadId(id);
@@ -334,7 +337,8 @@ export const newLeadService = {
       requested_data_fields: lead.requested_data_fields ?? [],
       farmer_profile_created: lead.farmer_profile_created,
       consent_request_status: lead.consent_request?.status,
-      consent_request_otp_verified: lead.consent_request?.otp_verified
+      consent_request_otp_verified: lead.consent_request?.otp_verified,
+      faydaId: lead.fayda_id ?? lead.consent_request?.farmer_fayda_id ?? ''
     };
   },
 
