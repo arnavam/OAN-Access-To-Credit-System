@@ -15,6 +15,7 @@ import type {
   ListProductsParams,
   CreateLoanProductCompoundInput,
   UpdateLoanProductCompoundInput,
+  ArchiveLoanProductInput,
 } from '../types/loan-products.types';
 
 type AsyncStatus = 'idle' | 'loading' | 'succeeded' | 'failed';
@@ -130,7 +131,7 @@ export const createProductCompound = createAsyncThunk(
         await taxonomyService.setProductAttributes(productId, input.attributes);
       }
 
-      await dispatch(fetchProducts());
+      await dispatch(fetchProducts(input.refetchParams));
       return created.data;
     } catch (error) {
       logger.error('createProductCompound thunk failed', { input, error });
@@ -156,7 +157,7 @@ export const updateProductCompound = createAsyncThunk(
         await taxonomyService.setProductAttributes(productId, input.attributes);
       }
 
-      await dispatch(fetchProducts());
+      await dispatch(fetchProducts(input.refetchParams));
       return updated.data;
     } catch (error) {
       logger.error('updateProductCompound thunk failed', { input, error });
@@ -167,13 +168,15 @@ export const updateProductCompound = createAsyncThunk(
 
 export const archiveProduct = createAsyncThunk(
   'sellerProducts/archiveProduct',
-  async (productId: string, { dispatch, rejectWithValue }) => {
+  async (input: string | ArchiveLoanProductInput, { dispatch, rejectWithValue }) => {
     try {
+      const productId = typeof input === 'string' ? input : input.productId;
+      const refetchParams = typeof input === 'string' ? undefined : input.refetchParams;
       const response = await loanProductsService.archiveProduct(productId);
-      await dispatch(fetchProducts());
+      await dispatch(fetchProducts(refetchParams));
       return response.data;
     } catch (error) {
-      logger.error('archiveProduct thunk failed', { productId, error });
+      logger.error('archiveProduct thunk failed', { input, error });
       return rejectWithValue(error instanceof Error ? error.message : 'Failed to archive loan product');
     }
   }

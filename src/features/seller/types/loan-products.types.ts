@@ -40,6 +40,7 @@ export interface CreateLoanProductCompoundInput {
   categoryTermIds?: string[];
   tagTermIds?: string[];
   attributes?: Record<string, string[]>;
+  refetchParams?: ListProductsParams;
 }
 
 export interface UpdateLoanProductCompoundInput {
@@ -47,4 +48,10 @@ export interface UpdateLoanProductCompoundInput {
   categoryTermIds?: string[];
   tagTermIds?: string[];
   attributes?: Record<string, string[]>;
+  refetchParams?: ListProductsParams;
+}
+
+export interface ArchiveLoanProductInput {
+  productId: string;
+  refetchParams?: ListProductsParams;
 }

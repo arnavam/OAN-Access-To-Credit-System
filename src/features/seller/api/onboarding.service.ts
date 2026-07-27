@@ -2,6 +2,7 @@ import { fetchApi } from '@/lib/api/fetchApi';
 import { validateResponse, bankStatusSchema, type BankStatus } from '@/lib/api/api.schemas';
 import type { ApiResponse } from '@/types/api';
 import type {
+  RegisterBankPayload,
   RegisterSellerPayload,
   SaveOrgContactsPayload,
   UploadKycDocumentPayload,
@@ -10,6 +11,13 @@ import type {
 export const onboardingService = {
   async registerSeller(payload: RegisterSellerPayload): Promise<ApiResponse<{ message: string }>> {
     return fetchApi('oan_a2c.api.v1.seller.onboarding.register_seller', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }) as Promise<ApiResponse<{ message: string }>>;
+  },
+
+  async registerBank(payload: RegisterBankPayload): Promise<ApiResponse<{ message: string }>> {
+    return fetchApi('oan_a2c.api.v1.seller.onboarding.register_bank', {
       method: 'POST',
       body: JSON.stringify(payload),
     }) as Promise<ApiResponse<{ message: string }>>;

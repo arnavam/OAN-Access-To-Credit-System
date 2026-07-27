@@ -4,6 +4,7 @@ import { onboardingService } from '../api/onboarding.service';
 import { logger } from '@/lib/logger';
 import type { BankStatus } from '@/lib/api/api.schemas';
 import type {
+  RegisterBankPayload,
   RegisterSellerPayload,
   SaveOrgContactsPayload,
   UploadKycDocumentPayload,
@@ -33,6 +34,19 @@ const initialState: OnboardingState = {
   registrationError: null,
   mutationError: null,
 };
+
+export const registerBank = createAsyncThunk(
+  'sellerOnboarding/registerBank',
+  async (payload: RegisterBankPayload, { rejectWithValue }) => {
+    try {
+      const response = await onboardingService.registerBank(payload);
+      return response.data;
+    } catch (error) {
+      logger.error('registerBank thunk failed', { error });
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to register bank organisation');
+    }
+  }
+);
 
 export const registerSeller = createAsyncThunk(
   'sellerOnboarding/registerSeller',
@@ -113,6 +127,9 @@ const onboardingSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      .addCase(registerBank.pending, (s) => { s.registrationStatus = 'loading'; s.registrationError = null; })
+      .addCase(registerBank.fulfilled, (s) => { s.registrationStatus = 'succeeded'; })
+      .addCase(registerBank.rejected, (s, action) => { s.registrationStatus = 'failed'; s.registrationError = action.payload as string; })
       .addCase(registerSeller.pending, (s) => { s.registrationStatus = 'loading'; s.registrationError = null; })
       .addCase(registerSeller.fulfilled, (s) => { s.registrationStatus = 'succeeded'; })
       .addCase(registerSeller.rejected, (s, action) => { s.registrationStatus = 'failed'; s.registrationError = action.payload as string; })

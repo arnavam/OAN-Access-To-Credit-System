@@ -17,6 +17,18 @@ export interface UploadKycDocumentPayload {
   filedata: string; // Base64 PDF
 }
 
+export interface RegisterBankPayload {
+  bank_name: string;
+  bank_code: string;
+  entity_type: string;
+  registered_street: string;
+  registered_city: string;
+  registered_country: string;
+  registered_postal_code: string;
+  registered_email: string;
+  registered_phone: string;
+}
+
 export interface UpdateBankStatusPayload {
   bank_code: string;
   new_status: 'Onboarding' | 'Active' | 'Suspended';
