@@ -1,5 +1,5 @@
-import { z } from 'zod';
 import { logger } from '@/lib/logger';
+import { z } from 'zod';
 
 // 1. consent.verify_otp
 export const verifyOtpResponseSchema = z.object({
@@ -165,4 +165,92 @@ export function validateResponse<T>(schema: z.ZodType<T>, data: unknown, endpoin
   }
   return result.data;
 }
+
+// ==========================================
+// Seller Feature API Schemas
+// ==========================================
+
+export const loanProductSummarySchema = z.object({
+  name: z.string(),
+  product_name: z.string(),
+  slug: z.string().nullable().optional(),
+  status: z.enum(['Draft', 'Active', 'Archived']),
+  min_interest_rate: z.number(),
+  max_interest_rate: z.number().nullable().optional(),
+  min_amount: z.number().nullable().optional(),
+  max_amount: z.number(),
+  tenure_months: z.number(),
+  creation: z.string().nullable().optional(),
+});
+export type LoanProductSummary = z.infer<typeof loanProductSummarySchema>;
+
+export const loanProductDetailSchema = loanProductSummarySchema.extend({
+  description: z.string().nullable().optional(),
+  bank: z.string().nullable().optional(),
+  modified: z.string().nullable().optional(),
+  product_meta: z.array(z.object({ meta_key: z.string(), meta_value: z.string() })).default([]),
+  categories: z.array(z.string()).default([]),
+  tags: z.array(z.string()).default([]),
+  attributes: z.record(z.string(), z.array(z.string())).default({}),
+});
+export type LoanProductDetail = z.infer<typeof loanProductDetailSchema>;
+
+export const sellerDashboardStatsSchema = z.object({
+  total_products: z.number(),
+  active_products: z.number(),
+  total_applications: z.number(),
+  pending_applications: z.number(),
+  approved_applications: z.number(),
+  total_approved_amount: z.number(),
+});
+export type SellerDashboardStats = z.infer<typeof sellerDashboardStatsSchema>;
+
+export const taxonomyCategorySchema = z.object({
+  term_id: z.string(),
+  parent_category: z.string().nullable(),
+  term_name: z.string(),
+});
+export type TaxonomyCategory = z.infer<typeof taxonomyCategorySchema>;
+
+export const taxonomyTagSchema = z.object({
+  term_id: z.string(),
+  term_name: z.string(),
+});
+export type TaxonomyTag = z.infer<typeof taxonomyTagSchema>;
+
+export const taxonomyAttributeSchema = z.object({
+  term_id: z.string(),
+  term_name: z.string(),
+  slug: z.string().nullable().optional(),
+});
+export type TaxonomyAttribute = z.infer<typeof taxonomyAttributeSchema>;
+
+export const teamUserSchema = z.object({
+  name: z.string(),
+  email: z.string(),
+  first_name: z.string().nullable().optional(),
+  enabled: z.union([z.literal(0), z.literal(1)]),
+});
+export type TeamUser = z.infer<typeof teamUserSchema>;
+
+export const bankStatusSchema = z.object({
+  status: z.enum(['Onboarding', 'Active', 'Suspended']),
+});
+export type BankStatus = z.infer<typeof bankStatusSchema>;
+
+export const registerSellerSchema = z.object({
+  email: z.string().email('Invalid email address format.'),
+  full_name: z.string().min(2, 'Full name must be at least 2 characters long.'),
+  password: z
+    .string()
+    .min(8, 'Password must be between 8 and 64 characters long.')
+    .max(64, 'Password must be between 8 and 64 characters long.')
+    .regex(/[A-Za-z]/, 'Password must contain at least 1 letter.')
+    .regex(/\d/, 'Password must contain at least 1 number.')
+    .regex(/[^A-Za-z0-9]/, 'Password must contain at least 1 special character.'),
+  phone_number: z.string().min(8, 'Mobile number must be at least 8 digits.'),
+});
+export type RegisterSellerSchemaPayload = z.infer<typeof registerSellerSchema>;
+
+
 

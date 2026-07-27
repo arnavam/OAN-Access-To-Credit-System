@@ -1,14 +1,18 @@
-import { configureStore, Middleware, isRejectedWithValue, UnknownAction } from '@reduxjs/toolkit';
-import { ApiErrorCode } from '../lib/api/apiErrors';
+import { configureStore, isRejectedWithValue, Middleware, UnknownAction } from '@reduxjs/toolkit';
 import { authReducer, logout } from '../features/auth/store/authSlice';
 import { leadReducer } from '../features/leads/store/leadSlice';
-import { loanFormReducer } from '../features/new-loan/store/newLoanFormSlice';
 import { loanDashboardReducer } from '../features/loans/store/loanDashboardSlice';
-import { newLeadReducer } from '../features/new-lead/store/newLeadSlice';
-import { farmerReducer } from '../features/new-lead/store/farmerSlice';
-import { consentReducer } from '../features/new-lead/store/consentSlice';
-import { visitReducer } from '../features/new-lead/store/visitSlice';
 import { assignmentReducer } from '../features/new-lead/store/assignmentSlice';
+import { consentReducer } from '../features/new-lead/store/consentSlice';
+import { farmerReducer } from '../features/new-lead/store/farmerSlice';
+import { newLeadReducer } from '../features/new-lead/store/newLeadSlice';
+import { visitReducer } from '../features/new-lead/store/visitSlice';
+import { loanFormReducer } from '../features/new-loan/store/newLoanFormSlice';
+import { sellerProductsReducer } from '../features/seller/store/loanProductsSlice';
+import { sellerOnboardingReducer } from '../features/seller/store/onboardingSlice';
+import { sellerTeamReducer } from '../features/seller/store/teamSlice';
+import { ApiErrorCode } from '../lib/api/apiErrors';
+
 
 const storageMiddleware: Middleware = (store) => (next) => (action) => {
   const result = next(action);
@@ -73,6 +77,9 @@ export const store = configureStore({
     assignment: assignmentReducer,
     loanForm: loanFormReducer,
     loanDashboard: loanDashboardReducer,
+    sellerProducts: sellerProductsReducer,
+    sellerOnboarding: sellerOnboardingReducer,
+    sellerTeam: sellerTeamReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(storageMiddleware, unauthenticatedMiddleware),
