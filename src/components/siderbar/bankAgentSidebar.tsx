@@ -1,15 +1,14 @@
 'use client';
-import React from 'react';
+import { LayoutDashboard, Package } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Search, FileText, Menu, Package, ClipboardCheck, ShieldCheck } from 'lucide-react';
 
 interface SidebarProps {
   isExpanded: boolean;
   setIsExpanded: (expanded: boolean) => void;
 }
 
-export default function BankAgentSidebar({ isExpanded, setIsExpanded }: SidebarProps) {
+export default function BankAgentSidebar({ isExpanded, setIsExpanded: _setIsExpanded }: SidebarProps) {
   const pathname = usePathname();
 
   return (

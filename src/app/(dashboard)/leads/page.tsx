@@ -1,5 +1,5 @@
-import { Metadata } from 'next';
 import { LeadsDashboardClient } from '@/features/leads/components/LeadsDashboardClient';
+import { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Leads Dashboard | Ethiopia OpenAgriNet Access to Credit',

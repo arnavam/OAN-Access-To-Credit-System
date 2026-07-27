@@ -1,10 +1,10 @@
 'use client';
 import { logger } from '@/lib/logger';
 
-import { useState, useEffect } from 'react';
-import { Provider as ReduxProvider } from 'react-redux';
-import { store } from '@/store';
 import { getMeThunk } from '@/features/auth/store/authSlice';
+import { store } from '@/store';
+import { useEffect, useState } from 'react';
+import { Provider as ReduxProvider } from 'react-redux';
 
 export function Providers({ children }: { children: React.ReactNode }) {
 

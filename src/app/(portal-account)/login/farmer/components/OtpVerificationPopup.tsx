@@ -1,8 +1,8 @@
 'use client';
 
 import { Portal } from '@/components/Portal';
-import React, { useState, useRef, KeyboardEvent } from 'react';
-import { X, Info, Smartphone } from 'lucide-react';
+import { Info, Smartphone, X } from 'lucide-react';
+import { KeyboardEvent, useRef, useState } from 'react';
 
 interface OtpVerificationPopupProps {
   isOpen: boolean;

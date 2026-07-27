@@ -1,8 +1,8 @@
 'use client';
-import React, { useState, useRef, useEffect } from 'react';
-import Link from 'next/link';
-import { Menu, Bell, Globe, ChevronDown, Settings, LogOut } from 'lucide-react';
 import { LanguageSelector } from '@/app/(portal-account)/components/LanguageSelector';
+import { Bell, ChevronDown, LogOut, Menu, Settings } from 'lucide-react';
+import Link from 'next/link';
+import { useEffect, useRef, useState } from 'react';
 
 interface TopNavProps {
   onMenuClick?: () => void;

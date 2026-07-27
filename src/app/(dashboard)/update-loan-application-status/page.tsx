@@ -1,23 +1,18 @@
 'use client';
-import { useState, useMemo } from 'react';
 import {
-  Search, Download, RefreshCcw, ChevronLeft, ChevronRight,
-  X, Check, AlertTriangle, Clock3, CheckCircle2, FileText,
-  MapPin, Banknote, Calendar,
+    AlertTriangle, Banknote, Calendar, Check, CheckCircle2, ChevronLeft, ChevronRight, Clock3, Download, FileText,
+    MapPin, RefreshCcw, Search, X
 } from 'lucide-react';
+import { useMemo, useState } from 'react';
 
-import { useEffect } from 'react';
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { fetchLoans, updateLoanStatus, selectPagedRowsData, MappedLoanRow } from '@/features/loans/store/loanDashboardSlice';
-import { updateLeadStatusThunk } from '@/features/new-lead';
-import {
-  STATUS_CFG,
-  LOAN_STATUSES,
-  UPDATABLE_STATUSES,
-  PAGE_SIZE,
-  STATUS_UPDATE_REASONS,
-} from '@/features/loans/constants/loans.constants';
 import LoanStatusBadge from '@/features/loans/components/LoanStatusBadge';
+import {
+    LOAN_STATUSES, PAGE_SIZE, STATUS_CFG, STATUS_UPDATE_REASONS, UPDATABLE_STATUSES
+} from '@/features/loans/constants/loans.constants';
+import { fetchLoans, MappedLoanRow, selectPagedRowsData, updateLoanStatus } from '@/features/loans/store/loanDashboardSlice';
+import { updateLeadStatusThunk } from '@/features/new-lead';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { useEffect } from 'react';
 
 // ─── KPI configuration ────────────────────────────────────────────────────────
 const KPI_CFG = [

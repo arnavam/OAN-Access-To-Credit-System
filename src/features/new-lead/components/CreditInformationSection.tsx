@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { AlertCircle, CreditCard } from 'lucide-react';
 import { useParams } from 'next/navigation';
-import { useAppSelector, useAppDispatch } from '@/store/hooks';
-import { selectCreditInfo, selectIsLeadFinalized, selectVerificationBlocked, addCreditInfoThunk, fetchCreditInfoThunk } from '../store/newLeadSlice';
-import { CreditInformationModal } from './modals/CreditInformationModal';
-import { CreditCard, AlertCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { type CreditInfoFormData } from '../schemas/credit.schema';
+import { addCreditInfoThunk, fetchCreditInfoThunk, selectCreditInfo, selectIsLeadFinalized, selectVerificationBlocked } from '../store/newLeadSlice';
+import { CreditInformationModal } from './modals/CreditInformationModal';
 
 export function CreditInformationSection() {
   const dispatch = useAppDispatch();

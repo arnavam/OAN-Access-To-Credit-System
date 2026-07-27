@@ -57,14 +57,14 @@ export const generateMockApplications = (count: number = 319) => {
   const lastNames = ['Girma', 'Bekele', 'Yusuf', 'Tadesse', 'Haile', 'Alemu', 'Tesfaye', 'Kassahun', 'Worku', 'Assefa'];
 
   for (let i = mockRows.length; i < count; i++) {
-    const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
-    const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+    const firstName = firstNames[Math.floor(Math.random() * firstNames.length)] || 'Abebe';
+    const lastName = lastNames[Math.floor(Math.random() * lastNames.length)] || 'Girma';
     const name = `${firstName} ${lastName}`;
     const initials = `${firstName[0]}${lastName[0]}`;
     const idNum = (1000 + i).toString().padStart(5, '0');
     const id = `ET-FRM-2026-${idNum}`;
-    const color = colors[i % colors.length];
-    const product = products[Math.floor(Math.random() * products.length)];
+    const color = colors[i % colors.length] || colors[0]!;
+    const product = products[Math.floor(Math.random() * products.length)] || products[0]!;
     const amountNum = Math.floor(Math.random() * 190) * 1000 + 10000;
     const amount = `ETB ${amountNum.toLocaleString()}`;
     const dateObj = new Date(2026, 6, 6); // Before Jul 7
@@ -74,8 +74,8 @@ export const generateMockApplications = (count: number = 319) => {
     const ampm = hours >= 12 ? 'PM' : 'AM';
     const displayHours = hours > 12 ? hours - 12 : hours;
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const dateStr = `${monthNames[dateObj.getMonth()]} ${dateObj.getDate()}, ${dateObj.getFullYear()}, ${displayHours}:${minutes} ${ampm}`;
-    const statusObj = statuses[Math.floor(Math.random() * statuses.length)];
+    const dateStr = `${monthNames[dateObj.getMonth()] || "Jan"} ${dateObj.getDate()}, ${dateObj.getFullYear()}, ${displayHours}:${minutes} ${ampm}`;
+    const statusObj = statuses[Math.floor(Math.random() * statuses.length)] || statuses[0]!;
 
     applications.push({
       id: i.toString(),

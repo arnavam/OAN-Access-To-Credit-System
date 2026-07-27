@@ -1,14 +1,14 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
-import { useAppDispatch } from '@/store/hooks';
-import { ListChecks, Users, LayoutDashboard } from 'lucide-react';
+import FarmerHeader from '@/components/header/farmerHeader';
 import Sidebar, { NavSection } from '@/components/Sidebar';
+import FarmerSidebar from '@/components/siderbar/FarmerSidebar';
 import TopHeader from '@/components/TopHeader';
 import { logout as logoutAction } from '@/features/auth/store/authSlice';
-import FarmerSidebar from '@/components/siderbar/FarmerSidebar';
-import FarmerHeader from '@/components/header/farmerHeader';
+import { useAppDispatch } from '@/store/hooks';
+import { LayoutDashboard, ListChecks, Users } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import React, { useEffect, useState } from 'react';
 
 import '@/styles/main-layout.scss';
 

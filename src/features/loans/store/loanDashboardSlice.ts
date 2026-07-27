@@ -1,8 +1,8 @@
-import { createSlice, createAsyncThunk, createSelector, PayloadAction } from '@reduxjs/toolkit';
-import type { RootState } from '../../../store';
-import { loanService, GetLoansParams, LoanApplicationSummary, LoanSummaryMetrics } from '@/features/loans/api/loan.service';
 import { selectUserEmail } from '@/features/auth/store/authSlice';
+import { GetLoansParams, LoanApplicationSummary, loanService, LoanSummaryMetrics } from '@/features/loans/api/loan.service';
 import type { ApiResponse } from '@/types/api';
+import { createAsyncThunk, createSelector, createSlice, PayloadAction } from '@reduxjs/toolkit';
+import type { RootState } from '../../../store';
 
 // Sentinel sent to the API when the user has explicitly cleared all status
 // filters, signalling "match no statuses" (distinct from omitting the param,

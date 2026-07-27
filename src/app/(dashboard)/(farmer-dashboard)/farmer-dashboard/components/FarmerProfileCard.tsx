@@ -1,5 +1,4 @@
-import React from 'react';
-import { CheckCircle2, MapPin, Leaf, Tractor, Activity } from 'lucide-react';
+import { Activity, CheckCircle2, Leaf, MapPin } from 'lucide-react';
 
 export default function FarmerProfileCard() {
   return (

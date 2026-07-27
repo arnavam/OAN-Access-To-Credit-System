@@ -1,48 +1,33 @@
 'use client';
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import { Download, Plus } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { KPI_CARDS_LAYOUT, LEAD_STATUS_MAP, resolveDateFilter } from '@/features/leads/constants/leads.constants';
-import type { Lead, KpiStat } from '@/features/leads/types/leads.types';
+import type { KpiStat, Lead } from '@/features/leads/types/leads.types';
 
 import LeadKpiCard from '@/features/leads/components/LeadKpiCard';
-import LeadToolbar from '@/features/leads/components/LeadToolbar';
-import LeadTable from '@/features/leads/components/LeadTable';
 import LeadPagination from '@/features/leads/components/LeadPagination';
+import LeadTable from '@/features/leads/components/LeadTable';
+import LeadToolbar from '@/features/leads/components/LeadToolbar';
 import dynamic from 'next/dynamic';
 
 const LeadAdvancedFilters = dynamic(() => import('@/features/leads/components/LeadAdvancedFilters'), {
   ssr: false,
 });
 
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import {
-  fetchLeads,
-  fetchLeadSummary,
-  selectLeads,
-  selectIsLeadsLoading,
-  selectLeadSummary,
-  selectSearch,
-  selectActiveTab,
-  selectDateFilter,
-  selectColStatusFilter,
-  selectColCallTimeFilter,
-  setSearch,
-  setActiveTab,
-  setColStatusFilter,
-  setColCallTimeFilter,
-  resetFilters,
-  selectTotalCount,
-  selectAdvFilters,
-  selectLeadsError,
-} from '@/features/leads/store/leadSlice';
-import { fetchLeadMetadataThunk } from '@/features/new-lead/store/newLeadSlice';
-import { selectOfficerName, selectUserEmail } from '@/features/auth/store/authSlice';
 import { AccessDenied } from '@/components/AccessDenied';
 import { ConnectionError } from '@/components/ConnectionError';
+import { selectOfficerName, selectUserEmail } from '@/features/auth/store/authSlice';
+import {
+    fetchLeads,
+    fetchLeadSummary, resetFilters, selectActiveTab, selectAdvFilters, selectColCallTimeFilter, selectColStatusFilter, selectDateFilter, selectIsLeadsLoading, selectLeads, selectLeadsError, selectLeadSummary,
+    selectSearch, selectTotalCount, setActiveTab, setColCallTimeFilter, setColStatusFilter, setSearch
+} from '@/features/leads/store/leadSlice';
+import { fetchLeadMetadataThunk } from '@/features/new-lead/store/newLeadSlice';
 import { ApiErrorCode, classifyError } from '@/lib/api/apiErrors';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
 
 export function LeadsDashboardClient() {
   const router = useRouter();
@@ -68,6 +53,11 @@ export function LeadsDashboardClient() {
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [openColFilter, setOpenColFilter] = useState<string | null>(null);
   const [sliderIndex, setSliderIndex] = useState(0);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Tab badge counts come from get_lead_summary.tab_counts (RBAC-scoped). The
   // backend's `assigned` count maps to the "My" tab. Until the summary loads,
@@ -253,12 +243,6 @@ export function LeadsDashboardClient() {
   if (leadsError && allLeads.length === 0 && !isLoading) {
     return <ConnectionError onRetry={() => loadLeads(currentPage)} />;
   }
-
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
 
   return (
     <div className="space-y-4">

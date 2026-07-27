@@ -2,14 +2,14 @@
 
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { RegisterHeaderCard } from './components/RegisterHeaderCard';
-import { OrganisationSection } from './components/OrganisationSection';
-import { RegisteredAddressSection } from './components/RegisteredAddressSection';
+import { useState } from 'react';
 import { ContactDetailsSection } from './components/ContactDetailsSection';
-import { RegisterFooterCard } from './components/RegisterFooterCard';
+import { OrganisationSection } from './components/OrganisationSection';
 import { OrganizationRegisteredPopup } from './components/OrganizationRegisteredPopup';
+import { RegisteredAddressSection } from './components/RegisteredAddressSection';
+import { RegisterFooterCard } from './components/RegisterFooterCard';
+import { RegisterHeaderCard } from './components/RegisterHeaderCard';
 
 export default function RegisterPage() {
   const router = useRouter();

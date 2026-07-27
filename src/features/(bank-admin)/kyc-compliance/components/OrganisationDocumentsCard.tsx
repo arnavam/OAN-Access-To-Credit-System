@@ -1,8 +1,8 @@
 'use client';
-import React, { useState, useRef } from 'react';
 import { FileText, Upload } from 'lucide-react';
-import { ViewDocumentModal } from './ViewDocumentModal';
+import React, { useRef, useState } from 'react';
 import { DeleteDocumentModal } from './DeleteDocumentModal';
+import { ViewDocumentModal } from './ViewDocumentModal';
 
 export function OrganisationDocumentsCard() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);

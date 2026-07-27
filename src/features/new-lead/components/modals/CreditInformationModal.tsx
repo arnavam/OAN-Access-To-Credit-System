@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { X } from 'lucide-react';
-import { useAppSelector } from '@/store/hooks';
-import { selectLoanTypesOptions } from '../../store/newLeadSlice';
 import { SelectField } from '@/components/ui/SelectField';
+import { useAppSelector } from '@/store/hooks';
+import { X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { creditInfoSchema, type CreditInfoFormData } from '../../schemas/credit.schema';
+import { selectLoanTypesOptions } from '../../store/newLeadSlice';
 
 interface CreditInformationModalProps {
   isOpen: boolean;

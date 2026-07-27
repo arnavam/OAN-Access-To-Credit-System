@@ -1,7 +1,6 @@
 "use client";
-import React from 'react';
-import { Landmark } from 'lucide-react';
 import type { Loan } from '@/features/(farmer-application)/discover-loans/data/mockLoans';
+import { Landmark } from 'lucide-react';
 
 interface ApplicationHeaderProps {
   loan: Loan;

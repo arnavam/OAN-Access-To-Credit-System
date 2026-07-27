@@ -1,18 +1,16 @@
-import { useEffect, useRef, useState } from 'react';
+import { selectOfficerName, selectOfficerRole } from '@/features/auth/store/authSlice';
+import { useAppSelector } from '@/store/hooks';
+import {
+    Bell,
+    ChevronDown,
+    Database,
+    Globe, Languages, LogOut,
+    Settings,
+    UserRound
+} from 'lucide-react';
 import Image from 'next/image';
 import { useParams } from 'next/navigation';
-import {
-  Bell,
-  ChevronDown,
-  Database,
-  Globe,
-  LogOut,
-  Settings,
-  UserRound,
-  Languages,
-} from 'lucide-react';
-import { selectOfficerName, selectOfficerRole } from '@/features/auth/store/authSlice';
-import { useAppSelector } from '@/store/hooks'
+import { useEffect, useRef, useState } from 'react';
 import menuToggleArrow from './menu-toggle-arrow.svg';
 import menuToggleBars from './menu-toggle-bars.svg';
 

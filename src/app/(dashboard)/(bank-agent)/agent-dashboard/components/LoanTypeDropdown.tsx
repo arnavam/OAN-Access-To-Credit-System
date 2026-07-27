@@ -1,6 +1,6 @@
 'use client';
-import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 const LOAN_TYPES = ['Seed', 'Input', 'Equipment', 'Livestock'];
 

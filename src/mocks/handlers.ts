@@ -1,7 +1,7 @@
-import { http, HttpResponse } from 'msw';
-import { DUMMY_LOANS, getFallbackMockRows } from './loans.mock';
-import { leadRows, LeadRow } from './leads.mock';
 import { CreateLeadPayload } from '@/features/new-lead/api/newLead.service';
+import { http, HttpResponse } from 'msw';
+import { LeadRow, leadRows } from './leads.mock';
+import { DUMMY_LOANS, getFallbackMockRows } from './loans.mock';
 
 export const handlers = [
   http.get('/api/loans', () => {

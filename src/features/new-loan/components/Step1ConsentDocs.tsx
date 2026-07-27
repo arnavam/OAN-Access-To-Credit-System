@@ -1,15 +1,15 @@
 'use client';
 
-import { logger } from '@/lib/logger';
-import React, { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { nextStepAPI, selectLoanFormState } from '@/features/new-loan/store/newLoanFormSlice';
-import { loanService, type SupportingDocument } from '@/features/loans/api/loan.service';
-import { ArrowRight, CheckCircle2, FileText, FolderOpen, Eye, EyeOff, X, Check, Info, AlertTriangle } from 'lucide-react';
-import type { AppDispatch } from '@/store';
 import { UndoToast } from '@/components/ui/UndoToast';
-import { AddSupportingDocModal } from './AddSupportingDocModal';
+import { loanService, type SupportingDocument } from '@/features/loans/api/loan.service';
 import { newLeadService, type FarmerDetails } from '@/features/new-lead/api/newLead.service';
+import { nextStepAPI, selectLoanFormState } from '@/features/new-loan/store/newLoanFormSlice';
+import { logger } from '@/lib/logger';
+import type { AppDispatch } from '@/store';
+import { AlertTriangle, ArrowRight, Check, CheckCircle2, Eye, EyeOff, FileText, FolderOpen, Info, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { AddSupportingDocModal } from './AddSupportingDocModal';
 
 export function Step1ConsentDocs({ leadId }: { leadId?: string | undefined }) {
   const dispatch = useDispatch<AppDispatch>();

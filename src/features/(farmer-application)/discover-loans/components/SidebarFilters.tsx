@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
 import Button from '@/components/ui/Button';
+import { ChevronDown, ChevronUp } from 'lucide-react';
+import { useState } from 'react';
 
 export default function SidebarFilters() {
   const [loanAmount, setLoanAmount] = useState<number>(350000);

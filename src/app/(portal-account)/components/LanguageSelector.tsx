@@ -1,7 +1,7 @@
 'use client';
 
+import { Check } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { Globe, Check } from 'lucide-react';
 
 const languages = [
   { code: 'en', label: 'English', country: 'United States', flag: '🇺🇸' },

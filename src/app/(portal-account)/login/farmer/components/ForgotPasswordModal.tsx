@@ -1,7 +1,7 @@
 'use client';
-import React, { useState } from 'react';
 import { Portal } from '@/components/Portal';
-import { X, Mail, CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, Mail, X } from 'lucide-react';
+import React, { useState } from 'react';
 
 interface ForgotPasswordModalProps {
   isOpen: boolean;

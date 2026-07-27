@@ -1,9 +1,9 @@
 'use client';
 import { Portal } from '@/components/Portal';
-import React, { useState } from 'react';
-import { X, Plus, Package, Loader2 } from 'lucide-react';
-import { LoanTypeDropdown } from './LoanTypeDropdown';
+import { Loader2, Package, Plus, X } from 'lucide-react';
+import { useState } from 'react';
 import { LoanProductCreatedSuccess } from './LoanProductCreatedSuccess';
+import { LoanTypeDropdown } from './LoanTypeDropdown';
 
 interface AddLoanProductModalProps {
   isOpen: boolean;

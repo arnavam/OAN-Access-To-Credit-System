@@ -1,9 +1,9 @@
 'use client';
-import React, { useState, useRef, useEffect } from 'react';
+import { LanguageSelector } from '@/app/(portal-account)/components/LanguageSelector';
+import { Bell, ChevronDown, LogOut, Menu, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, Bell, Globe, ChevronDown, Settings, LogOut } from 'lucide-react';
-import { LanguageSelector } from '@/app/(portal-account)/components/LanguageSelector';
+import { useEffect, useRef, useState } from 'react';
 
 interface HeaderProps {
   onMenuClick: () => void;

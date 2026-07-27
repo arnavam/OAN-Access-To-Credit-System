@@ -1,7 +1,7 @@
+import { ChevronDown } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { FormCard } from './FormCard';
 import { OtpVerificationPopup } from './OtpVerificationPopup';
-import { ChevronDown } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
 
 interface ContactDetailsSectionProps {
   isAgreed: boolean;

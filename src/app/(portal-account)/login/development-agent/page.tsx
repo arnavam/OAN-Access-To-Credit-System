@@ -1,5 +1,5 @@
-import { Metadata } from 'next';
 import { LoginClient } from '@/features/auth/components/LoginClient';
+import { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Field Agent Login | Ethiopia OpenAgriNet Access to Credit',

@@ -1,14 +1,13 @@
-import React from 'react';
+import { FileText, LayoutDashboard, Search } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Search, FileText, Menu } from 'lucide-react';
 
 interface SidebarProps {
   isExpanded: boolean;
   setIsExpanded: (expanded: boolean) => void;
 }
 
-export default function FarmerSidebar({ isExpanded, setIsExpanded }: SidebarProps) {
+export default function FarmerSidebar({ isExpanded, setIsExpanded: _setIsExpanded }: SidebarProps) {
   const pathname = usePathname();
 
   return (

@@ -1,11 +1,11 @@
-import { useEffect, useState, useRef, ChangeEvent } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { submitConsentThunk, selectConsentState } from '../store/consentSlice';
-import { selectIsPollingLong, selectFarmerState } from '../store/farmerSlice';
-import { ProfileSyncLoadingModal } from './modals/ProfileSyncLoadingModal';
-import { Calendar, FileText, CheckSquare, Square, Loader2, Sparkles, Folder, Eye, X, Upload, AlertCircle } from 'lucide-react';
+import { AlertCircle, Calendar, CheckSquare, Eye, FileText, Folder, Loader2, Sparkles, Square, Upload, X } from 'lucide-react';
 import { useParams } from 'next/navigation';
-import { newLeadService, ConsentReason, AllowedDataField } from '../api/newLead.service';
+import { ChangeEvent, useEffect, useRef, useState } from 'react';
+import { AllowedDataField, ConsentReason, newLeadService } from '../api/newLead.service';
+import { selectConsentState, submitConsentThunk } from '../store/consentSlice';
+import { selectFarmerState, selectIsPollingLong } from '../store/farmerSlice';
+import { ProfileSyncLoadingModal } from './modals/ProfileSyncLoadingModal';
 
 export function ConsentFinalizationSection() {
   const dispatch = useAppDispatch();

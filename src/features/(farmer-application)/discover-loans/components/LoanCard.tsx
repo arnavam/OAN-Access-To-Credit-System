@@ -1,7 +1,7 @@
 "use client";
-import React, { useState } from 'react';
+import { ArrowRight, Bookmark, Landmark, Star } from 'lucide-react';
 import Link from 'next/link';
-import { Bookmark, ArrowRight, Star, Landmark } from 'lucide-react';
+import { useState } from 'react';
 import type { Loan } from '../data/mockLoans';
 
 interface LoanCardProps {

@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { AlertTriangle, CheckCircle2, Circle, Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Loader2, CheckCircle2, Circle, AlertTriangle } from 'lucide-react';
 
 interface ProfileSyncLoadingModalProps {
   isOpen: boolean;

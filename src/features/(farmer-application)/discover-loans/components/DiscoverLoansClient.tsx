@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import SidebarFilters from './SidebarFilters';
-import TopBar from './TopBar';
+import { Search } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { mockLoans } from '../data/mockLoans';
 import LoanCard from './LoanCard';
 import Pagination from './Pagination';
-import { mockLoans } from '../data/mockLoans';
-import { Search } from 'lucide-react';
+import SidebarFilters from './SidebarFilters';
+import TopBar from './TopBar';
 
 // Generate a larger dataset for pagination demonstration
 const allLoans = Array.from({ length: 6 }, (_, i) =>

@@ -1,6 +1,6 @@
-import { memo } from 'react';
-import { useAppSelector } from '@/store/hooks';
 import { selectOfficerName } from '@/features/auth/store/authSlice';
+import { useAppSelector } from '@/store/hooks';
+import { memo } from 'react';
 
 const LoanDashboardHeader = memo(() => {
   const officerName = useAppSelector(selectOfficerName);

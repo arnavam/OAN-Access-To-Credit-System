@@ -1,7 +1,7 @@
 "use client";
-import React, { useState } from 'react';
-import ApplicationSummary from './components/ApplicationSummary';
+import { useState } from 'react';
 import ApplicationList from './components/ApplicationList';
+import ApplicationSummary from './components/ApplicationSummary';
 
 export type TabType = 'total' | 'review' | 'disbursed' | 'rejected';
 
@@ -14,9 +14,9 @@ export default function MyApplicationsPage() {
                 <h1 className="text-xl font-bold text-gray-900">My Applications</h1>
             </div>
 
-            <ApplicationSummary activeTab={activeTab} onTabChange={setActiveTab} />
+            <ApplicationSummary activeTab={activeTab} onTabChange={(tab: string) => setActiveTab(tab as TabType)} />
 
-            <ApplicationList activeTab={activeTab} onTabChange={setActiveTab} />
+            <ApplicationList activeTab={activeTab} onTabChange={(tab: string) => setActiveTab(tab as TabType)} />
         </div>
     );
 }

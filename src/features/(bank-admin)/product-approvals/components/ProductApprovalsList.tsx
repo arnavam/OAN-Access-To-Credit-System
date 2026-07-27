@@ -1,6 +1,5 @@
-import React from 'react';
-import { Building2, Landmark } from 'lucide-react';
-import { ProductApprovalCard, ApprovalItem } from './ProductApprovalCard';
+import { Landmark } from 'lucide-react';
+import { ApprovalItem, ProductApprovalCard } from './ProductApprovalCard';
 
 const mockApprovals: ApprovalItem[] = [
   {

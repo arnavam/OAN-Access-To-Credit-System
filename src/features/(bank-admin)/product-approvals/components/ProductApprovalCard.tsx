@@ -1,6 +1,6 @@
 'use client';
-import React, { useState } from 'react';
-import { Check, X as XIcon, BarChart3, Landmark, Sprout, Package, PawPrint, LucideIcon } from 'lucide-react';
+import { BarChart3, Check, LucideIcon, Package, PawPrint, Sprout, X as XIcon } from 'lucide-react';
+import { useState } from 'react';
 import { ApproveProductModal } from './ApproveProductModal';
 import { RejectProductModal } from './RejectProductModal';
 
@@ -35,8 +35,10 @@ export const ProductApprovalCard = ({ item }: { item: ApprovalItem }) => {
   const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
 
-  const styles = categoryStyles[item.category] || categoryStyles.equipment;
-  const sStyles = statusStyles[item.status] || statusStyles['Pending Approved'];
+  const defaultCategoryStyle = { bg: 'bg-purple-100', text: 'text-purple-600', border: 'border-purple-100', icon: BarChart3, pillBg: 'bg-purple-100', cardBg: 'bg-gradient-to-r from-purple-50/80 to-white border-purple-100' };
+  const defaultStatusStyle = { text: 'text-orange-700', border: 'border-orange-200', dot: 'bg-orange-500', bg: 'bg-orange-100' };
+  const styles = categoryStyles[item.category] || categoryStyles['equipment'] || defaultCategoryStyle;
+  const sStyles = statusStyles[item.status] || statusStyles['Pending Approved'] || defaultStatusStyle;
   const Icon = styles.icon;
 
   return (

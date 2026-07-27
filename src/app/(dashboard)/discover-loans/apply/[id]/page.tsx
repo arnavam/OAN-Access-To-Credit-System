@@ -1,4 +1,3 @@
-import React from 'react';
 import ApplyLoanPage from '@/features/(farmer-application)/apply-loan/page';
 
 interface PageProps {

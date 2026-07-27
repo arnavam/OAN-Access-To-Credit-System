@@ -1,22 +1,17 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import type { RootState } from '@/store';
-import {
-  newLeadService,
-  SpecificLeadAPI,
-  GetLeadMetadataResponse,
-  GetCallDetailsResponse,
-  GetActivitiesResponse,
-  AddActivityNoteResponse,
-  CreateLeadResponse,
-  UpdateLeadStatusResponse
-} from '../api/newLead.service';
-import type { CreditInfoAPI, AddCreditInfoResponse } from '@/lib/api/api.schemas';
-import { formatTiming } from './helpers';
-import { fetchAssignmentInfoThunk } from './assignmentSlice';
-import { initializeLead, clearForm } from './actions';
-import { fetchLeadDetailsThunk } from './farmerSlice';
+import type { AddCreditInfoResponse, CreditInfoAPI } from '@/lib/api/api.schemas';
 import { ApiError } from '@/lib/api/fetchApi';
 import { normalizeLeadId } from '@/lib/utils';
+import type { RootState } from '@/store';
+import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
+import {
+    AddActivityNoteResponse,
+    CreateLeadResponse, GetActivitiesResponse, GetCallDetailsResponse, GetLeadMetadataResponse, newLeadService,
+    SpecificLeadAPI, UpdateLeadStatusResponse
+} from '../api/newLead.service';
+import { clearForm, initializeLead } from './actions';
+import { fetchAssignmentInfoThunk } from './assignmentSlice';
+import { fetchLeadDetailsThunk } from './farmerSlice';
+import { formatTiming } from './helpers';
 
 
 

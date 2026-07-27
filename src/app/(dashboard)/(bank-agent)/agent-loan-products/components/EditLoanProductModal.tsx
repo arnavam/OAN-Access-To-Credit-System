@@ -1,9 +1,9 @@
 'use client';
-import { Portal } from '@/components/Portal';
-import React, { useState, useEffect } from 'react';
-import { X, Package, Loader2 } from 'lucide-react';
-import { LoanTypeDropdown } from '@/app/(dashboard)/(bank-agent)/agent-dashboard/components/LoanTypeDropdown';
 import { LoanProductCreatedSuccess } from '@/app/(dashboard)/(bank-agent)/agent-dashboard/components/LoanProductCreatedSuccess';
+import { LoanTypeDropdown } from '@/app/(dashboard)/(bank-agent)/agent-dashboard/components/LoanTypeDropdown';
+import { Portal } from '@/components/Portal';
+import { Loader2, Package, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { LoanProduct } from './LoanProductCard';
 
 interface EditLoanProductModalProps {
@@ -35,7 +35,7 @@ export function EditLoanProductModal({ isOpen, onClose, product }: EditLoanProdu
       
       // Try to parse amount string (e.g., "10,000 - 25,000 ETB")
       const amountParts = product.amount?.split('-');
-      if (amountParts && amountParts.length >= 2) {
+      if (amountParts && amountParts[0] && amountParts[1]) {
         setMinAmount(amountParts[0].replace(/[^0-9,]/g, ''));
         setMaxAmount(amountParts[1].replace(/[^0-9,]/g, ''));
       } else {

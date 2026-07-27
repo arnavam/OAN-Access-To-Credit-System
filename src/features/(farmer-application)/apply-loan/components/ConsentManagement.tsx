@@ -1,8 +1,6 @@
 "use client";
-import { Portal } from '@/components/Portal';
-
-import React, { useState } from 'react';
 import { Check, X } from 'lucide-react';
+import { useState } from 'react';
 import SignedConsentForm from './SignedConsentForm';
 
 const ConsentItem = ({ label, initialChecked }: { label: string; initialChecked: boolean }) => {

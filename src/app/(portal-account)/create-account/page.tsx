@@ -1,5 +1,5 @@
-import { LeftSidebar } from '@/app/(portal-account)/components/leftSidebar';
 import { LanguageSelector } from '@/app/(portal-account)/components/LanguageSelector';
+import { LeftSidebar } from '@/app/(portal-account)/components/leftSidebar';
 import { CreateAccountForm } from '@/app/(portal-account)/create-account/components/CreateAccountForm';
 
 export default function CreateAccountPage() {

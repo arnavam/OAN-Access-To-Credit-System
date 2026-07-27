@@ -1,5 +1,4 @@
 "use client";
-import React, { useState } from 'react';
 import ApplicationCard, { ApplicationStatus } from './ApplicationCard';
 
 export default function ApplicationList({ activeTab, onTabChange }: { activeTab: string, onTabChange: (tab: string) => void }) {

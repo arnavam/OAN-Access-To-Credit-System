@@ -1,13 +1,12 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import type { RootState } from '../../../store';
 import { leadService } from '@/features/leads/api/lead.service';
-import type { GetLeadsParams, Lead, LeadSummaryResponse, LeadStatus } from '@/features/leads/types/leads.types';
+import type { GetLeadsParams, Lead, LeadStatus, LeadSummaryResponse } from '@/features/leads/types/leads.types';
 import {
-  updateLeadStatusThunk,
-  updateVisitScheduleStatusThunk,
-  fetchLeadDetailsThunk,
-  scheduleVisitThunk,
+    fetchLeadDetailsThunk,
+    scheduleVisitThunk, updateLeadStatusThunk,
+    updateVisitScheduleStatusThunk
 } from '@/features/new-lead';
+import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
+import type { RootState } from '../../../store';
 
 import { normalizeLeadId } from '@/lib/utils';
 

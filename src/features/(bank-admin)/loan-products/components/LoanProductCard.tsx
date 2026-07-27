@@ -1,8 +1,8 @@
 'use client';
-import React, { useState } from 'react';
-import { Pencil, Trash2, Sprout, Package, PawPrint, BarChart3, LucideIcon } from 'lucide-react';
-import { EditLoanProductModal } from './EditLoanProductModal';
+import { BarChart3, LucideIcon, Package, PawPrint, Pencil, Sprout, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 import { DeleteLoanProductModal } from './DeleteLoanProductModal';
+import { EditLoanProductModal } from './EditLoanProductModal';
 
 export type ProductCategory = 'seed' | 'input' | 'livestock' | 'equipment';
 export type ProductStatus = 'Active' | 'Pending Approved' | 'Inactive';
@@ -47,7 +47,7 @@ export const LoanProductCard = ({ product }: { product: LoanProduct }) => {
         <div className="flex items-center gap-4">
           <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${styles.bg} ${styles.text}`}>
 
-            <BarChart3 size={24} />
+            <Icon size={24} />
           </div>
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-3">

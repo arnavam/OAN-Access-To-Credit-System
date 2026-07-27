@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Plus } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 export default function CreditInformation() {
   const getBadgeStyle = (type: string) => {

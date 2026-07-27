@@ -1,7 +1,6 @@
 "use client";
-import React from 'react';
-import { X, CheckCircle2, Award, XCircle } from 'lucide-react';
 import { Portal } from '@/components/Portal';
+import { Award, CheckCircle2, X, XCircle } from 'lucide-react';
 import { ApplicationStatus } from './ApplicationCard';
 
 interface ApplicationActionModalProps {

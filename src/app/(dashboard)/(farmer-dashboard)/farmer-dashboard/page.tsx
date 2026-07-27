@@ -1,9 +1,8 @@
-import React from 'react';
-import FarmerProfileCard from './components/FarmerProfileCard';
-import TopLoanOffersCard from './components/TopLoanOffersCard';
 import AvailableLoanTypes from './components/AvailableLoanTypes';
+import FarmerProfileCard from './components/FarmerProfileCard';
 import HarvestRecordsTable from './components/HarvestRecordsTable';
 import RecentApplicationsList from './components/RecentApplicationsList';
+import TopLoanOffersCard from './components/TopLoanOffersCard';
 
 export default function FarmerDashboard() {
   return (

@@ -1,7 +1,6 @@
-import React from 'react';
-import { Users, FileText, Award, XCircle } from 'lucide-react';
+import { Award, FileText, Users, XCircle } from 'lucide-react';
 
-export default function ApplicationSummary({ activeTab, onTabChange }: { activeTab: string, onTabChange: (tab: string) => void }) {
+export default function ApplicationSummary({ activeTab: _activeTab, onTabChange }: { activeTab: string, onTabChange: (tab: string) => void }) {
   return (
     <div className="grid grid-cols-4 gap-6 mb-8">
       {/* Total Card */}

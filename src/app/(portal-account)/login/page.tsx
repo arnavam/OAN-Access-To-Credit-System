@@ -1,5 +1,5 @@
-import { LeftSidebar } from '@/app/(portal-account)/components/leftSidebar';
 import { LanguageSelector } from '@/app/(portal-account)/components/LanguageSelector';
+import { LeftSidebar } from '@/app/(portal-account)/components/leftSidebar';
 import { LoginForm } from '@/app/(portal-account)/login/components/LoginForm';
 
 export default function LoginPage() {

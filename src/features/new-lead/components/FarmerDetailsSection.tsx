@@ -1,8 +1,8 @@
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { selectFarmerState, updateFarmerDetails } from '../store/farmerSlice';
-import { selectConsentState } from '../store/consentSlice';
-import { useParams } from 'next/navigation';
 import { User } from 'lucide-react';
+import { useParams } from 'next/navigation';
+import { selectConsentState } from '../store/consentSlice';
+import { selectFarmerState, updateFarmerDetails } from '../store/farmerSlice';
 
 export function FarmerDetailsSection() {
   const dispatch = useAppDispatch();

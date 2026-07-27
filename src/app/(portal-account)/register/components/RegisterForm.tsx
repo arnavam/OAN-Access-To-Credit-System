@@ -1,13 +1,13 @@
 'use client';
 
 import { ArrowLeft, ArrowRight } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { ContactDetailsSection } from './ContactDetailsSection';
 import { FormCard } from './FormCard';
 import { OrganisationSection } from './OrganisationSection';
 import { RegisteredAddressSection } from './RegisteredAddressSection';
-import { ContactDetailsSection } from './ContactDetailsSection';
 
 export function RegisterForm() {
   const router = useRouter();

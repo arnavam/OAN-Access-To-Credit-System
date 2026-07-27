@@ -1,6 +1,6 @@
 'use client';
-import React, { useState } from 'react';
-import { UserCheck, Check } from 'lucide-react';
+import { Check, UserCheck } from 'lucide-react';
+import { useState } from 'react';
 
 export function OrganizationContactsCard() {
   const [groName, setGroName] = useState('');

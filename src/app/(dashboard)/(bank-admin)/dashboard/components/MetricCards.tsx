@@ -1,4 +1,4 @@
-import { CheckCircle2, Package, Users, FileCheck } from 'lucide-react';
+import { CheckCircle2, FileCheck, Package, Users } from 'lucide-react';
 import { mockApplications } from '../data/mockData';
 
 export function MetricCards() {

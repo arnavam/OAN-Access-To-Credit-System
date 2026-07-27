@@ -1,4 +1,4 @@
-import { X, SearchX, Users } from 'lucide-react';
+import { SearchX, Users, X } from 'lucide-react';
 
 interface LoanEmptyStateProps {
   hasFilters: boolean;

@@ -1,6 +1,6 @@
 'use client';
-import { useState, useRef, useEffect } from 'react';
-import { ShieldCheck, ChevronLeft, ChevronRight, Filter, Inbox, ChevronDown } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, Filter, Inbox, ShieldCheck } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { mockApplications } from '../data/mockData';
 import { StatusFilterDropdown, STATUS_OPTIONS } from './StatusFilterDropdown';
 
@@ -10,7 +10,7 @@ export function LoanApplicationsTable() {
   const [isStatusFilterOpen, setIsStatusFilterOpen] = useState(false);
   const [isItemsPerPageOpen, setIsItemsPerPageOpen] = useState(false);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([...STATUS_OPTIONS]);
-  const filterRef = useRef<HTMLDivElement>(null);
+  const filterRef = useRef<HTMLTableHeaderCellElement>(null);
   const itemsDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -28,7 +28,7 @@ export function LoanApplicationsTable() {
 
   // Filter applications based on selected statuses
   const filteredApplications = mockApplications.filter(app => {
-    return selectedStatuses.includes(app.status);
+    return app.status ? selectedStatuses.includes(app.status) : false;
   });
 
   const totalPages = Math.ceil(filteredApplications.length / itemsPerPage) || 1;

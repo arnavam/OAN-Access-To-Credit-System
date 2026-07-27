@@ -1,19 +1,19 @@
-import React from 'react';
+import { Loan, mockLoans } from '@/features/(farmer-application)/discover-loans/data/mockLoans';
+import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import { ArrowLeft, Bell, Globe } from 'lucide-react';
-import { mockLoans } from '@/features/(farmer-application)/discover-loans/data/mockLoans';
+import AdditionalNotes from './components/AdditionalNotes';
 import ApplicationHeader from './components/ApplicationHeader';
+import AuditHistory from './components/AuditHistory';
 import ConsentManagement from './components/ConsentManagement';
 import CreditInformation from './components/CreditInformation';
-import AdditionalNotes from './components/AdditionalNotes';
-import AuditHistory from './components/AuditHistory';
 
 interface ApplyLoanPageProps {
   id: string;
 }
 
 export default function ApplyLoanPage({ id }: ApplyLoanPageProps) {
-  const loan = mockLoans.find(l => l.id === id) || mockLoans[0]; // fallback to first loan if id doesn't match
+  const defaultLoan: Loan = { id: '0', bankName: 'Commercial Bank of Ethiopia', title: 'Agricultural Loan', matchPercentage: 85, matchType: 'High Match', amount: 200000, interestRate: 11, tenureMonths: 2, tags: [], isBookmarked: false };
+  const loan: Loan = mockLoans.find(l => l.id === id) || mockLoans[0] || defaultLoan;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">

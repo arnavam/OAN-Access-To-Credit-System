@@ -22,8 +22,8 @@ export const generateMockApplications = (count: number = 55) => {
   const applications = [];
 
   for (let i = 0; i < count; i++) {
-    const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
-    const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+    const firstName = firstNames[Math.floor(Math.random() * firstNames.length)] || 'Abebe';
+    const lastName = lastNames[Math.floor(Math.random() * lastNames.length)] || 'Girma';
     const name = `${firstName} ${lastName}`;
     const initials = `${firstName[0]}${lastName[0]}`;
 
@@ -31,8 +31,8 @@ export const generateMockApplications = (count: number = 55) => {
     const idNum = (1000 + i).toString().padStart(5, '0');
     const id = `ET-FRM-2026-${idNum}`;
 
-    const color = colors[i % colors.length];
-    const product = products[Math.floor(Math.random() * products.length)];
+    const color = colors[i % colors.length] || colors[0]!;
+    const product = products[Math.floor(Math.random() * products.length)] || products[0]!;
 
     // Generate a random amount between 10,000 and 200,000
     const amountNum = Math.floor(Math.random() * 190) * 1000 + 10000;
@@ -47,13 +47,13 @@ export const generateMockApplications = (count: number = 55) => {
     const displayHours = hours > 12 ? hours - 12 : hours;
 
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const dateStr = `${monthNames[dateObj.getMonth()]} ${dateObj.getDate()}, ${dateObj.getFullYear()}, ${displayHours}:${minutes} ${ampm}`;
+    const dateStr = `${monthNames[dateObj.getMonth()] || "Jan"} ${dateObj.getDate()}, ${dateObj.getFullYear()}, ${displayHours}:${minutes} ${ampm}`;
 
     // Force specific distribution for statuses
     let statusObj;
-    if (i < 5) statusObj = statuses[0]; // First few In Review
-    else if (i >= 5 && i < 15) statusObj = statuses[1]; // Next 10 Pending
-    else statusObj = statuses[Math.floor(Math.random() * statuses.length)];
+    if (i < 5) statusObj = statuses[0]!; // First few In Review
+    else if (i >= 5 && i < 15) statusObj = statuses[1]!; // Next 10 Pending
+    else statusObj = statuses[Math.floor(Math.random() * statuses.length)] || statuses[0]!;
 
     applications.push({
       id: i.toString(),

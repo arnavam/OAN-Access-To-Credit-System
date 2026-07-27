@@ -1,6 +1,6 @@
 "use client";
-import React, { useState } from 'react';
-import { CheckCircle2, Award, XCircle } from 'lucide-react';
+import { Award, CheckCircle2, XCircle } from 'lucide-react';
+import { useState } from 'react';
 import ApplicationActionModal from './ApplicationActionModal';
 
 export type ApplicationStatus = 'review' | 'disbursed' | 'rejected';

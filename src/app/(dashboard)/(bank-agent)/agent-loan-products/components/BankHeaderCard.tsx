@@ -1,6 +1,6 @@
 'use client';
-import React, { useState } from 'react';
-import { Plus, Landmark } from 'lucide-react';
+import { Landmark, Plus } from 'lucide-react';
+import { useState } from 'react';
 import { AddLoanProductModal } from './AddLoanProductModal';
 
 export const BankHeaderCard = () => {

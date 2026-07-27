@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
-import { TrendingUp, TrendingDown, Leaf, Wheat, ChevronDown, Flower } from 'lucide-react';
+import { ChevronDown, Flower, Leaf, TrendingDown, TrendingUp, Wheat } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import CropFilter from './CropFilter';
 import GradeFilter from './GradeFilter';
 

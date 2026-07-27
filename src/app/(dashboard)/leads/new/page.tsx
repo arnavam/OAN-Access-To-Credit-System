@@ -1,5 +1,5 @@
-import { Metadata } from 'next';
 import { CreateLeadForm } from '@/features/new-lead/components/new-lead/CreateLeadForm';
+import { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'New Lead | Ethiopia OpenAgriNet Access to Credit',

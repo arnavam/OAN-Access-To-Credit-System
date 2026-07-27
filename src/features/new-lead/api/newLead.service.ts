@@ -1,20 +1,10 @@
-import { z } from 'zod';
+import {
+    addCreditInfoResponseSchema, creditInfoApiSchema, sendOtpAndCreateConsentResponseSchema, submitConsentResponseSchema, validateResponse, verifyOtpResponseSchema, type AddCreditInfoResponse, type CreditInfoAPI, type SendOtpAndCreateConsentResponse, type SubmitConsentResponse, type VerifyOtpResponse
+} from '@/lib/api/api.schemas';
 import { fetchApi } from '@/lib/api/fetchApi';
 import { normalizeLeadId } from '@/lib/utils';
 import type { ApiResponse } from '@/types/api';
-import {
-  sendOtpAndCreateConsentResponseSchema,
-  verifyOtpResponseSchema,
-  submitConsentResponseSchema,
-  creditInfoApiSchema,
-  addCreditInfoResponseSchema,
-  validateResponse,
-  type SendOtpAndCreateConsentResponse,
-  type VerifyOtpResponse,
-  type SubmitConsentResponse,
-  type CreditInfoAPI,
-  type AddCreditInfoResponse
-} from '@/lib/api/api.schemas';
+import { z } from 'zod';
 
 export interface FarmerDetails {
   firstName: string;

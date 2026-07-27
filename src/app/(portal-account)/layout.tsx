@@ -1,7 +1,7 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
 import { Header } from '@/app/(portal-account)/components/Header';
+import { usePathname } from 'next/navigation';
 
 export default function PortalAccountLayout({
   children,

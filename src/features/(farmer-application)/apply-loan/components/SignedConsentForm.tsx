@@ -1,7 +1,7 @@
 "use client";
-import React, { useState, useRef } from 'react';
-import { UploadCloud, Eye, FileText, X } from 'lucide-react';
 import { Portal } from '@/components/Portal';
+import { Eye, FileText, UploadCloud, X } from 'lucide-react';
+import React, { useRef, useState } from 'react';
 
 export default function SignedConsentForm() {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -12,6 +12,7 @@ export default function SignedConsentForm() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
+      if (!file) return;
       setUploadedFile(file);
       if (fileUrl) URL.revokeObjectURL(fileUrl);
       setFileUrl(URL.createObjectURL(file));
@@ -90,7 +91,7 @@ export default function SignedConsentForm() {
         )}
       </div>
 
-      {isViewModalOpen && fileUrl && (
+      {isViewModalOpen && fileUrl && uploadedFile && (
         <Portal>
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="bg-white rounded-2xl w-full max-w-2xl h-[70vh] flex flex-col shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden">

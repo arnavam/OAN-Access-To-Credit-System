@@ -1,8 +1,8 @@
 'use client';
 import { Portal } from '@/components/Portal';
 
-import { X, Info, Smartphone } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
+import { Info, Smartphone, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 interface OtpVerificationPopupProps {
   email: string;

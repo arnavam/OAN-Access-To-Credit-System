@@ -1,7 +1,7 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { loginUser, getMe } from '../api/authApi';
 import type { RootState } from '../../../store';
-import type { User, AuthState } from '../types/auth.types';
+import { getMe, loginUser } from '../api/authApi';
+import type { AuthState, User } from '../types/auth.types';
 
 export const loginThunk = createAsyncThunk<
   User,
@@ -17,6 +17,7 @@ export const loginThunk = createAsyncThunk<
         username: loginData.email,
         officerName: loginData.full_name || usr,
         roles: Array.isArray(loginData.roles) ? loginData.roles : [],
+        bank: loginData.bank ?? null,
         mobileNo: null,
         userType: null,
       };
@@ -40,6 +41,7 @@ export const getMeThunk = createAsyncThunk<
         username: userData.email,
         officerName: userData.full_name || '',
         roles: Array.isArray(userData.roles) ? userData.roles : [],
+        bank: userData.bank ?? null,
         mobileNo: null,
         userType: null,
       };

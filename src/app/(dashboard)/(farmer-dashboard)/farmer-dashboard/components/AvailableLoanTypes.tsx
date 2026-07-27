@@ -1,7 +1,6 @@
-import React from 'react';
-import { Sprout, Wheat, Tractor, CreditCard, ChevronRight } from 'lucide-react';
-import Link from 'next/link';
 import Button from '@/components/ui/Button';
+import { ChevronRight, CreditCard, Sprout, Tractor, Wheat } from 'lucide-react';
+import Link from 'next/link';
 
 export default function AvailableLoanTypes() {
   const loans = [

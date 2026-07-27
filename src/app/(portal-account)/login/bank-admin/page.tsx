@@ -1,9 +1,9 @@
 import { LanguageSelector } from '../../components/LanguageSelector';
 
 import { LeftSidebar } from '@/app/(portal-account)/components/leftSidebar';
-import { BankAdminLoginForm } from './components/BankAdminLoginForm';
-import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
+import { BankAdminLoginForm } from './components/BankAdminLoginForm';
 
 export default function BankAdminLoginPage() {
   return (

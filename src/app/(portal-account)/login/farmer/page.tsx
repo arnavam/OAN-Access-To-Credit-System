@@ -1,19 +1,15 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
 import {
-  ArrowLeft,
-  ArrowRight,
-  Check,
-  Globe,
-  User,
-  ShieldCheck,
+    ArrowLeft,
+    ArrowRight, ShieldCheck, User
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import OtpVerificationPopup from './components/OtpVerificationPopup';
-import { ForgotPasswordModal } from './components/ForgotPasswordModal';
+import { useState } from 'react';
 import { LanguageSelector } from '../../components/LanguageSelector';
+import { ForgotPasswordModal } from './components/ForgotPasswordModal';
+import OtpVerificationPopup from './components/OtpVerificationPopup';
 
 const activeAgents = [
   { src: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix', alt: 'Agent 1' },
@@ -197,7 +193,7 @@ export default function FarmerLoginPage() {
       <OtpVerificationPopup
         isOpen={isOtpModalOpen}
         onClose={() => setIsOtpModalOpen(false)}
-        onSubmit={(otp) => {
+        onSubmit={(_otp) => {
           setIsOtpModalOpen(false);
           router.push('/farmer-dashboard');
         }}

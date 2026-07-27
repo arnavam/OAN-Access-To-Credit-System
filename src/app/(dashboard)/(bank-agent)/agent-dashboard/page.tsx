@@ -1,10 +1,10 @@
 'use client';
-import { useState } from 'react';
-import BankAgentSidebar from '@/components/siderbar/bankAgentSidebar';
 import { DashboardTopNav } from '@/components/header/bankAgentHeader';
+import BankAgentSidebar from '@/components/siderbar/bankAgentSidebar';
+import { useState } from 'react';
 import { DashboardHeader } from './components/DashboardHeader';
-import { MetricCards } from './components/MetricCards';
 import { LoanApplicationsTable } from './components/LoanApplicationsTable';
+import { MetricCards } from './components/MetricCards';
 
 export default function DashboardPage() {
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);

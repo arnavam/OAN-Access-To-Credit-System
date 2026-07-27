@@ -1,7 +1,6 @@
-import React from 'react';
+import Button from '@/components/ui/Button';
 import { ChevronRight } from 'lucide-react';
 import Link from 'next/link';
-import Button from '@/components/ui/Button';
 
 export default function RecentApplicationsList() {
   const applications = [

@@ -1,5 +1,5 @@
-import { FormCard } from './FormCard';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { FormCard } from './FormCard';
 
 interface RegisterFooterCardProps {
   isLoading: boolean;

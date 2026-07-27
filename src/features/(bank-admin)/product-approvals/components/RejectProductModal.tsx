@@ -1,7 +1,7 @@
 'use client';
 import { Portal } from '@/components/Portal';
-import React, { useState } from 'react';
-import { XCircle, Loader2 } from 'lucide-react';
+import { Loader2, XCircle } from 'lucide-react';
+import { useState } from 'react';
 import { ApprovalItem } from './ProductApprovalCard';
 
 interface RejectProductModalProps {

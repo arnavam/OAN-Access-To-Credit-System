@@ -1,25 +1,50 @@
 'use client';
 
-import { useState } from 'react';
-import { Eye, EyeOff, Lock, User, ArrowRight, ShieldCheck } from 'lucide-react';
+import { clearAuthError, loginThunk } from '@/features/auth/store/authSlice';
+import { hasPortalAccess, PORTAL_ALLOWED_ROLES } from '@/lib/auth/rbac';
+import { useAppDispatch } from '@/store/hooks';
+import { ArrowRight, Eye, EyeOff, Lock, ShieldCheck, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { ForgotPasswordModal } from './ForgotPasswordModal';
 
 export function BankAgentLoginForm() {
   const router = useRouter();
+  const dispatch = useAppDispatch();
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isForgotOpen, setIsForgotOpen] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulate login for now
-    setTimeout(() => {
-      // In a real app, this would route to a bank agent dashboard
-      router.push('/agent-dashboard');
+    setErrorMessage(null);
+    dispatch(clearAuthError());
+
+    try {
+      const result = await dispatch(loginThunk({ usr: username, pwd: password }));
+      if (loginThunk.fulfilled.match(result)) {
+        const user = result.payload;
+        // Enforce strict RBAC for Bank Agent portal
+        if (hasPortalAccess(user.roles, PORTAL_ALLOWED_ROLES.BANK_AGENT)) {
+          router.push('/agent-dashboard');
+        } else {
+          const userRoleName = user.roles.join(', ') || 'User';
+          setErrorMessage(
+            `Access Denied: Your account (${userRoleName}) does not have permission to access the Bank Agent portal.`
+          );
+        }
+      } else {
+        setErrorMessage((result.payload as string) || 'Invalid credentials or login failed.');
+      }
+    } catch {
+      setErrorMessage('An unexpected error occurred. Please try again.');
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const partnerBanks = ['CBE', 'Dashen', 'Awash', 'CBO', 'Abyssinia', 'OIB'];
@@ -35,6 +60,12 @@ export function BankAgentLoginForm() {
         </p>
       </div>
 
+      {errorMessage && (
+        <div className="w-full mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">
+          {errorMessage}
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="w-full space-y-6">
         <div className="space-y-4">
           <div className="space-y-1.5">
@@ -47,7 +78,10 @@ export function BankAgentLoginForm() {
               </div>
               <input
                 type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 placeholder="test_agent@coopbank.com"
+                required
                 className="w-full pl-10 pr-4 py-3 bg-white border border-[#D1D5DB] rounded-xl text-[14px] text-[#1F2937] focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] transition-all placeholder:text-[#9CA3AF] font-medium shadow-sm"
               />
             </div>
@@ -63,7 +97,10 @@ export function BankAgentLoginForm() {
               </div>
               <input
                 type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
+                required
                 className="w-full pl-10 pr-12 py-3 bg-white border border-[#D1D5DB] rounded-xl text-[14px] text-[#1F2937] focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] transition-all placeholder:text-[#9CA3AF] font-medium shadow-sm"
               />
               <button
@@ -115,10 +152,6 @@ export function BankAgentLoginForm() {
           <span>Continue to Sign In</span>
           <ArrowRight size={18} strokeWidth={2.5} />
         </button>
-
-        <div className="text-center text-[14px] font-medium text-[#6B7280]">
-          New to OAN? <a href="/register" className="text-[#16A34A] font-bold hover:underline">Register your organisation</a>
-        </div>
       </form>
 
       {/* FaydaPass Badge */}

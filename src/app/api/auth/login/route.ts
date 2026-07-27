@@ -1,7 +1,7 @@
+import { checkCsrf } from '@/lib/csrf';
+import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import { NextResponse } from 'next/server';
-import { env } from '@/lib/env';
-import { checkCsrf } from '@/lib/csrf';
 
 export async function POST(request: Request) {
   try {

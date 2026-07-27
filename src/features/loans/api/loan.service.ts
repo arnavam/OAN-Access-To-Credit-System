@@ -1,15 +1,15 @@
-import { z } from 'zod';
+import {
+    loanApplicationFullSchema,
+    loanApplicationSummarySchema,
+    validateResponse,
+    type LoanApplicationFull,
+    type LoanApplicationSummary
+} from '@/lib/api/api.schemas';
 import { fetchApi } from '@/lib/api/fetchApi';
 import { normalizeLeadId } from '@/lib/utils';
 import type { ApiResponse } from '@/types/api';
+import { z } from 'zod';
 import type { LoanFormData } from '../types/loans.types';
-import {
-  loanApplicationFullSchema,
-  loanApplicationSummarySchema,
-  validateResponse,
-  type LoanApplicationFull,
-  type LoanApplicationSummary,
-} from '@/lib/api/api.schemas';
 
 // `LoanApplicationFull` / `LoanApplicationSummary` are the validated shapes for
 // `get_full_profile` / `get_all_loans`; their single source of truth is the Zod

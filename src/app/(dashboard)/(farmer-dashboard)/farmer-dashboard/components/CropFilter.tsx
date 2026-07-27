@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import { Check, Filter } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Filter, Check } from 'lucide-react';
 
 interface CropFilterProps {
   selectedCrops: string[];

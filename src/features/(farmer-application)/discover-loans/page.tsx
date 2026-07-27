@@ -1,4 +1,3 @@
-import React from 'react';
 import DiscoverLoansClient from './components/DiscoverLoansClient';
 
 export default function DiscoverLoansPage() {

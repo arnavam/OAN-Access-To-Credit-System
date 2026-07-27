@@ -1,5 +1,5 @@
-import { Metadata } from 'next';
 import { NewLoanOrchestrator } from '@/features/new-loan/components/NewLoanOrchestrator';
+import { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'New Loan Application | Ethiopia OpenAgriNet Access to Credit',

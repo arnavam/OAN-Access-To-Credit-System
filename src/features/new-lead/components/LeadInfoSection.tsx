@@ -1,6 +1,6 @@
 import { useAppSelector } from '@/store/hooks';
-import { selectLeadSource, selectLeadPhoneNumber } from '../store/newLeadSlice';
 import { FileText } from 'lucide-react';
+import { selectLeadPhoneNumber, selectLeadSource } from '../store/newLeadSlice';
 
 interface LeadInfoSectionProps {
   isEditable?: boolean;

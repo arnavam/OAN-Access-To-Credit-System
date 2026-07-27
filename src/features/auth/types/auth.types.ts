@@ -5,6 +5,7 @@ export interface User {
   username: string;
   officerName: string;
   roles: string[];
+  bank: string | null;
 
   mobileNo: string | null;
   userType: string | null;

@@ -1,11 +1,11 @@
+import { FORM_SECTIONS, mapApiToFarmerDetails } from '@/features/loans/constants/form-sections';
 import { logger } from '@/lib/logger';
+import { maskSensitiveId } from '@/lib/utils';
+import { Building2, CheckCircle2, Coins, Eye, EyeOff, FileText, Loader2, Lock, Sprout, User, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, CheckCircle2, User, Lock, Building2, Loader2, Eye, EyeOff, FileText, Sprout, Coins } from 'lucide-react';
+import { LoanApplicationFull, loanService } from '../../api/loan.service';
 import { LoanTableRow } from '../LoanTable';
-import { loanService, LoanApplicationFull } from '../../api/loan.service';
-import { maskSensitiveId } from '@/lib/utils';
-import { FORM_SECTIONS, mapApiToFarmerDetails } from '@/features/loans/constants/form-sections';
 
 interface LoanApplicationModalProps {
   isOpen: boolean;

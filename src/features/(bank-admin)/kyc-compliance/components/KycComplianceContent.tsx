@@ -1,4 +1,3 @@
-import React from 'react';
 import { Landmark } from 'lucide-react';
 import { OrganisationDocumentsCard } from './OrganisationDocumentsCard';
 import { OrganizationContactsCard } from './OrganizationContactsCard';

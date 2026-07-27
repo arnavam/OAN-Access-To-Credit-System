@@ -1,15 +1,15 @@
-import { useState, useRef, useEffect, memo } from 'react';
-import { Filter, Check, Phone, Eye } from 'lucide-react';
+import { selectLeadStatusesOptions, selectLoanTypesOptions } from '@/features/new-lead/store/newLeadSlice';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { Check, Eye, Filter, Phone } from 'lucide-react';
+import { memo, useEffect, useRef, useState } from 'react';
 import {
-  selectPagedRows,
-  selectTableStatusFilters,
-  selectTableTypeFilters,
-  setTableStatusFilters,
-  setTableTypeFilters,
+    selectPagedRows,
+    selectTableStatusFilters,
+    selectTableTypeFilters,
+    setTableStatusFilters,
+    setTableTypeFilters
 } from '../store/loanDashboardSlice';
 import LoanEmptyState from './LoanEmptyState';
-import { selectLeadStatusesOptions, selectLoanTypesOptions } from '@/features/new-lead/store/newLeadSlice';
 
 export interface LoanTableRow {
   id: string;

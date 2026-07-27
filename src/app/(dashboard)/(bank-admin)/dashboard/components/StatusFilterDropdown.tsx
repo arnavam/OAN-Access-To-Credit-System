@@ -1,5 +1,3 @@
-import React from 'react';
-
 export const STATUS_OPTIONS = ['In Review', 'Pending', 'In Underwriting', 'Approved', 'Rejected'];
 
 interface StatusFilterDropdownProps {

@@ -1,21 +1,19 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
 import {
-  ArrowRight,
-  Check,
-  ChevronDown,
-  Eye,
-  EyeOff,
-  UserRound,
-  Lock,
+    Check,
+    ChevronDown,
+    Eye,
+    EyeOff, Lock, UserRound
 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { loginThunk, selectAuthError, selectAuthStatus, clearAuthError } from '@/features/auth/store/authSlice';
 import { HavingTroubleModal } from '@/features/auth/components/HavingTroubleModal';
+import { clearAuthError, loginThunk, selectAuthError, selectAuthStatus } from '@/features/auth/store/authSlice';
+import { hasPortalAccess, PORTAL_ALLOWED_ROLES } from '@/lib/auth/rbac';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
 
 const activeAgents = [
   { src: '/bb4a5b79fae40c0a468fa967443678ee9eb31bee.jpg', alt: 'Red-haired agent' },
@@ -60,12 +58,23 @@ export function LoginClient() {
     return () => document.removeEventListener('mousedown', handleDocumentClick);
   }, []);
 
+  const [deniedError, setDeniedError] = useState<string | null>(null);
+
   const handleSignInSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    setDeniedError(null);
     dispatch(clearAuthError());
     const result = await dispatch(loginThunk({ usr: username, pwd: password }));
     if (loginThunk.fulfilled.match(result)) {
-      router.push('/leads');
+      const user = result.payload;
+      if (hasPortalAccess(user.roles, PORTAL_ALLOWED_ROLES.DEV_AGENT)) {
+        router.push('/leads');
+      } else {
+        const userRoleName = user.roles.join(', ') || 'User';
+        setDeniedError(
+          `Access Denied: Your account (${userRoleName}) does not have permission to access the Development Agent portal.`
+        );
+      }
     }
   };
 
@@ -212,6 +221,11 @@ export function LoginClient() {
               </div>
 
               <div className="flex w-full max-w-[448px] flex-col mt-8">
+                {(deniedError || authError) && (
+                  <div className="w-full mb-4 p-3.5 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">
+                    {deniedError || authError}
+                  </div>
+                )}
                 <form className="flex flex-col gap-6 w-full font-bold" onSubmit={handleSignInSubmit}>
                   <label className="flex flex-col gap-2">
                     <span className="font-medium text-[#374151] text-[14px] leading-[20px]">Phone Number or Email</span>

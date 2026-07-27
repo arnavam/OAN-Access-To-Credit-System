@@ -1,6 +1,6 @@
 'use client';
-import React, { useState, useRef } from 'react';
-import { Edit, Paperclip, Image as ImageIcon, X, File as FileIcon } from 'lucide-react';
+import { Edit, File as FileIcon, Image as ImageIcon, Paperclip, X } from 'lucide-react';
+import React, { useRef, useState } from 'react';
 
 export default function AdditionalNotes() {
   const initialNotesData = [

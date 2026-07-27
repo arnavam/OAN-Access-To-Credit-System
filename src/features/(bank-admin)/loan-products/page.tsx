@@ -1,7 +1,7 @@
 'use client';
-import React, { useState } from 'react';
-import BankAdminSidebar from '@/components/siderbar/bankAdminSidebar';
 import { DashboardTopNav } from '@/components/header/bankAdminHeader';
+import BankAdminSidebar from '@/components/siderbar/bankAdminSidebar';
+import { useState } from 'react';
 import { LoanProductsList } from './components/LoanProductsList';
 
 export default function LoanProductsPage() {

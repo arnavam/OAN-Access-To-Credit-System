@@ -1,5 +1,5 @@
-import { Metadata } from 'next';
 import { ScheduleVisitClient } from '@/features/new-lead/components/ScheduleVisitClient';
+import { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Schedule Visit | Ethiopia OpenAgriNet Access to Credit',

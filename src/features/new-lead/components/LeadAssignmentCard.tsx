@@ -1,9 +1,9 @@
-import { useState } from 'react';
-import { useAppSelector, useAppDispatch } from '@/store/hooks';
-import { selectAssignmentState, selectIsLeadFinalized, assignLeadThunk } from '..';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { Edit } from 'lucide-react';
-import { useParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
+import { useParams } from 'next/navigation';
+import { useState } from 'react';
+import { assignLeadThunk, selectAssignmentState, selectIsLeadFinalized } from '..';
 
 const AssignOwnerModal = dynamic(() => import('./modals/AssignOwnerModal'), {
   ssr: false,

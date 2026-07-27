@@ -1,7 +1,7 @@
 'use client';
 import { Portal } from '@/components/Portal';
-import React, { useState } from 'react';
-import { Trash2, Loader2 } from 'lucide-react';
+import { Loader2, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 
 interface DeleteDocumentModalProps {
   isOpen: boolean;

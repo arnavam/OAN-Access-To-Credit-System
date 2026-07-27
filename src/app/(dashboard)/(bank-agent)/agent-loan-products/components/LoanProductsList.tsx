@@ -1,6 +1,5 @@
-import React from 'react';
 import { BankHeaderCard } from './BankHeaderCard';
-import { LoanProductCard, LoanProduct } from './LoanProductCard';
+import { LoanProduct, LoanProductCard } from './LoanProductCard';
 
 const mockLoanProducts: LoanProduct[] = [
   {

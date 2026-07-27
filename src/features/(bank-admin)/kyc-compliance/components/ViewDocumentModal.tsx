@@ -1,7 +1,7 @@
 'use client';
 import { Portal } from '@/components/Portal';
-import React, { useEffect, useState } from 'react';
-import { FileText, Download } from 'lucide-react';
+import { Download, FileText } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 interface ViewDocumentModalProps {
   isOpen: boolean;
@@ -51,9 +51,9 @@ export function ViewDocumentModal({ isOpen, onClose, file }: ViewDocumentModalPr
         <div className="px-8 pb-6">
           <div className="bg-gray-50 border border-gray-200 rounded-2xl h-[280px] flex flex-col items-center justify-center overflow-hidden relative">
             {fileUrl && isImage ? (
-              <img src={fileUrl} alt={file.name} className="w-full h-full object-contain p-2" />
+              <img src={fileUrl} alt={file?.name || 'Document'} className="w-full h-full object-contain p-2" />
             ) : fileUrl && isPdf ? (
-              <iframe src={`${fileUrl}#toolbar=0`} className="w-full h-full" title={file.name} />
+              <iframe src={`${fileUrl}#toolbar=0`} className="w-full h-full" title={file?.name || 'Document'} />
             ) : (
               <>
                 <FileText size={48} className="text-gray-300 mb-4" strokeWidth={1} />

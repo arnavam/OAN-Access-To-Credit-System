@@ -1,6 +1,6 @@
 
-import { fetchApi } from '@/lib/api/fetchApi';
 import { rawUserResponseSchema, validateResponse, type RawUserResponse } from '@/lib/api/api.schemas';
+import { fetchApi } from '@/lib/api/fetchApi';
 
 // `RawUserResponse` is the validated `get_me` shape; its single source of truth
 // is the Zod schema in `@/lib/api/api.schemas`.

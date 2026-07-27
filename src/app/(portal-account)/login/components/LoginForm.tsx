@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { ArrowRight, CheckCircle, Tractor } from 'lucide-react';
+import { ArrowRight, CheckCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 // Icons are now loaded from PNG files in /public/images/icons/
 

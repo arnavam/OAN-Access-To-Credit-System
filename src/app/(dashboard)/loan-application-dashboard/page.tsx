@@ -1,5 +1,5 @@
-import { Metadata } from 'next';
 import { LoanApplicationDashboardClient } from '@/features/loans/components/LoanApplicationDashboardClient';
+import { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Loan Applications Dashboard | Ethiopia OpenAgriNet Access to Credit',

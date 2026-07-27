@@ -1,7 +1,7 @@
+import '@/styles/main.scss';
 import type { Metadata } from 'next';
 import { Roboto, Space_Grotesk } from 'next/font/google';
 import { Providers } from './providers';
-import '@/styles/main.scss';
 
 const roboto = Roboto({
   weight: ['400', '500', '700'],

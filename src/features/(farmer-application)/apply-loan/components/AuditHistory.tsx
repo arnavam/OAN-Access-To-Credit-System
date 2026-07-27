@@ -1,5 +1,4 @@
-import React from 'react';
-import { History, User, Phone, UserCheck } from 'lucide-react';
+import { History, Phone, User, UserCheck } from 'lucide-react';
 
 export default function AuditHistory() {
   return (

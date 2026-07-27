@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { Search, SlidersHorizontal } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { selectActiveTab, setActiveTab, setSearchQuery, selectSearchQuery, clearAdvancedFilters, selectTabCounts } from '../store/loanDashboardSlice';
+import { Search, SlidersHorizontal } from 'lucide-react';
+import React, { useState } from 'react';
+import { clearAdvancedFilters, selectActiveTab, selectSearchQuery, selectTabCounts, setActiveTab, setSearchQuery } from '../store/loanDashboardSlice';
 import LoanAdvancedFilters from './LoanAdvancedFilters';
 
 export default function LoanToolbar() {
