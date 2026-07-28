@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Download, Plus } from 'lucide-react';
+import { FileOutput, Plus } from 'lucide-react';
 
 import { KPI_CARDS_LAYOUT, LEAD_STATUS_MAP, resolveDateFilter } from '@/features/leads/constants/leads.constants';
 import type { Lead, KpiStat } from '@/features/leads/types/leads.types';
@@ -273,7 +273,7 @@ export function LeadsDashboardClient() {
             onClick={handleExportCSV}
             className="flex-1 md:flex-none inline-flex items-center justify-center gap-2 rounded-xl border border-border-subtle bg-white px-5 py-3 text-base font-medium text-text-primary transition hover:bg-slate-50 active:scale-95"
           >
-            <Download size={18} />
+            <FileOutput size={18} />
             {/* Only a partial selection differs from a page export: select-all (allChecked)
                 covers the whole current page, which is identical to exporting with no selection. */}
             {selectedRows.length > 0 && !allChecked ? `Export Selected (${selectedRows.length})` : 'Export CSV'}
