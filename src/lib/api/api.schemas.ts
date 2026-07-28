@@ -104,11 +104,13 @@ export const loanApplicationSummarySchema = z.object({
   lead_id: z.string(),
   loan_amount: z.number(),
   loan_type: z.string(),
-  location: z.string().nullish().transform(val => val ?? ''),
+  loan_product: z.string().nullish().transform((val) => val ?? undefined),
+  loan_product_name: z.string().nullish().transform((val) => val ?? undefined),
+  location: z.string().nullish().transform((val) => val ?? ''),
   phone_number: z.string(),
   creation: z.string(),
-  first_name: z.string().nullish().transform(val => val ?? undefined),
-  last_name: z.string().nullish().transform(val => val ?? undefined),
+  first_name: z.string().nullish().transform((val) => val ?? undefined),
+  last_name: z.string().nullish().transform((val) => val ?? undefined),
 });
 export type LoanApplicationSummary = z.infer<typeof loanApplicationSummarySchema>;
 
@@ -136,7 +138,12 @@ export const rawUserResponseSchema = z.object({
   email: z.string(),
   full_name: z.string(),
   roles: z.array(z.string()),
+  user_type: z.enum(['bank_admin', 'bank_agent', 'dev_agent', 'marketplace', 'farmer', 'unknown']),
   bank: z.string().nullish(),
+  bank_id: z.string().nullish(),
+  bank_code: z.string().nullish(),
+  bank_name: z.string().nullish(),
+  bank_status: z.enum(['Onboarding', 'Active', 'Suspended']).nullish(),
 });
 export type RawUserResponse = z.infer<typeof rawUserResponseSchema>;
 
@@ -181,6 +188,8 @@ export const loanProductSummarySchema = z.object({
   max_amount: z.number(),
   tenure_months: z.number(),
   creation: z.string().nullable().optional(),
+  categories: z.array(z.string()).nullish().transform((val) => val ?? []),
+  applications_count: z.number().nullish().transform((val) => val ?? 0),
 });
 export type LoanProductSummary = z.infer<typeof loanProductSummarySchema>;
 
@@ -233,11 +242,6 @@ export const teamUserSchema = z.object({
 });
 export type TeamUser = z.infer<typeof teamUserSchema>;
 
-export const bankStatusSchema = z.object({
-  status: z.enum(['Onboarding', 'Active', 'Suspended']),
-});
-export type BankStatus = z.infer<typeof bankStatusSchema>;
-
 export const registerSellerSchema = z.object({
   email: z.string().email('Invalid email address format.'),
   full_name: z.string().min(2, 'Full name must be at least 2 characters long.'),
@@ -251,6 +255,5 @@ export const registerSellerSchema = z.object({
   phone_number: z.string().min(8, 'Mobile number must be at least 8 digits.'),
 });
 export type RegisterSellerSchemaPayload = z.infer<typeof registerSellerSchema>;
-
 
 

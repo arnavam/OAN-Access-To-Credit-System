@@ -1,8 +1,8 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import type { RootState } from '@/store';
-import { teamService } from '../api/team.service';
-import { logger } from '@/lib/logger';
 import type { TeamUser } from '@/lib/api/api.schemas';
+import { logger } from '@/lib/logger';
+import type { RootState } from '@/store';
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { teamService } from '../api/team.service';
 import type { InviteUserPayload, UpdateUserProfilePayload } from '../types/team.types';
 
 type AsyncStatus = 'idle' | 'loading' | 'succeeded' | 'failed';

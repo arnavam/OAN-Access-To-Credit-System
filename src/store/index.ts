@@ -1,4 +1,4 @@
-import { configureStore, isRejectedWithValue, Middleware, UnknownAction } from '@reduxjs/toolkit';
+import { combineReducers, configureStore, isRejectedWithValue, Middleware, UnknownAction } from '@reduxjs/toolkit';
 import { authReducer, logout } from '../features/auth/store/authSlice';
 import { leadReducer } from '../features/leads/store/leadSlice';
 import { loanDashboardReducer } from '../features/loans/store/loanDashboardSlice';
@@ -66,21 +66,31 @@ const unauthenticatedMiddleware: Middleware = (api) => (next) => (action) => {
   return next(action);
 };
 
+const appReducer = combineReducers({
+  auth: authReducer,
+  leads: leadReducer,
+  newLead: newLeadReducer,
+  farmer: farmerReducer,
+  consent: consentReducer,
+  visit: visitReducer,
+  assignment: assignmentReducer,
+  loanForm: loanFormReducer,
+  loanDashboard: loanDashboardReducer,
+  sellerProducts: sellerProductsReducer,
+  sellerOnboarding: sellerOnboardingReducer,
+  sellerTeam: sellerTeamReducer,
+});
+
+const rootReducer = (state: ReturnType<typeof appReducer> | undefined, action: UnknownAction) => {
+  if (action.type === logout.type) {
+    // Reset all state to undefined so each slice returns its initial state
+    return appReducer(undefined, action);
+  }
+  return appReducer(state, action);
+};
+
 export const store = configureStore({
-  reducer: {
-    auth: authReducer,
-    leads: leadReducer,
-    newLead: newLeadReducer,
-    farmer: farmerReducer,
-    consent: consentReducer,
-    visit: visitReducer,
-    assignment: assignmentReducer,
-    loanForm: loanFormReducer,
-    loanDashboard: loanDashboardReducer,
-    sellerProducts: sellerProductsReducer,
-    sellerOnboarding: sellerOnboardingReducer,
-    sellerTeam: sellerTeamReducer,
-  },
+  reducer: rootReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(storageMiddleware, unauthenticatedMiddleware),
 });

@@ -55,6 +55,8 @@ const ALL_STATUS_VALUES = ['danger', 'info', 'neutral'];
 export interface MappedLoanRow extends Omit<LoanApplicationSummary, 'status'> {
   id: string;
   applicant: string;
+  initials?: string;
+  productName?: string;
   phone: string;
   loanAmount: string;
   type: string;

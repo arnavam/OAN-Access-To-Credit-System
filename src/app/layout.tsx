@@ -19,6 +19,11 @@ const spaceGrotesk = Space_Grotesk({
 export const metadata: Metadata = {
   title: 'Access to Credit System',
   description: 'Manage, filter, and process your lead and loan pipelines.',
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.png',
+    apple: '/favicon.png',
+  },
 };
 
 // Force dynamic rendering so the per-request CSP nonce (set in src/proxy.ts)

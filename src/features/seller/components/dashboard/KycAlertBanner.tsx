@@ -1,7 +1,16 @@
+ 'use client';
+import { selectBankStatus } from '@/features/auth/store/authSlice';
+import { useAppSelector } from '@/store/hooks';
 import { AlertTriangle, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
 export function KycAlertBanner() {
+  const bankStatus = useAppSelector(selectBankStatus);
+
+  if (bankStatus === 'Active') {
+    return null;
+  }
+
   return (
     <div className="bg-[#FFFBEB] border border-[#FDE68A] rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.05),0px_2px_4px_-1px_rgba(0,0,0,0.03)] hover:-translate-y-1 hover:shadow-lg transition-all duration-300 rounded-xl">
       <div className="flex items-start sm:items-center space-x-3">

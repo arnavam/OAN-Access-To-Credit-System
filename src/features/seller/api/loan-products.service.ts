@@ -1,19 +1,11 @@
-import { fetchApi } from '@/lib/api/fetchApi';
 import {
-  validateResponse,
-  loanProductSummarySchema,
-  loanProductDetailSchema,
-  sellerDashboardStatsSchema,
-  type LoanProductSummary,
-  type LoanProductDetail,
-  type SellerDashboardStats,
+    loanProductDetailSchema, loanProductSummarySchema, sellerDashboardStatsSchema, validateResponse, type LoanProductDetail, type LoanProductSummary, type SellerDashboardStats
 } from '@/lib/api/api.schemas';
+import { fetchApi } from '@/lib/api/fetchApi';
 import type { ApiResponse } from '@/types/api';
 import { z } from 'zod';
 import type {
-  ListProductsParams,
-  CreateLoanProductPayload,
-  UpdateLoanProductPayload,
+    CreateLoanProductPayload, ListProductsParams, UpdateLoanProductPayload
 } from '../types/loan-products.types';
 
 export const loanProductsService = {

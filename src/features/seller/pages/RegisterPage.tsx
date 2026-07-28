@@ -1,11 +1,5 @@
 'use client';
 
-import { ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import type { AppDispatch } from '@/store';
 import { ContactDetailsSection, type ContactFields } from '@/features/seller/components/register/ContactDetailsSection';
 import { OrganisationSection, type OrganisationFields } from '@/features/seller/components/register/OrganisationSection';
 import { OrganizationRegisteredPopup } from '@/features/seller/components/register/OrganizationRegisteredPopup';
@@ -13,6 +7,12 @@ import { RegisteredAddressSection, type RegisteredAddressFields } from '@/featur
 import { RegisterFooterCard } from '@/features/seller/components/register/RegisterFooterCard';
 import { RegisterHeaderCard } from '@/features/seller/components/register/RegisterHeaderCard';
 import { registerBank, selectOnboardingRegistrationError, selectOnboardingRegistrationStatus } from '@/features/seller/store/onboardingSlice';
+import type { AppDispatch } from '@/store';
+import { ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 
 export default function RegisterPage() {
   const router = useRouter();

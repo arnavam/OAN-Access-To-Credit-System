@@ -1,13 +1,10 @@
 'use client';
 
-import FarmerHeader from '@/components/header/farmerHeader';
+import { DashboardHeader } from '@/components/header/DashboardHeader';
 import Sidebar, { NavSection } from '@/components/Sidebar';
 import FarmerSidebar from '@/components/siderbar/FarmerSidebar';
-import TopHeader from '@/components/TopHeader';
-import { logout as logoutAction } from '@/features/auth/store/authSlice';
-import { useAppDispatch } from '@/store/hooks';
 import { LayoutDashboard, ListChecks, Users } from 'lucide-react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 
 import '@/styles/main-layout.scss';
@@ -57,8 +54,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isFarmerSidebarExpanded, setIsFarmerSidebarExpanded] = useState(true);
 
   const pathname = usePathname();
-  const router = useRouter();
-  const dispatch = useAppDispatch();
 
   // ----- DEV AGENT LOGIC -----
   const activeItem = navigationSections
@@ -70,6 +65,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
 
   const pageTitle = activeItem?.label ?? PAGE_TITLES[pathname] ?? 'Dashboard';
+
+  // Farmer branch derives its header title from the current path.
+  let farmerHeaderTitle = 'Dashboard';
+  if (pathname.startsWith('/discover-loans/apply')) {
+    farmerHeaderTitle = 'New Loan Application';
+  } else if (pathname.startsWith('/discover-loans')) {
+    farmerHeaderTitle = 'Discover Loans';
+  } else if (pathname.startsWith('/my-applications') || pathname.startsWith('/farmer-dashboard/applications')) {
+    farmerHeaderTitle = 'My Applications';
+  }
 
   // update the title of the page
   useEffect(() => {
@@ -142,15 +147,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         )}
         <Sidebar isCollapsed={isSidebarCollapsed} isMobileOpen={isMobileOpen} sections={filteredNavigationSections} />
         <main id="dashboard-main" className="dashboard-main">
-          <TopHeader
-            isSidebarCollapsed={isSidebarCollapsed}
-            onToggleSidebar={handleToggleSidebar}
-            onLogout={async () => {
-              await fetch('/api/auth/logout', { method: 'POST' }).catch(() => { });
-              dispatch(logoutAction());
-              router.push('/login');
-            }}
-            pageTitle={pageTitle}
+          <DashboardHeader
+            role="officer"
+            onMenuClick={handleToggleSidebar}
+            title={pageTitle}
           />
           <div id="dashboard-content" className="dashboard-content">
             {children}
@@ -165,7 +165,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="flex min-h-screen bg-[#F8F9fa] font-sans">
       <FarmerSidebar isExpanded={isFarmerSidebarExpanded} setIsExpanded={setIsFarmerSidebarExpanded} />
       <div className="flex-1 flex flex-col min-w-0 transition-all duration-300">
-        <FarmerHeader onMenuClick={() => setIsFarmerSidebarExpanded(!isFarmerSidebarExpanded)} />
+        <DashboardHeader
+          role="farmer"
+          title={farmerHeaderTitle}
+          subtitle="Farmer ID: ETH-2847"
+          onMenuClick={() => setIsFarmerSidebarExpanded(!isFarmerSidebarExpanded)}
+        />
         <main className="flex-1 p-6 md:p-10 overflow-x-hidden">
           {children}
         </main>

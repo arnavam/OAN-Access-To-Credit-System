@@ -1,11 +1,11 @@
 import { fetchApi } from '@/lib/api/fetchApi';
-import { validateResponse, bankStatusSchema, type BankStatus } from '@/lib/api/api.schemas';
 import type { ApiResponse } from '@/types/api';
 import type {
-  RegisterBankPayload,
-  RegisterSellerPayload,
-  SaveOrgContactsPayload,
-  UploadKycDocumentPayload,
+    RegisterBankPayload,
+    RegisterSellerPayload,
+    SaveOrgContactsPayload,
+    UpdateBankStatusPayload,
+    UploadKycDocumentPayload
 } from '../types/onboarding.types';
 
 export const onboardingService = {
@@ -37,18 +37,10 @@ export const onboardingService = {
     }) as Promise<ApiResponse<{ message: string; file_url: string }>>;
   },
 
-  async getBankStatus(): Promise<ApiResponse<BankStatus>> {
-    const raw = (await fetchApi('oan_a2c.api.v1.seller.onboarding.get_bank_status')) as ApiResponse<Record<string, unknown>>;
-    return {
-      ...raw,
-      data: validateResponse(bankStatusSchema, raw.data, 'seller.get_bank_status'),
-    };
-  },
-
-  async updateBankStatus(bankCode: string, newStatus: 'Onboarding' | 'Active' | 'Suspended'): Promise<ApiResponse<{ message: string }>> {
+  async updateBankStatus(payload: UpdateBankStatusPayload): Promise<ApiResponse<{ message: string }>> {
     return fetchApi('oan_a2c.api.v1.seller.onboarding.update_bank_status', {
       method: 'POST',
-      body: JSON.stringify({ bank_code: bankCode, new_status: newStatus }),
+      body: JSON.stringify(payload),
     }) as Promise<ApiResponse<{ message: string }>>;
   },
 };

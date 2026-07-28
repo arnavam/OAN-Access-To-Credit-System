@@ -1,21 +1,14 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import type {
+    LoanProductDetail, LoanProductSummary, SellerDashboardStats, TaxonomyAttribute, TaxonomyCategory,
+    TaxonomyTag
+} from '@/lib/api/api.schemas';
+import { logger } from '@/lib/logger';
 import type { RootState } from '@/store';
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { loanProductsService } from '../api/loan-products.service';
 import { taxonomyService } from '../api/taxonomy.service';
-import { logger } from '@/lib/logger';
 import type {
-  LoanProductSummary,
-  LoanProductDetail,
-  SellerDashboardStats,
-  TaxonomyCategory,
-  TaxonomyTag,
-  TaxonomyAttribute,
-} from '@/lib/api/api.schemas';
-import type {
-  ListProductsParams,
-  CreateLoanProductCompoundInput,
-  UpdateLoanProductCompoundInput,
-  ArchiveLoanProductInput,
+    ArchiveLoanProductInput, CreateLoanProductCompoundInput, ListProductsParams, SetLoanProductStatusInput, UpdateLoanProductCompoundInput
 } from '../types/loan-products.types';
 
 type AsyncStatus = 'idle' | 'loading' | 'succeeded' | 'failed';
@@ -182,6 +175,20 @@ export const archiveProduct = createAsyncThunk(
   }
 );
 
+export const setProductStatus = createAsyncThunk(
+  'sellerProducts/setProductStatus',
+  async (input: SetLoanProductStatusInput, { dispatch, rejectWithValue }) => {
+    try {
+      const response = await loanProductsService.setProductStatus(input.productId, input.status);
+      await dispatch(fetchProducts(input.refetchParams));
+      return response.data;
+    } catch (error) {
+      logger.error('setProductStatus thunk failed', { input, error });
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to update loan product status');
+    }
+  }
+);
+
 const loanProductsSlice = createSlice({
   name: 'sellerProducts',
   initialState,
@@ -240,3 +247,5 @@ export const selectProductsListStatus = (state: RootState) => state.sellerProduc
 export const selectProductsListError = (state: RootState) => state.sellerProducts.listError;
 export const selectProductsMutationStatus = (state: RootState) => state.sellerProducts.mutationStatus;
 export const selectProductsMutationError = (state: RootState) => state.sellerProducts.mutationError;
+export const selectDetailStatus = (state: RootState) => state.sellerProducts.detailStatus;
+export const selectDetailError = (state: RootState) => state.sellerProducts.detailError;

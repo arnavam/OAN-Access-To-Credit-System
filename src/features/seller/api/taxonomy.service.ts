@@ -1,13 +1,9 @@
-import { fetchApi } from '@/lib/api/fetchApi';
 import {
-  validateResponse,
-  taxonomyCategorySchema,
-  taxonomyTagSchema,
-  taxonomyAttributeSchema,
-  type TaxonomyCategory,
-  type TaxonomyTag,
-  type TaxonomyAttribute,
+    taxonomyAttributeSchema, taxonomyCategorySchema,
+    taxonomyTagSchema, validateResponse, type TaxonomyAttribute, type TaxonomyCategory,
+    type TaxonomyTag
 } from '@/lib/api/api.schemas';
+import { fetchApi } from '@/lib/api/fetchApi';
 import type { ApiResponse } from '@/types/api';
 import { z } from 'zod';
 

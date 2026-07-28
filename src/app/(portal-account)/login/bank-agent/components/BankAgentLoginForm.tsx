@@ -1,7 +1,7 @@
 'use client';
 
-import { clearAuthError, loginThunk } from '@/features/auth/store/authSlice';
-import { hasPortalAccess, PORTAL_ALLOWED_ROLES } from '@/lib/auth/rbac';
+import { logoutUser } from '@/features/auth/api/authApi';
+import { clearAuthError, loginThunk, logout } from '@/features/auth/store/authSlice';
 import { useAppDispatch } from '@/store/hooks';
 import { ArrowRight, Eye, EyeOff, Lock, ShieldCheck, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -29,12 +29,15 @@ export function BankAgentLoginForm() {
       if (loginThunk.fulfilled.match(result)) {
         const user = result.payload;
         // Enforce strict RBAC for Bank Agent portal
-        if (hasPortalAccess(user.roles, PORTAL_ALLOWED_ROLES.BANK_AGENT)) {
+        if (user.kind === 'bank_agent') {
           router.push('/agent-dashboard');
         } else {
-          const userRoleName = user.roles.join(', ') || 'User';
+          // Valid credentials, wrong portal: clear the session so the user
+          // isn't left silently authenticated, then show a generic message.
+          await logoutUser();
+          dispatch(logout());
           setErrorMessage(
-            `Access Denied: Your account (${userRoleName}) does not have permission to access the Bank Agent portal.`
+            'These credentials are not valid for this portal. Please use your designated login page.'
           );
         }
       } else {

@@ -1,17 +1,49 @@
 'use client';
 import { LanguageSelector } from '@/app/(portal-account)/components/LanguageSelector';
+import { logoutUser } from '@/features/auth/api/authApi';
+import { logout, selectBankName, selectOfficerName } from '@/features/auth/store/authSlice';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { Bell, ChevronDown, LogOut, Menu, Settings } from 'lucide-react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
-interface TopNavProps {
-  onMenuClick?: () => void;
-  title?: string;
+export type DashboardRole = 'bank-admin' | 'bank-agent' | 'farmer' | 'officer';
+
+interface RoleConfig {
+  /** Fallback display name when the store has none. */
+  fallbackName: string;
+  /** Where to send the user after logout. */
+  loginPath: string;
 }
 
-export function DashboardTopNav({ onMenuClick, title = "Dashboard" }: TopNavProps) {
+const ROLE_CONFIG: Record<DashboardRole, RoleConfig> = {
+  'bank-admin': { fallbackName: 'Bank Admin', loginPath: '/login/bank-admin' },
+  'bank-agent': { fallbackName: 'Bank Agent', loginPath: '/login/bank-agent' },
+  farmer: { fallbackName: 'Farmer', loginPath: '/' },
+  officer: { fallbackName: 'Guest User', loginPath: '/login' },
+};
+
+interface DashboardHeaderProps {
+  role: DashboardRole;
+  onMenuClick?: () => void;
+  title?: string;
+  /**
+   * Secondary line under the name in the profile dropdown. Defaults to the
+   * bank name from the store (falling back to "<Fallback> Portal"). Pass a
+   * literal string for roles that show something else (e.g. a farmer ID).
+   */
+  subtitle?: string;
+}
+
+export function DashboardHeader({ role, onMenuClick, title = 'Dashboard', subtitle }: DashboardHeaderProps) {
+  const dispatch = useAppDispatch();
+  const router = useRouter();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+  const officerName = useAppSelector(selectOfficerName);
+  const bankName = useAppSelector(selectBankName);
+
+  const config = ROLE_CONFIG[role];
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -20,11 +52,22 @@ export function DashboardTopNav({ onMenuClick, title = "Dashboard" }: TopNavProp
         setIsProfileOpen(false);
       }
     }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const userName = "Almaz Tadesse";
+  const handleLogout = async () => {
+    setIsProfileOpen(false);
+    try {
+      await logoutUser();
+    } finally {
+      dispatch(logout());
+      router.push(config.loginPath);
+    }
+  };
+
+  const userName = officerName ?? config.fallbackName;
+  const institutionName = subtitle ?? bankName ?? `${config.fallbackName} Portal`;
 
   return (
     <header className="bg-white border-b border-gray-100 shadow-md h-20 flex items-center justify-between px-6 md:px-10 sticky top-0 z-30">
@@ -41,7 +84,6 @@ export function DashboardTopNav({ onMenuClick, title = "Dashboard" }: TopNavProp
           <Bell className="w-6 h-6 group-hover:scale-110 group-hover:rotate-12 group-hover:text-orange-500 transition-all duration-300" />
           <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>
         </button>
-
 
         <div className="hidden sm:block">
           <LanguageSelector />
@@ -65,7 +107,7 @@ export function DashboardTopNav({ onMenuClick, title = "Dashboard" }: TopNavProp
             <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-lg py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
               <div className="px-4 py-2 border-b border-gray-50 mb-1">
                 <p className="text-sm font-bold text-gray-900">{userName}</p>
-                <p className="text-xs text-gray-500">Bank Admin</p>
+                <p className="text-xs text-gray-500">{institutionName}</p>
               </div>
 
               <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
@@ -73,10 +115,14 @@ export function DashboardTopNav({ onMenuClick, title = "Dashboard" }: TopNavProp
                 Settings
               </button>
 
-              <Link href="/login/bank-admin" className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors mt-1 border-t border-gray-50 pt-3">
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors mt-1 border-t border-gray-50 pt-3 text-left cursor-pointer"
+              >
                 <LogOut className="w-4 h-4 text-red-500" />
                 Logout
-              </Link>
+              </button>
             </div>
           )}
         </div>

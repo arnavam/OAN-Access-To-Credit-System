@@ -1,70 +1,94 @@
 'use client';
 import { Portal } from '@/components/Portal';
+import { clearMutationError, selectProductsMutationError, selectProductsMutationStatus, setProductStatus } from '@/features/seller/store/loanProductsSlice';
+import type { LoanProductSummary } from '@/lib/api/api.schemas';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { Loader2, XCircle } from 'lucide-react';
-import { useState } from 'react';
-import { ApprovalItem } from './ProductApprovalCard';
+import { useEffect } from 'react';
 
 interface RejectProductModalProps {
   isOpen: boolean;
   onClose: () => void;
-  product: ApprovalItem | null;
+  product: LoanProductSummary | null;
 }
 
 export function RejectProductModal({ isOpen, onClose, product }: RejectProductModalProps) {
-  const [isRejecting, setIsRejecting] = useState(false);
+  const dispatch = useAppDispatch();
+  const mutationStatus = useAppSelector(selectProductsMutationStatus);
+  const mutationError = useAppSelector(selectProductsMutationError);
 
-  const handleReject = () => {
-    setIsRejecting(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsRejecting(false);
+  useEffect(() => {
+    if (isOpen) {
+      dispatch(clearMutationError());
+    }
+  }, [dispatch, isOpen]);
+
+  const handleReject = async () => {
+    if (!product) {
+      return;
+    }
+
+    const result = await dispatch(
+      setProductStatus({
+        productId: product.name,
+        status: 'Archived',
+        refetchParams: { status: 'Draft' },
+      })
+    );
+
+    if (setProductStatus.fulfilled.match(result)) {
       onClose();
-    }, 1000);
+    }
   };
 
   if (!isOpen) return null;
 
+  const isRejecting = mutationStatus === 'loading';
+
   return (
     <Portal>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-        <div className="bg-white rounded-[24px] shadow-xl w-full max-w-[570px] flex flex-col p-8 text-center animate-in zoom-in-95 duration-200">
-
-          {/* Icon */}
-          <div className="relative w-20 h-20 mx-auto mb-6">
-            <div className="absolute inset-0 bg-[#FEE2E2] rounded-full opacity-50 animate-ping"></div>
-            <div className="relative w-full h-full bg-[#FEF2F2] rounded-full flex items-center justify-center shadow-sm border-[6px] border-[#FEE2E2] transform transition-transform hover:scale-110 duration-300">
-              <XCircle className="w-10 h-10 text-[#EF4444] animate-pulse" />
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="flex w-full max-w-[570px] flex-col rounded-[24px] bg-white p-8 text-center shadow-xl animate-in zoom-in-95 duration-200">
+          <div className="relative mx-auto mb-6 h-20 w-20">
+            <div className="absolute inset-0 animate-ping rounded-full bg-[#FEE2E2] opacity-50" />
+            <div className="relative flex h-full w-full items-center justify-center rounded-full border-[6px] border-[#FEE2E2] bg-[#FEF2F2] shadow-sm transition-transform duration-300 hover:scale-110">
+              <XCircle className="h-10 w-10 text-[#EF4444] animate-pulse" />
             </div>
           </div>
 
-          {/* Text */}
-          <h2 className="text-[22px] font-bold text-[#111827] mb-3">
+          <h2 className="mb-3 text-[22px] font-bold text-[#111827]">
             Reject Loan Product?
           </h2>
-          <p className="text-[15px] text-[#6B7280] leading-relaxed mb-8 px-2">
-            Are you sure you want to reject <span className="font-bold text-[#374151]">"{product?.title}"</span>?<br />
-            The bank agent will be notified to revise their submission.
+          <p className="mb-8 px-2 text-[15px] leading-relaxed text-[#6B7280]">
+            Are you sure you want to reject <span className="font-bold text-[#374151]">"{product?.product_name}"</span>?<br />
+            This archives the submission and removes it from the approval queue.
           </p>
 
-          {/* Buttons */}
-          <div className="flex items-center space-x-3 w-full">
+          {mutationError ? (
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-left text-[14px] text-red-700">
+              {mutationError}
+            </div>
+          ) : null}
+
+          <div className="flex w-full items-center space-x-3">
             <button
+              type="button"
               onClick={onClose}
               disabled={isRejecting}
-              className="flex-1 py-3.5 border border-[#E5E7EB] rounded-xl text-[15px] font-bold text-[#374151] hover:bg-gray-50 transition-colors disabled:opacity-50"
+              className="flex-1 rounded-xl border border-[#E5E7EB] py-3.5 text-[15px] font-bold text-[#374151] transition-colors hover:bg-gray-50 disabled:opacity-50"
             >
               Cancel
             </button>
             <button
+              type="button"
               onClick={handleReject}
               disabled={isRejecting}
-              className="flex-1 py-3.5 bg-[#EF4444] hover:bg-[#DC2626] text-white rounded-xl text-[15px] font-bold transition-colors flex items-center justify-center space-x-2 disabled:opacity-80 disabled:cursor-not-allowed shadow-sm shadow-red-200"
+              className="flex-1 flex items-center justify-center space-x-2 rounded-xl bg-[#EF4444] py-3.5 text-[15px] font-bold text-white shadow-sm shadow-red-200 transition-colors hover:bg-[#DC2626] disabled:cursor-not-allowed disabled:opacity-80"
             >
-              {isRejecting && <Loader2 size={18} className="animate-spin" />}
+              {isRejecting ? <Loader2 size={18} className="animate-spin" /> : null}
               <span>{isRejecting ? 'Rejecting...' : 'Yes, Reject'}</span>
             </button>
           </div>
-
         </div>
       </div>
     </Portal>

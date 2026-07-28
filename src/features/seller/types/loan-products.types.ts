@@ -55,3 +55,9 @@ export interface ArchiveLoanProductInput {
   productId: string;
   refetchParams?: ListProductsParams;
 }
+
+export interface SetLoanProductStatusInput {
+  productId: string;
+  status: 'Draft' | 'Active' | 'Archived';
+  refetchParams?: ListProductsParams;
+}

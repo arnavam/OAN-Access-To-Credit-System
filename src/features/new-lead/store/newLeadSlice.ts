@@ -149,7 +149,7 @@ export const addActivityNoteThunk = createAsyncThunk<
   async (payload, { getState, rejectWithValue }) => {
     try {
       const state = getState() as RootState;
-      const officerName = state.auth?.user?.officerName || 'Current User';
+      const officerName = state.auth?.user?.name || 'Current User';
       const cleanLeadId = (payload.leadId || '').replace(/^#/, '');
 
       if (cleanLeadId === 'new') {
@@ -200,15 +200,16 @@ export const fetchCreditInfoThunk = createAsyncThunk<
 );
 
 export const addCreditInfoThunk = createAsyncThunk<
-  { response: AddCreditInfoResponse; payload: { leadId: string; loan_type: string; loan_amount: number | string; purpose_message?: string } },
-  { leadId: string; loan_type: string; loan_amount: number | string; purpose_message?: string }
+  { response: AddCreditInfoResponse; payload: { leadId: string; loan_product?: string; loan_type?: string; loan_amount: number | string; purpose_message?: string } },
+  { leadId: string; loan_product?: string; loan_type?: string; loan_amount: number | string; purpose_message?: string }
 >(
   'newLead/addCreditInfo',
   async (payload, { rejectWithValue }) => {
     try {
       const response = await newLeadService.addCreditInfo({
         lead_id: normalizeLeadId(payload.leadId),
-        loan_type: payload.loan_type,
+        ...(payload.loan_product !== undefined ? { loan_product: payload.loan_product } : {}),
+        ...(payload.loan_type !== undefined ? { loan_type: payload.loan_type } : {}),
         loan_amount: Number(payload.loan_amount),
         ...(payload.purpose_message !== undefined ? { purpose_message: payload.purpose_message } : {})
       });
@@ -375,7 +376,7 @@ const newLeadSlice = createSlice({
         const { payload, response } = action.payload;
         state.creditInfo.push({
           id: response.credit_info_id, // Fallback just in case
-          type: payload.loan_type,
+          type: payload.loan_product || payload.loan_type || 'Unknown',
           amount: String(payload.loan_amount),
           purpose: payload.purpose_message || ''
         });

@@ -24,12 +24,12 @@ export function CreditInformationSection() {
     }
   }, [dispatch, leadId]);
 
-  const handleSubmit = async (data: CreditInfoFormData) => {
+  const handleSubmit = async (data: CreditInfoFormData & { productId?: string }) => {
     if (!leadId) return;
 
     await dispatch(addCreditInfoThunk({
       leadId,
-      loan_type: data.loanType,
+      ...(data.productId ? { loan_product: data.productId } : { loan_type: data.loanType }),
       loan_amount: data.loanAmount.toString(), // The API seems to expect a string here based on previous payload or DTO, we should check `addCreditInfoThunk` type
       purpose_message: data.purposeMessage
     })).unwrap();
@@ -65,7 +65,7 @@ export function CreditInformationSection() {
           <div className="min-w-[500px] w-full">
             <div className="w-full bg-[#EEF4FB]/50 border-b border-[#D4D4D4] flex flex-row">
               <div className="p-3 px-4 w-[140px] sm:w-[177px]">
-                <span className="font-inter font-semibold text-sm leading-4 tracking-wide text-[#4F4F58]">Loan Type</span>
+                <span className="font-inter font-semibold text-sm leading-4 tracking-wide text-[#4F4F58]">Loan Product</span>
               </div>
               <div className="p-3 px-4 w-[140px] sm:w-[177px]">
                 <span className="font-roboto font-semibold text-sm leading-4 tracking-wide text-[#4F4F58]">Loan Amount</span>

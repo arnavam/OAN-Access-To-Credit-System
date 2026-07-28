@@ -41,6 +41,17 @@ export async function loginUser({ usr, pwd }: LoginCredentials): Promise<RawUser
   return data.user;
 }
 
+// Clears the server-side session cookies. Best-effort — callers should still
+// reset client auth state (dispatch(logout())) regardless of the outcome.
+export async function logoutUser(): Promise<void> {
+  await fetch(`/api/auth/logout`, {
+    method: 'POST',
+    credentials: 'include',
+  }).catch(() => {
+    // Swallow network errors: the client-side reset is what matters here.
+  });
+}
+
 export async function getMe(): Promise<RawUserResponse> {
   const data = await fetchApi('oan_a2c.api.auth.get_me', {
     method: 'GET',

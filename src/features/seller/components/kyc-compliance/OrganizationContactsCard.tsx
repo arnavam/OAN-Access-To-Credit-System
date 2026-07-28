@@ -1,107 +1,146 @@
 'use client';
-import { Check, UserCheck } from 'lucide-react';
+import { clearOnboardingErrors, saveOrgContacts, selectOnboardingMutationError, selectOnboardingMutationStatus, updateBankStatus } from '@/features/seller/store/onboardingSlice';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { Check, Loader2, UserCheck } from 'lucide-react';
 import { useState } from 'react';
 
-export function OrganizationContactsCard() {
-  const [groName, setGroName] = useState('');
-  const [groMobile, setGroMobile] = useState('');
-  const [opsName, setOpsName] = useState('');
-  const [opsMobile, setOpsMobile] = useState('');
-  const [isSaved, setIsSaved] = useState(false);
-  const [error, setError] = useState('');
+interface ContactFormState {
+  groName: string;
+  groMobile: string;
+  opsName: string;
+  opsMobile: string;
+}
 
-  const handleSave = () => {
-    if (!groName.trim() || !groMobile.trim() || !opsName.trim() || !opsMobile.trim()) {
-      setError('Please fill in all fields');
+const initialFormState: ContactFormState = {
+  groName: '',
+  groMobile: '',
+  opsName: '',
+  opsMobile: '',
+};
+
+export function OrganizationContactsCard() {
+  const dispatch = useAppDispatch();
+  const [form, setForm] = useState<ContactFormState>(initialFormState);
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [isSaved, setIsSaved] = useState(false);
+  const mutationStatus = useAppSelector(selectOnboardingMutationStatus);
+  const mutationError = useAppSelector(selectOnboardingMutationError);
+
+  const handleSave = async () => {
+    if (!form.groName.trim() || !form.groMobile.trim() || !form.opsName.trim() || !form.opsMobile.trim()) {
+      setLocalError('Please fill in all contact fields.');
       setIsSaved(false);
       return;
     }
-    setError('');
-    setIsSaved(true);
-    // Optional: Auto-hide success message after 3 seconds
-    setTimeout(() => setIsSaved(false), 3000);
+
+    setLocalError(null);
+    setIsSaved(false);
+    dispatch(clearOnboardingErrors());
+
+    const result = await dispatch(
+      saveOrgContacts({
+        gro_name: form.groName.trim(),
+        gro_mobile: form.groMobile.trim(),
+        ops_name: form.opsName.trim(),
+        ops_mobile: form.opsMobile.trim(),
+      })
+    );
+
+    if (saveOrgContacts.fulfilled.match(result)) {
+      setIsSaved(true);
+      await dispatch(
+        updateBankStatus({
+          new_status: 'Active',
+        })
+      );
+    }
   };
 
+  const isSaving = mutationStatus === 'loading';
+
   return (
-    <div className="bg-white flex flex-col w-full h-full border border-[#F1F3F4] shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.05),0px_2px_4px_-1px_rgba(0,0,0,0.03)] hover:-translate-y-1 hover:shadow-lg transition-all duration-300 rounded-xl">
-      <div className="p-6 border-b border-gray-200 flex items-center gap-4">
-        <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center shrink-0">
+    <div className="flex h-full w-full flex-col rounded-xl border border-[#F1F3F4] bg-white shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.05),0px_2px_4px_-1px_rgba(0,0,0,0.03)] transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+      <div className="flex items-center gap-4 border-b border-gray-200 p-6">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600">
           <UserCheck size={20} />
         </div>
         <div>
           <h2 className="text-[16px] font-bold text-gray-900">Organization Contacts</h2>
-          <p className="text-[14px] text-gray-500">Nominate your Grievance Redressal Officer and Operations contact.</p>
+          <p className="text-[14px] text-gray-500">Save your GRO and Operations contact details for compliance.</p>
         </div>
       </div>
-      <div className="p-6 flex-1 flex flex-col">
-        <div className="space-y-6 flex-1">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+      <div className="flex flex-1 flex-col p-6">
+        <div className="flex-1 space-y-6">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-1.5">
               <label className="text-[14px] font-bold text-gray-900">Grievance Redressal Officer (GRO)</label>
               <input
                 type="text"
-                placeholder="Enter Full Name"
-                value={groName}
-                onChange={(e) => setGroName(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-[14px] transition-all"
+                placeholder="Enter full name"
+                value={form.groName}
+                onChange={(event) => setForm((current) => ({ ...current, groName: event.target.value }))}
+                className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-[14px] transition-all focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
             <div className="space-y-1.5">
               <label className="text-[14px] font-bold text-gray-900">Mobile No.</label>
               <input
                 type="text"
-                placeholder="Enter Mobile No."
-                value={groMobile}
-                onChange={(e) => setGroMobile(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-[14px] transition-all"
+                placeholder="Enter mobile number"
+                value={form.groMobile}
+                onChange={(event) => setForm((current) => ({ ...current, groMobile: event.target.value }))}
+                className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-[14px] transition-all focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-1.5">
               <label className="text-[14px] font-bold text-gray-900">Operations Contact</label>
               <input
                 type="text"
-                placeholder="Enter Full Name"
-                value={opsName}
-                onChange={(e) => setOpsName(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-[14px] transition-all"
+                placeholder="Enter full name"
+                value={form.opsName}
+                onChange={(event) => setForm((current) => ({ ...current, opsName: event.target.value }))}
+                className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-[14px] transition-all focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
             <div className="space-y-1.5">
               <label className="text-[14px] font-bold text-gray-900">Mobile No.</label>
               <input
                 type="text"
-                placeholder="Enter Mobile No."
-                value={opsMobile}
-                onChange={(e) => setOpsMobile(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-[14px] transition-all"
+                placeholder="Enter mobile number"
+                value={form.opsMobile}
+                onChange={(event) => setForm((current) => ({ ...current, opsMobile: event.target.value }))}
+                className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-[14px] transition-all focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
           </div>
         </div>
 
-        <div className="pt-6 mt-6">
+        <div className="mt-6 border-t border-gray-200 pt-6">
           <div className="flex items-center gap-4">
             <button
+              type="button"
               onClick={handleSave}
-              className="flex items-center gap-2 px-5 py-2.5 bg-[#16A34A] hover:bg-[#15803d] text-white rounded-lg text-[14px] font-bold transition-colors shadow-sm"
+              disabled={isSaving}
+              className="flex items-center gap-2 rounded-lg bg-[#16A34A] px-5 py-2.5 text-[14px] font-bold text-white shadow-sm transition-colors hover:bg-[#15803d] disabled:cursor-not-allowed disabled:opacity-80"
             >
-              <Check size={18} strokeWidth={2.5} />
-              <span>Save Contacts</span>
+              {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} strokeWidth={2.5} />}
+              <span>{isSaving ? 'Saving...' : 'Save Contacts'}</span>
             </button>
-            {isSaved && (
-              <div className="flex items-center gap-2 text-[#16A34A] font-bold text-[14px] animate-in fade-in duration-300">
-                <div className="w-2 h-2 rounded-full bg-[#16A34A]"></div>
+            {isSaved ? (
+              <div className="flex items-center gap-2 text-[14px] font-bold text-[#16A34A]">
+                <div className="h-2 w-2 rounded-full bg-[#16A34A]" />
                 Contacts saved
               </div>
-            )}
-            {error && !isSaved && (
-              <div className="text-red-500 font-medium text-[14px] animate-in fade-in duration-300">
-                {error}
+            ) : null}
+            {localError || mutationError ? (
+              <div className="text-[14px] font-medium text-red-500">
+                {localError ?? mutationError}
               </div>
-            )}
+            ) : null}
           </div>
         </div>
       </div>

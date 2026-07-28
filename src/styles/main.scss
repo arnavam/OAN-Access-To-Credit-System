@@ -1,7 +1,7 @@
 @use './variables';
 
 @import "tailwindcss";
-@config "../../tailwind.config.ts";
+@config "../../tailwind.config.mts";
 
 html {
   height: 100%;

@@ -1,36 +1,28 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import type { RootState } from '@/store';
-import { onboardingService } from '../api/onboarding.service';
+import { getMeThunk, setBankStatus } from '@/features/auth/store/authSlice';
 import { logger } from '@/lib/logger';
-import type { BankStatus } from '@/lib/api/api.schemas';
+import type { RootState } from '@/store';
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { onboardingService } from '../api/onboarding.service';
 import type {
-  RegisterBankPayload,
-  RegisterSellerPayload,
-  SaveOrgContactsPayload,
-  UploadKycDocumentPayload,
-  UpdateBankStatusPayload,
+    RegisterBankPayload,
+    RegisterSellerPayload,
+    SaveOrgContactsPayload, UpdateBankStatusPayload, UploadKycDocumentPayload
 } from '../types/onboarding.types';
 
 type AsyncStatus = 'idle' | 'loading' | 'succeeded' | 'failed';
 
 interface OnboardingState {
-  bankStatus: BankStatus['status'] | null;
   uploadedFileUrl: string | null;
-  statusFetchStatus: AsyncStatus;
   registrationStatus: AsyncStatus;
   mutationStatus: AsyncStatus;
-  statusFetchError: string | null;
   registrationError: string | null;
   mutationError: string | null;
 }
 
 const initialState: OnboardingState = {
-  bankStatus: null,
   uploadedFileUrl: null,
-  statusFetchStatus: 'idle',
   registrationStatus: 'idle',
   mutationStatus: 'idle',
-  statusFetchError: null,
   registrationError: null,
   mutationError: null,
 };
@@ -57,19 +49,6 @@ export const registerSeller = createAsyncThunk(
     } catch (error) {
       logger.error('registerSeller thunk failed', { error });
       return rejectWithValue(error instanceof Error ? error.message : 'Failed to register seller account');
-    }
-  }
-);
-
-export const fetchBankStatus = createAsyncThunk(
-  'sellerOnboarding/fetchBankStatus',
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await onboardingService.getBankStatus();
-      return response.data.status;
-    } catch (error) {
-      logger.error('fetchBankStatus thunk failed', { error });
-      return rejectWithValue(error instanceof Error ? error.message : 'Failed to retrieve bank onboarding status');
     }
   }
 );
@@ -104,8 +83,9 @@ export const updateBankStatus = createAsyncThunk(
   'sellerOnboarding/updateBankStatus',
   async (payload: UpdateBankStatusPayload, { dispatch, rejectWithValue }) => {
     try {
-      const response = await onboardingService.updateBankStatus(payload.bank_code, payload.new_status);
-      await dispatch(fetchBankStatus());
+      const response = await onboardingService.updateBankStatus(payload);
+      dispatch(setBankStatus(payload.new_status));
+      void dispatch(getMeThunk());
       return response.data;
     } catch (error) {
       logger.error('updateBankStatus thunk failed', { payload, error });
@@ -133,9 +113,6 @@ const onboardingSlice = createSlice({
       .addCase(registerSeller.pending, (s) => { s.registrationStatus = 'loading'; s.registrationError = null; })
       .addCase(registerSeller.fulfilled, (s) => { s.registrationStatus = 'succeeded'; })
       .addCase(registerSeller.rejected, (s, action) => { s.registrationStatus = 'failed'; s.registrationError = action.payload as string; })
-      .addCase(fetchBankStatus.pending, (s) => { s.statusFetchStatus = 'loading'; s.statusFetchError = null; })
-      .addCase(fetchBankStatus.fulfilled, (s, action) => { s.statusFetchStatus = 'succeeded'; s.bankStatus = action.payload; })
-      .addCase(fetchBankStatus.rejected, (s, action) => { s.statusFetchStatus = 'failed'; s.statusFetchError = action.payload as string; })
       .addCase(saveOrgContacts.pending, (s) => { s.mutationStatus = 'loading'; s.mutationError = null; })
       .addCase(saveOrgContacts.fulfilled, (s) => { s.mutationStatus = 'succeeded'; })
       .addCase(saveOrgContacts.rejected, (s, action) => { s.mutationStatus = 'failed'; s.mutationError = action.payload as string; })
@@ -152,7 +129,6 @@ export const { clearOnboardingErrors } = onboardingSlice.actions;
 export const sellerOnboardingReducer = onboardingSlice.reducer;
 export default onboardingSlice.reducer;
 
-export const selectBankStatus = (state: RootState) => state.sellerOnboarding.bankStatus;
 export const selectUploadedFileUrl = (state: RootState) => state.sellerOnboarding.uploadedFileUrl;
 export const selectOnboardingRegistrationStatus = (state: RootState) => state.sellerOnboarding.registrationStatus;
 export const selectOnboardingRegistrationError = (state: RootState) => state.sellerOnboarding.registrationError;

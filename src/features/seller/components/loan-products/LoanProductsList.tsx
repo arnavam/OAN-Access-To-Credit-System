@@ -1,71 +1,69 @@
+'use client';
+import {
+    fetchProducts,
+    selectProducts,
+    selectProductsListError,
+    selectProductsListStatus
+} from '@/features/seller/store/loanProductsSlice';
+import type { ListProductsParams } from '@/features/seller/types/loan-products.types';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { AlertCircle, Loader2 } from 'lucide-react';
+import { useEffect } from 'react';
 import { BankHeaderCard } from './BankHeaderCard';
-import { LoanProduct, LoanProductCard } from './LoanProductCard';
+import { LoanProductCard } from './LoanProductCard';
 
-const mockLoanProducts: LoanProduct[] = [
-  {
-    id: '1',
-    title: 'CBE Smallholder Seed Loan',
-    category: 'seed',
-    status: 'Active',
-    amount: 'ETB 5,000–25,000',
-    interestValue: '8.5%',
-    interestLabel: 'p.a.',
-    tenureValue: '12m',
-    tenureLabel: 'tenure',
-    applicantsValue: 142,
-    applicantsLabel: 'applicants'
-  },
-  {
-    id: '2',
-    title: 'CBE Agri Input Finance',
-    category: 'input',
-    status: 'Active',
-    amount: 'ETB 10,000–50,000',
-    interestValue: '9.2%',
-    interestLabel: 'p.a.',
-    tenureValue: '18m',
-    tenureLabel: 'tenure',
-    applicantsValue: 89,
-    applicantsLabel: 'applicants'
-  },
-  {
-    id: '3',
-    title: 'CBE Pastoralist Livestock Loan',
-    category: 'livestock',
-    status: 'Active',
-    amount: 'ETB 20,000–150,000',
-    interestValue: '9%',
-    interestLabel: 'p.a.',
-    tenureValue: '24m',
-    tenureLabel: 'tenure',
-    applicantsValue: 67,
-    applicantsLabel: 'applicants'
-  },
-  {
-    id: '4',
-    title: 'CBE Equipment & Irrigation Loan',
-    category: 'equipment',
-    status: 'Pending Approved',
-    amount: 'ETB 50,000–500,000',
-    interestValue: '10.5%',
-    interestLabel: 'p.a.',
-    tenureValue: '36m',
-    tenureLabel: 'tenure',
-    applicantsValue: 21,
-    applicantsLabel: 'applicants'
-  }
-];
+interface LoanProductsListProps {
+  portalLabel?: string;
+  listParams?: ListProductsParams;
+}
 
-export const LoanProductsList = () => {
+export function LoanProductsList({ portalLabel, listParams }: LoanProductsListProps) {
+  const dispatch = useAppDispatch();
+  const products = useAppSelector(selectProducts);
+  const listStatus = useAppSelector(selectProductsListStatus);
+  const listError = useAppSelector(selectProductsListError);
+
+  useEffect(() => {
+    void dispatch(fetchProducts(listParams));
+  }, [dispatch, listParams]);
+
+  const isLoading = listStatus === 'idle' || listStatus === 'loading';
+
   return (
-    <div className="w-full  mx-auto space-y-4">
-      <BankHeaderCard />
+    <div className="mx-auto w-full space-y-4">
+      <BankHeaderCard portalLabel={portalLabel} />
 
-      <div className="flex flex-col gap-4 mt-6">
-        {mockLoanProducts.map((product) => (
-          <LoanProductCard key={product.id} product={product} />
-        ))}
-      </div>
+      {listError ? (
+        <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">
+          <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+          <div>
+            <p className="text-[14px] font-semibold">Failed to load loan products</p>
+            <p className="text-[14px]">{listError}</p>
+          </div>
+        </div>
+      ) : null}
+
+      {isLoading ? (
+        <div className="flex min-h-[240px] items-center justify-center rounded-xl border border-dashed border-gray-200 bg-white">
+          <div className="flex items-center gap-2 text-sm font-medium text-gray-500">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Loading loan products...
+          </div>
+        </div>
+      ) : products.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-gray-200 bg-white p-8 text-center">
+          <p className="text-[16px] font-semibold text-gray-900">No loan products found</p>
+          <p className="mt-2 text-[14px] text-gray-500">
+            Create a loan product to publish it to the marketplace.
+          </p>
+        </div>
+      ) : (
+        <div className="mt-6 flex flex-col gap-4">
+          {products.map((product) => (
+            <LoanProductCard key={product.name} product={product} />
+          ))}
+        </div>
+      )}
     </div>
   );
-};
+}

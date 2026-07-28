@@ -1,5 +1,5 @@
+import { teamUserSchema, validateResponse, type TeamUser } from '@/lib/api/api.schemas';
 import { fetchApi } from '@/lib/api/fetchApi';
-import { validateResponse, teamUserSchema, type TeamUser } from '@/lib/api/api.schemas';
 import type { ApiResponse } from '@/types/api';
 import { z } from 'zod';
 import type { InviteUserPayload, UpdateUserProfilePayload } from '../types/team.types';

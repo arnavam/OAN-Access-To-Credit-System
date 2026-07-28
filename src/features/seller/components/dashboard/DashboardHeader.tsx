@@ -1,4 +1,6 @@
 'use client';
+import { selectBankName } from '@/features/auth/store/authSlice';
+import { useAppSelector } from '@/store/hooks';
 import { Landmark, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { AddLoanProductModal } from './AddLoanProductModal';
@@ -9,6 +11,7 @@ interface DashboardHeaderProps {
 
 export function DashboardHeader({ portalLabel = 'Bank Admin Portal - Loan Product Management' }: DashboardHeaderProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const bankName = useAppSelector(selectBankName);
 
   return (
     <>
@@ -18,7 +21,7 @@ export function DashboardHeader({ portalLabel = 'Bank Admin Portal - Loan Produc
             <Landmark size={24} />
           </div>
           <div>
-            <h2 className="text-[18px] font-bold text-[#1F2937]">Commercial Bank of Ethiopia</h2>
+            <h2 className="text-[18px] font-bold text-[#1F2937]">{bankName ?? 'Seller Portal'}</h2>
             <p className="text-[14px] text-[#6B7280]">{portalLabel}</p>
           </div>
         </div>

@@ -10,9 +10,9 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
+import { logoutUser } from '@/features/auth/api/authApi';
 import { HavingTroubleModal } from '@/features/auth/components/HavingTroubleModal';
-import { clearAuthError, loginThunk, selectAuthError, selectAuthStatus } from '@/features/auth/store/authSlice';
-import { hasPortalAccess, PORTAL_ALLOWED_ROLES } from '@/lib/auth/rbac';
+import { clearAuthError, loginThunk, logout, selectAuthError, selectAuthStatus } from '@/features/auth/store/authSlice';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 
 const activeAgents = [
@@ -67,12 +67,15 @@ export function LoginClient() {
     const result = await dispatch(loginThunk({ usr: username, pwd: password }));
     if (loginThunk.fulfilled.match(result)) {
       const user = result.payload;
-      if (hasPortalAccess(user.roles, PORTAL_ALLOWED_ROLES.DEV_AGENT)) {
+      if (user.kind === 'dev_agent') {
         router.push('/leads');
       } else {
-        const userRoleName = user.roles.join(', ') || 'User';
+        // Valid credentials, wrong portal: clear the session so the user
+        // isn't left silently authenticated, then show a generic message.
+        await logoutUser();
+        dispatch(logout());
         setDeniedError(
-          `Access Denied: Your account (${userRoleName}) does not have permission to access the Development Agent portal.`
+          'These credentials are not valid for this portal. Please use your designated login page.'
         );
       }
     }

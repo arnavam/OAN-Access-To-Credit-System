@@ -1,11 +1,11 @@
 'use client';
 
-import { clearAuthError, loginThunk } from '@/features/auth/store/authSlice';
-import { hasPortalAccess, PORTAL_ALLOWED_ROLES } from '@/lib/auth/rbac';
+import { logoutUser } from '@/features/auth/api/authApi';
+import { clearAuthError, loginThunk, logout } from '@/features/auth/store/authSlice';
 import { useAppDispatch } from '@/store/hooks';
 import { ArrowRight, Eye, EyeOff, Lock, ShieldCheck, User } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { ForgotPasswordModal } from './ForgotPasswordModal';
 
@@ -30,16 +30,15 @@ export function BankAdminLoginForm() {
       if (loginThunk.fulfilled.match(result)) {
         const user = result.payload;
         // Enforce RBAC: check if user is authorized for Bank Admin portal
-        if (hasPortalAccess(user.roles, PORTAL_ALLOWED_ROLES.BANK_ADMIN)) {
-          if (!user.bank) {
-            router.push('/register');
-          } else {
-            router.push('/dashboard');
-          }
+        if (user.kind === 'bank_admin' || user.kind === 'marketplace') {
+          router.push(user.kind === 'bank_admin' && !user.bankCode ? '/register' : '/dashboard');
         } else {
-          const userRoleName = user.roles.join(', ') || 'User';
+          // Valid credentials, wrong portal: clear the session so the user
+          // isn't left silently authenticated, then show a generic message.
+          await logoutUser();
+          dispatch(logout());
           setErrorMessage(
-            `Access Denied: Your account (${userRoleName}) does not have permission to access the Bank Admin portal.`
+            'These credentials are not valid for this portal. Please use your designated login page.'
           );
         }
       } else {

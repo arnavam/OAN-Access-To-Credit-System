@@ -12,16 +12,20 @@ interface MetricCardsProps {
   pendingLabel?: string;
   pendingValue?: string;
   totalApplicants?: number;
+  activeProducts?: number;
+  totalProducts?: number;
 }
 
 export function MetricCards({
   pendingLabel = 'Pending Approvals',
   pendingValue,
   totalApplicants = 0,
+  activeProducts = 0,
+  totalProducts = 0,
 }: MetricCardsProps) {
   const metrics: MetricCard[] = [
-    { label: 'Active Products', value: '3', icon: CheckCircle2, iconBg: 'bg-green-100', iconColor: 'text-green-500' },
-    { label: 'Total Products', value: '4', icon: Package, iconBg: 'bg-blue-100', iconColor: 'text-blue-500' },
+    { label: 'Active Products', value: activeProducts.toString(), icon: CheckCircle2, iconBg: 'bg-green-100', iconColor: 'text-green-500' },
+    { label: 'Total Products', value: totalProducts.toString(), icon: Package, iconBg: 'bg-blue-100', iconColor: 'text-blue-500' },
     { label: 'Total Applicants', value: totalApplicants.toString(), icon: Users, iconBg: 'bg-purple-100', iconColor: 'text-purple-500' },
     { label: pendingLabel, value: pendingValue ?? '0', icon: FileCheck, iconBg: 'bg-orange-100', iconColor: 'text-orange-500' },
   ];

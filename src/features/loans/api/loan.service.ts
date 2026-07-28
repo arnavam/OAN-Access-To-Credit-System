@@ -85,7 +85,42 @@ export interface GetLoansParams {
   lead_id?: string;
 }
 
+export interface BrowseProductsParams {
+  search?: string;
+  bank?: string;
+  loan_product?: string;
+  min_amount?: number;
+  max_amount?: number;
+  limit?: number;
+  start?: number;
+}
+
+export interface BrowseProductItem {
+  name: string;
+  product_name: string;
+  slug?: string | null;
+  bank?: string | null;
+  min_interest_rate: number;
+  max_interest_rate?: number | null;
+  min_amount?: number | null;
+  max_amount: number;
+  tenure_months: number;
+}
+
 export const loanService = {
+  async browseProducts(params?: BrowseProductsParams, options?: RequestInit): Promise<ApiResponse<{ products: BrowseProductItem[] }>> {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          searchParams.append(key, value.toString());
+        }
+      });
+    }
+    const path = `oan_a2c.api.v1.loan_applications.browse_products?${searchParams.toString()}`;
+    return fetchApi(path, options) as Promise<ApiResponse<{ products: BrowseProductItem[] }>>;
+  },
+
   async getLoans(params?: GetLoansParams, options?: RequestInit): Promise<ApiResponse<LoanApplicationSummary[]>> {
     const searchParams = new URLSearchParams();
     if (params) {

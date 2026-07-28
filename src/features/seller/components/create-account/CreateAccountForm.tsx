@@ -1,16 +1,15 @@
 'use client';
 
+import {
+    clearOnboardingErrors, registerSeller,
+    selectOnboardingRegistrationError,
+    selectOnboardingRegistrationStatus
+} from '@/features/seller/store/onboardingSlice';
+import { registerSellerSchema } from '@/lib/api/api.schemas';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { ArrowRight, ChevronDown, Eye, EyeOff, Info, Lock, Mail, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { registerSellerSchema } from '@/lib/api/api.schemas';
-import {
-  registerSeller,
-  selectOnboardingRegistrationError,
-  selectOnboardingRegistrationStatus,
-  clearOnboardingErrors,
-} from '@/features/seller/store/onboardingSlice';
 
 export function CreateAccountForm() {
   const router = useRouter();

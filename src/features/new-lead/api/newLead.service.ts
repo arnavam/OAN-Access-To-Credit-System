@@ -368,7 +368,7 @@ export const newLeadService = {
   },
 
   // Add credit information for a lead
-  async addCreditInfo(data: { lead_id: string; loan_type: string; loan_amount: number; purpose_message?: string }): Promise<AddCreditInfoResponse> {
+  async addCreditInfo(data: { lead_id: string; loan_type?: string; loan_product?: string; loan_amount: number; purpose_message?: string }): Promise<AddCreditInfoResponse> {
     const response = await fetchApi('oan_a2c.api.v1.leads.add_lead_credit_info', {
       method: 'POST',
       body: JSON.stringify(data),

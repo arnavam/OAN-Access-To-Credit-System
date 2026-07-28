@@ -1,3 +1,4 @@
+import { canAccess, homeRouteFor, readUserKindFromJwt } from '@/features/auth/rbac';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
@@ -31,9 +32,19 @@ export function proxy(request: NextRequest) {
     return withCsp(NextResponse.redirect(loginUrl));
   }
 
-  // 2. Prevent logged-in users from hitting the login page
-  if (pathname === '/login' && token) {
-    return withCsp(NextResponse.redirect(new URL('/leads', request.url)));
+  // 2. Role-based routing (routing/UX only — the backend authorizes every API
+  //    call). Decode user_type from the signed JWT and bounce mismatches home.
+  const kind = token ? readUserKindFromJwt(token) : null;
+
+  // Prevent logged-in users from sitting on any login page — send them to the
+  // home route for their actual role, not a hardcoded one.
+  if ((pathname === '/login' || pathname.startsWith('/login/')) && kind) {
+    return withCsp(NextResponse.redirect(new URL(homeRouteFor(kind), request.url)));
+  }
+
+  // Block navigation to routes the user's role may not access.
+  if (kind && !canAccess(kind, pathname)) {
+    return withCsp(NextResponse.redirect(new URL(homeRouteFor(kind), request.url)));
   }
 
   return withCsp(NextResponse.next({ request: { headers: requestHeaders } }));

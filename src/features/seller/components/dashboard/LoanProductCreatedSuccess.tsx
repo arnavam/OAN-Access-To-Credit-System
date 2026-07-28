@@ -16,10 +16,10 @@ export function LoanProductCreatedSuccess({ onDone, height = 'h-[420px]' }: Loan
         </div>
       </div>
       <h2 className="text-[24px] font-bold text-[#1F2937] mb-4 animate-in slide-in-from-bottom-4 fade-in duration-500 delay-300 fill-mode-both">
-        Loan Product Created!
+        Loan Product Saved!
       </h2>
       <p className="text-[18px] text-[#6B7280] max-w-[400px] mb-12 leading-relaxed animate-in slide-in-from-bottom-4 fade-in duration-500 delay-500 fill-mode-both">
-        Your new loan product has been successfully created and published. It is now active and available for eligible profiles.
+        Your loan product changes have been saved successfully and synchronized with the backend.
       </p>
       <button
         onClick={onDone}
