@@ -172,7 +172,7 @@ function LeadTable({
   };
 
   return (
-    <div className="overflow-x-auto w-full [&::-webkit-scrollbar]:hidden">
+    <div className="overflow-x-auto w-full min-h-[400px]">
       <table className="w-full min-w-[1118px] table-fixed border-collapse">
         <thead>
           <tr className="border-b border-[#EDEFF1] bg-[rgba(248,250,252,0.5)] h-[57px] select-none">

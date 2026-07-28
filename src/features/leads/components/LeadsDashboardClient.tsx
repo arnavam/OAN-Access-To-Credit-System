@@ -1,8 +1,8 @@
 'use client';
 
-import { Download, Plus } from 'lucide-react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { FileOutput, Plus } from 'lucide-react';
 
 import { KPI_CARDS_LAYOUT, LEAD_STATUS_MAP, resolveDateFilter } from '@/features/leads/constants/leads.constants';
 import type { KpiStat, Lead } from '@/features/leads/types/leads.types';
@@ -21,9 +21,9 @@ import { AccessDenied } from '@/components/AccessDenied';
 import { ConnectionError } from '@/components/ConnectionError';
 import { selectOfficerName, selectUserEmail } from '@/features/auth/store/authSlice';
 import {
-    fetchLeads,
-    fetchLeadSummary, resetFilters, selectActiveTab, selectAdvFilters, selectColCallTimeFilter, selectColStatusFilter, selectDateFilter, selectIsLeadsLoading, selectLeads, selectLeadsError, selectLeadSummary,
-    selectSearch, selectTotalCount, setActiveTab, setColCallTimeFilter, setColStatusFilter, setSearch
+  fetchLeads,
+  fetchLeadSummary, resetFilters, selectActiveTab, selectAdvFilters, selectColCallTimeFilter, selectColStatusFilter, selectDateFilter, selectIsLeadsLoading, selectLeads, selectLeadsError, selectLeadSummary,
+  selectSearch, selectTotalCount, setActiveTab, setColCallTimeFilter, setColStatusFilter, setSearch
 } from '@/features/leads/store/leadSlice';
 import { fetchLeadMetadataThunk } from '@/features/new-lead/store/newLeadSlice';
 import { ApiErrorCode, classifyError } from '@/lib/api/apiErrors';
@@ -106,8 +106,8 @@ export function LeadsDashboardClient() {
     // 'unassigned', "All" → omit. (Falls back to no scope if email isn't loaded.)
     const assigned_to =
       activeTab === 'my' ? (userEmail ?? undefined)
-      : activeTab === 'unassigned' ? 'unassigned'
-      : undefined;
+        : activeTab === 'unassigned' ? 'unassigned'
+          : undefined;
 
     return dispatch(fetchLeads({
       start: (page - 1) * pageSize,
@@ -257,7 +257,7 @@ export function LeadsDashboardClient() {
             onClick={handleExportCSV}
             className="flex-1 md:flex-none inline-flex items-center justify-center gap-2 rounded-xl border border-border-subtle bg-white px-5 py-3 text-base font-medium text-text-primary transition hover:bg-slate-50 active:scale-95"
           >
-            <Download size={18} />
+            <FileOutput size={18} />
             {/* Only a partial selection differs from a page export: select-all (allChecked)
                 covers the whole current page, which is identical to exporting with no selection. */}
             {selectedRows.length > 0 && !allChecked ? `Export Selected (${selectedRows.length})` : 'Export CSV'}
