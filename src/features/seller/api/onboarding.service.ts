@@ -8,6 +8,47 @@ import type {
     UploadKycDocumentPayload
 } from '../types/onboarding.types';
 
+export interface BankProfile {
+  bank_id: string;
+  bank_code: string;
+  bank_name: string;
+  brand_name?: string;
+  entity_type: string;
+  registered_street: string;
+  registered_kebele_village?: string;
+  registered_woreda_district?: string;
+  registered_city: string;
+  registered_country: string;
+  registered_postal_code: string;
+  registered_email: string;
+  registered_phone: string;
+  website?: string;
+  status: string;
+  gro_name?: string;
+  gro_mobile?: string;
+  ops_name?: string;
+  ops_mobile?: string;
+  kyc_document?: string;
+  kyc_document_uploaded: boolean;
+  org_grievance_updated: boolean;
+  logo?: string;
+}
+
+export interface UpdateBankProfilePayload {
+  bank_name?: string;
+  brand_name?: string;
+  website?: string;
+  registered_street?: string;
+  registered_kebele_village?: string;
+  registered_woreda_district?: string;
+  registered_city?: string;
+  registered_country?: string;
+  registered_postal_code?: string;
+  registered_email?: string;
+  registered_phone?: string;
+  logo?: string;
+}
+
 export const onboardingService = {
   async registerSeller(payload: RegisterSellerPayload): Promise<ApiResponse<{ message: string }>> {
     return fetchApi('oan_a2c.api.v1.seller.onboarding.register_seller', {
@@ -42,5 +83,29 @@ export const onboardingService = {
       method: 'POST',
       body: JSON.stringify(payload),
     }) as Promise<ApiResponse<{ message: string }>>;
+  },
+
+  async getBankProfile(): Promise<ApiResponse<BankProfile>> {
+    const res = await fetchApi('oan_a2c.api.v1.seller.onboarding.get_bank_profile', {
+      method: 'GET',
+    }) as ApiResponse<BankProfile>;
+    if (res?.data?.logo) {
+      res.data.logo = res.data.logo.replace(/^https?:\/\/[^/]+\/files\//, '/api/files/');
+    }
+    return res;
+  },
+
+  async updateBankProfile(payload: UpdateBankProfilePayload): Promise<ApiResponse<{ message: string }>> {
+    return fetchApi('oan_a2c.api.v1.seller.onboarding.update_bank_profile', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }) as Promise<ApiResponse<{ message: string }>>;
+  },
+
+  async uploadImage(payload: { filename: string; filedata: string }): Promise<ApiResponse<{ message: string; file_url: string }>> {
+    return fetchApi('oan_a2c.api.v1.seller.onboarding.upload_image', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }) as Promise<ApiResponse<{ message: string; file_url: string }>>;
   },
 };

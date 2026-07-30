@@ -4,33 +4,21 @@ import { ArrowRight, CheckCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-// Icons are now loaded from PNG files in /public/images/icons/
+const ROLE_ROUTES: Record<string, string> = {
+  farmer: '/login/farmer',
+  bank: '/login/bank-admin',
+  agent: '/login/bank-agent',
+  'dev-agent': '/login/development-agent',
+  admin: '/login/administrator',
+};
 
 export function LoginForm() {
   const router = useRouter();
   const [role, setRole] = useState('farmer');
-  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSignInSubmit = async (event: React.FormEvent) => {
+  const handleSignInSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    setIsLoading(true);
-    // Simulate login
-    setTimeout(() => {
-      setIsLoading(false);
-      if (role === 'farmer') {
-        router.push('/login/farmer');
-      } else if (role === 'bank') {
-        router.push('/login/bank-admin');
-      } else if (role === 'agent') {
-        router.push('/login/bank-agent');
-      } else if (role === 'dev-agent') {
-        router.push('/login/development-agent');
-      } else if (role === 'admin') {
-        router.push('/login/administrator');
-      } else {
-        router.push('/');
-      }
-    }, 1000);
+    router.push(ROLE_ROUTES[role] ?? '/');
   };
 
   return (
@@ -60,7 +48,7 @@ export function LoginForm() {
 
         <label className={`flex items-center p-4 border rounded-xl cursor-pointer transition-all group ${role === 'bank' ? 'border-[#16A34A] bg-white ring-1 ring-[#16A34A]' : 'border-gray-200 hover:border-gray-300 bg-white'}`}>
           <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mr-4 shrink-0 overflow-hidden">
-            <img src="/images/icons/bank-admin.png" alt="Bank Admin" className="w-12 h-12  object-contain" />
+            <img src="/images/icons/bank-admin.png" alt="Bank Admin" className="w-12 h-12 object-contain" />
           </div>
           <div className="flex-grow">
             <div className="font-bold text-gray-900 text-[15px]">Bank Admin</div>
@@ -76,7 +64,7 @@ export function LoginForm() {
 
         <label className={`flex items-center p-4 border rounded-xl cursor-pointer transition-all group ${role === 'agent' ? 'border-[#16A34A] bg-white ring-1 ring-[#16A34A]' : 'border-gray-200 hover:border-gray-300 bg-white'}`}>
           <div className="w-12 h-12 rounded-full bg-[#E8F8EE] flex items-center justify-center mr-4 shrink-0 overflow-hidden">
-            <img src="/images/icons/bank-agent.png" alt="Bank Agent" className="w-12 h-12  object-contain" />
+            <img src="/images/icons/bank-agent.png" alt="Bank Agent" className="w-12 h-12 object-contain" />
           </div>
           <div className="flex-grow">
             <div className="font-bold text-gray-900 text-[15px]">Bank Agent</div>
@@ -127,11 +115,10 @@ export function LoginForm() {
       <form className="mb-10" onSubmit={handleSignInSubmit}>
         <button
           type="submit"
-          disabled={isLoading}
-          className="w-full bg-[#16A34A] hover:bg-[#158e41] text-white text-base font-bold py-3.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 group shadow-sm disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
+          className="w-full bg-[#16A34A] hover:bg-[#158e41] text-white text-base font-bold py-3.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 group shadow-sm cursor-pointer"
         >
-          {isLoading ? 'Processing...' : 'Next Step'}
-          {!isLoading && <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}
+          Next Step
+          <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
         </button>
       </form>
 

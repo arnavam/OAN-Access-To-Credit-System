@@ -92,8 +92,11 @@ export function ContactDetailsSection({ fields, onChange, isAgreed, setIsAgreed 
             <input
               type="tel"
               placeholder="Enter Phone Number"
-              value={fields.registered_phone.replace(/^\+\d+\s?/, '')}
-              onChange={(e) => onChange({ registered_phone: `${selectedPhoneCode} ${e.target.value}` })}
+              value={fields.registered_phone.startsWith(selectedPhoneCode) ? fields.registered_phone.slice(selectedPhoneCode.length).trimStart() : fields.registered_phone}
+              onChange={(e) => {
+                const inputDigits = e.target.value;
+                onChange({ registered_phone: inputDigits ? `${selectedPhoneCode}${inputDigits}` : '' });
+              }}
               className="flex-1 px-3 py-2.5 bg-white border border-[#D1D5DB] rounded-lg text-[14px] text-[#1F2937] focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] transition-all placeholder:text-[#9CA3AF]"
             />
           </div>

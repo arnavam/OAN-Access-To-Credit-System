@@ -1,5 +1,6 @@
 'use client';
 
+import { Button } from '@/components/ui/Button';
 import { FeedbackModal } from '@/components/ui/FeedbackModal';
 import { loanService } from '@/features/loans/api/loan.service';
 import LeadStatusModal, { LeadStatusOutcome } from '@/features/new-lead/components/modals/LeadStatusModal';
@@ -12,7 +13,6 @@ import { useAppDispatch } from '@/store/hooks';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Button } from './Button';
 
 interface LeadDashboardActionsProps {
     leadId: string;

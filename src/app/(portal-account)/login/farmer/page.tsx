@@ -1,5 +1,6 @@
 'use client';
 
+import { ForgotPasswordModal } from '@/features/auth/components/ForgotPasswordModal';
 import {
     ArrowLeft,
     ArrowRight, ShieldCheck, User
@@ -8,7 +9,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { LanguageSelector } from '../../components/LanguageSelector';
-import { ForgotPasswordModal } from './components/ForgotPasswordModal';
 import OtpVerificationPopup from './components/OtpVerificationPopup';
 
 const activeAgents = [

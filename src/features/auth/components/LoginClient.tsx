@@ -1,10 +1,12 @@
 'use client';
 
 import {
+    ArrowLeft,
+    ArrowRight,
     Check,
     ChevronDown,
     Eye,
-    EyeOff, Lock, UserRound
+    EyeOff, Globe, Lock, UserRound
 } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -43,7 +45,7 @@ export function LoginClient() {
   const [password, setPassword] = useState('');
   const languageMenuRef = useRef<HTMLDivElement>(null);
 
-  const portalSubtitle = 'Access the Development Agent';
+  const portalSubtitle = 'Coordinate field-level agricultural credit access across regions';
 
   useEffect(() => {
     const handleDocumentClick = (event: MouseEvent) => {
@@ -83,11 +85,15 @@ export function LoginClient() {
 
   return (
     <div className="relative flex min-h-screen flex-col items-center bg-[linear-gradient(0deg,#F9FAFB,#F9FAFB),#FFFFFF] font-sans">
-
-
-      <main className="flex flex-1 items-center justify-center w-full">
-        <section className="mx-auto flex flex-1 items-center justify-center py-8 lg:py-12 w-full px-4 sm:px-6 lg:px-8">
-          <div className="flex overflow-hidden bg-white w-full max-w-2xl lg:max-w-[1152px] lg:w-full h-auto lg:h-[700px] lg:min-h-[700px] shadow-[0px_25px_50px_-12px_rgba(0,0,0,0.25)] rounded-[16px] flex-col lg:flex-row min-h-0 mx-auto">
+      <main className="flex flex-1 items-center justify-center w-full py-8 lg:py-12">
+        <section className="mx-auto flex flex-col flex-1 items-center justify-center w-full px-4 sm:px-6 lg:px-8">
+          <div className="w-full max-w-2xl lg:max-w-[1152px] mx-auto mb-4 flex justify-start">
+            <button onClick={() => router.back()} className="flex items-center gap-2 text-[#4B5563] hover:text-[#111827] font-semibold transition-colors">
+              <ArrowLeft size={20} strokeWidth={2.5} />
+              Back
+            </button>
+          </div>
+          <div className="flex overflow-hidden bg-white w-full max-w-2xl lg:max-w-[1152px] lg:w-full h-auto lg:min-h-[800px] shadow-[0px_25px_50px_-12px_rgba(0,0,0,0.25)] rounded-[16px] flex-col lg:flex-row min-h-0 mx-auto">
             <div className="flex flex-col justify-between isolate relative w-full lg:w-1/2 p-6 sm:p-8 lg:p-12 min-h-auto bg-[linear-gradient(180deg,var(--panel-bg)_0%,var(--panel-bg-deep)_100%)]">
               <div className="relative z-10">
                 <div className="flex items-center gap-0 mb-8 sm:mb-10">
@@ -156,67 +162,57 @@ export function LoginClient() {
             </div>
 
             <div className="flex flex-col justify-center items-center p-6 sm:p-8 lg:p-16 relative bg-white w-full lg:w-1/2 z-10">
-              <div className="flex flex-col items-center text-center w-full max-w-[448px] relative z-10">
-                <div className="w-full flex justify-end mb-14 relative z-20">
-                  <div className="relative" ref={languageMenuRef}>
+              <div className="absolute top-6 right-6 sm:top-8 sm:right-10 z-50" ref={languageMenuRef}>
+                <button
+                  className="flex items-center gap-2 font-medium transition-colors hover:text-gray-900 text-[#4B5563] text-[14px]"
+                  type="button"
+                  aria-haspopup="menu"
+                  aria-expanded={isLanguageMenuOpen}
+                  onClick={() => setIsLanguageMenuOpen((current) => !current)}
+                >
+                  <span className="flex items-center gap-1.5">
+                    <span className="flex items-center" aria-hidden="true">
+                      <Globe size={16} className="text-[#6B7280]" />
+                    </span>
+                    <span className="leading-none">{activeLanguage.label}</span>
+                  </span>
+                  <ChevronDown size={14} strokeWidth={2.2} />
+                </button>
+
+                <div
+                  className={`absolute right-0 top-[calc(100%+0.45rem)] z-50 w-[9rem] sm:w-[12rem] overflow-hidden rounded-[0.5rem] border border-slate-200 bg-white py-1 shadow-lg origin-top-right transition-all duration-180 ease-in-out ${isLanguageMenuOpen ? 'opacity-100 pointer-events-auto translate-y-0 scale-100' : 'opacity-0 pointer-events-none -translate-y-[0.45rem] scale-96'}`}
+                  role="menu"
+                >
+                  {languages.map((language) => (
                     <button
-                      className="flex items-center gap-2 font-medium transition-colors hover:text-gray-900 text-[#4B5563] text-[14px] border border-gray-200 p-2 rounded-lg"
+                      key={language.code}
+                      className={`flex w-full items-center justify-between gap-3 px-4 py-2 text-left text-sm transition duration-150 ${activeLanguage.code === language.code ? 'bg-gray-50 text-gray-900' : 'text-gray-700 hover:bg-gray-50'}`}
                       type="button"
-                      aria-haspopup="menu"
-                      aria-expanded={isLanguageMenuOpen}
-                      onClick={() => setIsLanguageMenuOpen((current) => !current)}
+                      role="menuitemradio"
+                      aria-checked={activeLanguage.code === language.code}
+                      onClick={() => {
+                        setActiveLanguage(language);
+                        setIsLanguageMenuOpen(false);
+                      }}
                     >
-                      <span className="flex items-center gap-2">
+                      <span className="flex min-w-0 items-center gap-2">
                         <span className="text-[0.95rem] leading-none" aria-hidden="true">
-                          {activeLanguage.flag}
+                          {language.flag}
                         </span>
-                        <span className="leading-none">{activeLanguage.label}</span>
+                        <span className="flex flex-col">
+                          <span className="truncate">{language.label}</span>
+                          <span className="truncate text-xs text-gray-500">{language.country}</span>
+                        </span>
                       </span>
-                      <ChevronDown size={14} strokeWidth={2.2} />
+                      {activeLanguage.code === language.code ? (
+                        <Check size={12} strokeWidth={3} />
+                      ) : null}
                     </button>
-
-                    <div
-                      className={`absolute right-0 top-[calc(100%+0.45rem)] z-50 w-[9rem] sm:w-[12rem] overflow-hidden rounded-[0.5rem] border border-slate-200 bg-white py-1 shadow-lg origin-top-right transition-all duration-180 ease-in-out ${isLanguageMenuOpen ? 'opacity-100 pointer-events-auto translate-y-0 scale-100' : 'opacity-0 pointer-events-none -translate-y-[0.45rem] scale-96'}`}
-                      role="menu"
-                    >
-                      {languages.map((language) => (
-                        <button
-                          key={language.code}
-                          className={`flex w-full items-center justify-between gap-3 px-4 py-2 text-left text-sm transition duration-150 ${activeLanguage.code === language.code ? 'bg-gray-50 text-gray-900' : 'text-gray-700 hover:bg-gray-50'}`}
-                          type="button"
-                          role="menuitemradio"
-                          aria-checked={activeLanguage.code === language.code}
-                          onClick={() => {
-                            setActiveLanguage(language);
-                            setIsLanguageMenuOpen(false);
-                          }}
-                        >
-                          <span className="flex min-w-0 items-center gap-2">
-                            <span
-                              className="text-[0.95rem] leading-none"
-                              aria-hidden="true"
-                            >
-                              {language.flag}
-                            </span>
-
-                            <span className="flex flex-col">
-                              <span className="truncate">
-                                {language.label}
-                              </span>
-                              <span className="truncate text-xs text-gray-500">
-                                {language.country}
-                              </span>
-                            </span>
-                          </span>
-                          {activeLanguage.code === language.code ? (
-                            <Check size={12} strokeWidth={3} />
-                          ) : null}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                  ))}
                 </div>
+              </div>
 
+              <div className="flex flex-col items-center text-center w-full max-w-[448px] relative z-10 mt-6 sm:mt-0">
                 <div className="flex flex-col items-center gap-2 w-full mt-2">
                   <h2 className="font-bold text-[#111827] text-[28px] sm:text-[36px] leading-tight sm:leading-[40px]">Welcome to the Portal</h2>
                   <p className="m-0 text-[#6B7280] text-[14px] sm:text-[16px] leading-normal sm:leading-[24px]">{portalSubtitle}</p>
@@ -289,7 +285,7 @@ export function LoginClient() {
                       className="font-semibold text-[#16335A] hover:underline bg-transparent border-none p-0 cursor-pointer text-left"
                       onClick={() => setIsTroubleModalOpen(true)}
                     >
-                      Having trouble?
+                      Forgot Password?
                     </button>
                   </div>
 
@@ -299,13 +295,42 @@ export function LoginClient() {
                     </p>
                   )}
 
-                  <button className="flex items-center justify-center rounded-lg font-bold text-white transition-colors duration-200 mt-2 w-full h-[56px] bg-[#16A34A] shadow-[0px_1px_2px_rgba(0,0,0,0.05)] text-[14px] hover:bg-[#10883c] disabled:opacity-70 disabled:cursor-not-allowed" type="submit" disabled={isLoading}>
-                    {isLoading ? 'Signing in…' : 'Sign In'}
+                  <button className="flex items-center justify-center gap-2 rounded-lg font-bold text-white transition-colors duration-200 mt-2 w-full h-[56px] bg-[#16A34A] shadow-[0px_1px_2px_rgba(0,0,0,0.05)] text-[14px] hover:bg-[#10883c] disabled:opacity-70 disabled:cursor-not-allowed" type="submit" disabled={isLoading}>
+                    {isLoading ? 'Signing in…' : (
+                      <>
+                        Continue to Sign In
+                        <ArrowRight size={18} strokeWidth={2.5} />
+                      </>
+                    )}
                   </button>
 
-                  <p className="border-t border-[#D4D4D4] mt-2 pt-6 flex justify-center text-[14px]">
-                    <span className="text-[#6B7280]">Need a new account?</span> <span className='text-[#16A34A] font-bold'><a href="#" className="font-bold text-[#16A34A] hover:text-[#10883c] hover:underline ml-1">Register here</a></span>
+                  <p className="mt-4 flex justify-center text-[13px]">
+                    <span className="text-[#6B7280]">New to OAN?</span> <span className='text-[#16A34A] font-bold'><a href="#" className="font-bold text-[#16A34A] hover:text-[#10883c] hover:underline ml-1">Register your organisation</a></span>
                   </p>
+
+                  <div className="mt-4 flex flex-col items-center">
+                    <div className="w-full flex items-start gap-3 bg-[#f0fdf4] border border-[#bbf7d0] rounded-xl p-4">
+                      <div className="mt-0.5 text-[#16A34A]">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                      </div>
+                      <p className="text-[13px] text-[#166534] leading-relaxed">
+                        <span className="font-bold">Secured by FaydaPass</span> — All sessions authenticated via Ethiopia National ID (Fayda Auth API)
+                      </p>
+                    </div>
+
+                    <div className="mt-6 flex flex-col items-center w-full">
+                      <span className="text-[#6B7280] text-[12px] mb-3">Partner Banks</span>
+                      <div className="flex flex-wrap justify-center gap-2">
+                        {['CBE', 'Dashen', 'Awash', 'CBO', 'Abyssinia', 'OIB'].map(bank => (
+                          <span key={bank} className="px-4 py-1.5 rounded-full border border-[#bbf7d0] text-[#16A34A] text-[11px] font-bold tracking-wide">
+                            {bank}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </form>
               </div>
             </div>

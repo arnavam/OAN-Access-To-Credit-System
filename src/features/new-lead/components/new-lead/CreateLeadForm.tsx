@@ -58,8 +58,12 @@ export function CreateLeadForm() {
       router.push(response?.lead_id ? `/leads/${response.lead_id}` : '/leads');
     } catch (error) {
       logger.error('Failed to create lead (Backend/System Error):', error);
-      const errorMsg = typeof error === 'string' ? error : (error as Error)?.message || '';
-      if (errorMsg.toLowerCase().includes('already exists')) {
+      const payload = error as { message?: string; details?: Record<string, string> };
+      const phoneFieldError = payload?.details?.phone_number;
+      const errorMsg = payload?.message || (typeof error === 'string' ? error : (error as Error)?.message || '');
+      if (phoneFieldError) {
+        setValidationError(phoneFieldError);
+      } else if (errorMsg.toLowerCase().includes('already exists')) {
         setValidationError(errorMsg);
       } else {
         setShowErrorPopup(true);

@@ -18,12 +18,12 @@ export default function DiscoverLoansClient() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('best_match');
   const [currentPage, setCurrentPage] = useState(1);
-  const entriesPerPage = 8;
+  const [entriesPerPage, setEntriesPerPage] = useState(10);
 
-  // Reset to page 1 when filters change
+  // Reset to page 1 when filters or page size change
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeTab, searchQuery, sortBy]);
+  }, [activeTab, searchQuery, sortBy, entriesPerPage]);
 
   // Apply filtering based on Active Tab and Search Query
   const filteredLoans = allLoans.filter(loan => {
@@ -63,6 +63,7 @@ export default function DiscoverLoansClient() {
   const totalPages = Math.ceil(totalEntries / entriesPerPage) || 1;
   const startIndex = (currentPage - 1) * entriesPerPage;
   const displayLoans = filteredLoans.slice(startIndex, startIndex + entriesPerPage);
+  const visibleCount = displayLoans.length;
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 w-full">
@@ -109,14 +110,16 @@ export default function DiscoverLoansClient() {
           </div>
         )}
 
-        {totalPages > 1 && (
+        {totalEntries > 0 && (
           <div className="mt-2">
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
               totalEntries={totalEntries}
+              visibleCount={visibleCount}
               entriesPerPage={entriesPerPage}
               onPageChange={setCurrentPage}
+              onPageSizeChange={setEntriesPerPage}
             />
           </div>
         )}

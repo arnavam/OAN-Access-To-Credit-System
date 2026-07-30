@@ -12,7 +12,7 @@ interface LeadPaginationProps {
   onPageSizeChange: (size: number) => void;
 }
 
-function LeadPagination({ filteredCount, safePage, totalPages, onPageChange, pageSize, onPageSizeChange }: LeadPaginationProps) {
+function LeadPagination({ visibleCount, filteredCount, safePage, totalPages, onPageChange, pageSize, onPageSizeChange }: LeadPaginationProps) {
   const pages = Array.from({ length: Math.min(3, totalPages) }, (_, i) => i + 1);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -33,42 +33,45 @@ function LeadPagination({ filteredCount, safePage, totalPages, onPageChange, pag
 
   return (
     <div className="flex flex-col xl:flex-row items-center justify-center xl:justify-between gap-4 md:gap-6 border-t border-[#F1F3F4] bg-white px-4 sm:px-8 py-5">
-      <div className="text-sm sm:text-base text-gray-400 font-medium flex flex-wrap items-center justify-center shrink-0 text-center">
-        <span className="whitespace-nowrap">Showing</span>
-        <div className="mx-2 relative" ref={dropdownRef}>
-          <button
-            type="button"
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="flex items-center justify-between gap-3 rounded border border-gray-200 px-4 py-1.5 text-gray-700 bg-white shadow-sm font-semibold outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 cursor-pointer transition-all hover:bg-gray-50 active:scale-95"
-          >
-            {pageSize}
-            <svg className={`h-4 w-4 fill-current text-gray-500 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-              <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
-            </svg>
-          </button>
-
-          {isDropdownOpen && (
-            <div className="absolute left-0 bottom-[calc(100%+4px)] z-50 w-full min-w-[80px] rounded-md border border-gray-200 bg-white shadow-lg origin-bottom animate-in fade-in slide-in-from-bottom-2 duration-200 overflow-hidden">
-              {[10, 20, 50, 100].map((size) => (
-                <button
-                  key={size}
-                  type="button"
-                  onClick={() => {
-                    onPageSizeChange(size);
-                    setIsDropdownOpen(false);
-                  }}
-                  className={`w-full text-left px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-gray-50 ${pageSize === size ? 'text-[#16A34A] bg-green-50/50' : 'text-gray-700'}`}
-                >
-                  {size}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-        <span className="whitespace-nowrap">of {filteredCount.toLocaleString()} entries</span>
+      {/* Left: record count */}
+      <div className="text-sm sm:text-base text-gray-400 font-medium shrink-0 order-1">
+        <span className="whitespace-nowrap">Showing <span className="font-semibold text-gray-700">{visibleCount}</span> of <span className="font-semibold text-gray-700">{filteredCount.toLocaleString()}</span> records</span>
       </div>
 
-      <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 w-full xl:w-auto">
+      {/* Center: page size dropdown — stacks below on mobile */}
+      <div className="relative order-3 xl:order-2" ref={dropdownRef}>
+        <button
+          type="button"
+          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+          className="flex items-center justify-between gap-3 rounded border border-gray-200 px-4 py-1.5 text-gray-700 bg-white shadow-sm font-semibold outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 cursor-pointer transition-all hover:bg-gray-50 active:scale-95 text-sm sm:text-base"
+        >
+          {pageSize}
+          <svg className={`h-4 w-4 fill-current text-gray-500 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+            <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+          </svg>
+        </button>
+
+        {isDropdownOpen && (
+          <div className="absolute left-0 bottom-[calc(100%+4px)] z-50 w-full min-w-[80px] rounded-md border border-gray-200 bg-white shadow-lg origin-bottom animate-in fade-in slide-in-from-bottom-2 duration-200 overflow-hidden">
+            {[10, 20, 50, 100].map((size) => (
+              <button
+                key={size}
+                type="button"
+                onClick={() => {
+                  onPageSizeChange(size);
+                  setIsDropdownOpen(false);
+                }}
+                className={`w-full text-left px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-gray-50 ${pageSize === size ? 'text-[#16A34A] bg-green-50/50' : 'text-gray-700'}`}
+              >
+                {size}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Right: page navigation */}
+      <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 w-full xl:w-auto order-2 xl:order-3">
         <button
           type="button"
           disabled={safePage === 1}

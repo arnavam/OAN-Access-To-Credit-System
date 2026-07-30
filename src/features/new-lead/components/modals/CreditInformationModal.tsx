@@ -103,7 +103,7 @@ export function CreditInformationModal({ isOpen, onClose, onSubmit }: CreditInfo
     setError(null);
   };
 
-  const productOptions = products.map((p) => p.product_name);
+  const productOptions = [...new Set(products.map((p) => p.product_name))];
 
   const modalContent = (
     <>

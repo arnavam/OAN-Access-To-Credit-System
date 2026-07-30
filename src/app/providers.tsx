@@ -16,7 +16,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     store.dispatch(getMeThunk());
 
     if (process.env.NEXT_PUBLIC_API_MOCKING === 'true') {
-      import('@/mocks/browser').then(({ worker }) => {
+      import('@/lib/mocks/browser').then(({ worker }) => {
         worker.start({
           onUnhandledRequest: 'bypass', // ignore requests to unmocked endpoints
         }).then(() => {

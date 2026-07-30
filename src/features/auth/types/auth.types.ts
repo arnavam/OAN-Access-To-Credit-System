@@ -1,7 +1,18 @@
 import type { RawUserResponse } from '@/features/auth/api/authApi';
+import { logger } from '@/lib/logger';
+
+// User-facing message for any malformed auth payload. The specific missing
+// field is written to the logger (for Sentry/debugging), never surfaced to the
+// user — a raw "missing bank_id field" string is meaningless to them.
+const AUTH_CONTRACT_ERROR = 'We could not sign you in due to an account setup issue. Please contact support.';
+
+function throwContractViolation(detail: string): never {
+  logger.error(`[Auth Contract Violation] ${detail}`);
+  throw new Error(AUTH_CONTRACT_ERROR);
+}
 
 export type User =
-  | { kind: 'bank_admin'; email: string; name: string; bankId: string; bankCode: string; bankName: string; bankStatus: 'Onboarding' | 'Active' | 'Suspended' }
+  | { kind: 'bank_admin'; email: string; name: string; bankId: string | null; bankCode: string | null; bankName: string | null; bankStatus: 'Onboarding' | 'Active' | 'Suspended' | null }
   | { kind: 'bank_agent'; email: string; name: string; bankId: string; bankCode: string; bankName: string; bankStatus: 'Onboarding' | 'Active' | 'Suspended' }
   | { kind: 'dev_agent'; email: string; name: string }
   | { kind: 'marketplace'; email: string; name: string }
@@ -32,17 +43,19 @@ export function classifyUser(raw: RawUserResponse): User {
 
   switch (user_type) {
     case 'bank_admin':
-      if (!bankId) throw new Error('Bank Admin user is missing bank_id field');
-      if (!bankCode) throw new Error('Bank Admin user is missing bank_code field');
-      if (!resolvedBankName) throw new Error('Bank Admin user is missing bank_name field');
-      if (!bankStatus) throw new Error('Bank Admin user is missing bank_status field');
-      return { kind: 'bank_admin', email, name, bankId, bankCode, bankName: resolvedBankName, bankStatus };
-    case 'bank_agent':
-      if (!bankId) throw new Error('Bank Agent user is missing bank_id field');
-      if (!bankCode) throw new Error('Bank Agent user is missing bank_code field');
-      if (!resolvedBankName) throw new Error('Bank Agent user is missing bank_name field');
-      if (!bankStatus) throw new Error('Bank Agent user is missing bank_status field');
-      return { kind: 'bank_agent', email, name, bankId, bankCode, bankName: resolvedBankName, bankStatus };
+      return { kind: 'bank_admin', email, name, bankId: bankId ?? null, bankCode: bankCode ?? null, bankName: resolvedBankName ?? null, bankStatus: bankStatus ?? null };
+    case 'bank_agent': {
+      const missing = [
+        !bankId && 'bank_id',
+        !bankCode && 'bank_code',
+        !resolvedBankName && 'bank_name',
+        !bankStatus && 'bank_status',
+      ].filter(Boolean);
+      if (missing.length > 0) {
+        throwContractViolation(`Bank Agent "${email}" is missing required field(s): ${missing.join(', ')}`);
+      }
+      return { kind: 'bank_agent', email, name, bankId: bankId!, bankCode: bankCode!, bankName: resolvedBankName!, bankStatus: bankStatus! };
+    }
     case 'dev_agent':
       return { kind: 'dev_agent', email, name };
     case 'marketplace':
@@ -50,6 +63,6 @@ export function classifyUser(raw: RawUserResponse): User {
     case 'farmer':
       return { kind: 'farmer', email, name };
     default:
-      throw new Error(`Unrecognized user_type from API: ${user_type}`);
+      throwContractViolation(`Unrecognized user_type from API: ${user_type}`);
   }
 }

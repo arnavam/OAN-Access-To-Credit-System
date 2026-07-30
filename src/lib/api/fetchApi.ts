@@ -128,6 +128,13 @@ export async function fetchApi(path: string, options: RequestInit = {}) {
       } catch (e) {
         // ignore
       }
+    } else if (responseData?.message?.details && typeof responseData.message.details === 'object') {
+      const detailValues = Object.values(responseData.message.details).filter(Boolean);
+      if (detailValues.length > 0) {
+        errorMsg = detailValues.join('. ');
+      } else if (responseData?.message?.message) {
+        errorMsg = responseData.message.message;
+      }
     } else if (responseData?.message?.message) {
       errorMsg = responseData.message.message;
     } else if (responseData?.message) {
@@ -138,7 +145,14 @@ export async function fetchApi(path: string, options: RequestInit = {}) {
 
   // Handle "200 OK" application-level errors
   if (responseData?.message?.status === 'error') {
-    throw new ApiError(responseData.message.message || 'Application Error', responseData);
+    let errorMsg = responseData.message.message || 'Application Error';
+    if (responseData.message.details && typeof responseData.message.details === 'object') {
+      const detailValues = Object.values(responseData.message.details).filter(Boolean);
+      if (detailValues.length > 0) {
+        errorMsg = detailValues.join('. ');
+      }
+    }
+    throw new ApiError(errorMsg, responseData);
   }
 
   return responseData?.message ?? responseData;

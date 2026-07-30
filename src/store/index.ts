@@ -14,6 +14,8 @@ import { sellerTeamReducer } from '../features/seller/store/teamSlice';
 import { ApiErrorCode } from '../lib/api/apiErrors';
 
 
+import { notificationReducer } from '../features/notifications/store/notificationSlice';
+
 const storageMiddleware: Middleware = (store) => (next) => (action) => {
   const result = next(action);
   const unknownAction = action as UnknownAction;
@@ -79,6 +81,7 @@ const appReducer = combineReducers({
   sellerProducts: sellerProductsReducer,
   sellerOnboarding: sellerOnboardingReducer,
   sellerTeam: sellerTeamReducer,
+  notifications: notificationReducer,
 });
 
 const rootReducer = (state: ReturnType<typeof appReducer> | undefined, action: UnknownAction) => {

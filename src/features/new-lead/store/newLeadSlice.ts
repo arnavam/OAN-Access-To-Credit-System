@@ -243,7 +243,11 @@ export const submitNewLeadThunk = createAsyncThunk<
 
       return await newLeadService.createLead(payload);
     } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Unknown Cause: Failed to create lead');
+      if (error instanceof ApiError) {
+        const details = (error.responseData as { message?: { details?: Record<string, string> } })?.message?.details;
+        if (details) return rejectWithValue({ message: error.message, details });
+      }
+      return rejectWithValue({ message: error instanceof Error ? error.message : 'Unknown Cause: Failed to create lead' });
     }
   }
 );

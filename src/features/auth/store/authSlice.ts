@@ -80,12 +80,15 @@ const authSlice = createSlice({
         state.error = (action.payload as string) ?? 'Something went wrong.';
       })
       .addCase(getMeThunk.pending, (state) => {
+        state.status = 'loading';
         state.error = null;
       })
       .addCase(getMeThunk.fulfilled, (state, action: PayloadAction<User>) => {
+        state.status = 'succeeded';
         state.user = action.payload;
       })
       .addCase(getMeThunk.rejected, (state) => {
+        state.status = 'failed';
         state.user = null;
       });
   },

@@ -18,7 +18,6 @@ export function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProp
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    // Simulate API call
     setTimeout(() => {
       setIsSubmitting(false);
       setIsSuccess(true);
@@ -29,7 +28,6 @@ export function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProp
     <Portal>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[420px] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
-          {/* Header */}
           <div className="flex items-center justify-between p-5 border-b border-[#E5E7EB]">
             <h2 className="text-[18px] font-bold text-[#1F2937]">Forgot Password</h2>
             <button
@@ -40,7 +38,6 @@ export function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProp
             </button>
           </div>
 
-          {/* Body */}
           <div className="p-6">
             {isSuccess ? (
               <div className="text-center py-4">

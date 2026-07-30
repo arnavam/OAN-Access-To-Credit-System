@@ -83,6 +83,8 @@ export interface GetLoansParams {
   to_date?: string;
   location?: string;
   lead_id?: string;
+  sort_by?: 'loan_amount' | 'creation';
+  sort_order?: 'asc' | 'desc';
 }
 
 export interface BrowseProductsParams {

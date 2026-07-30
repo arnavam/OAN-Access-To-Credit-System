@@ -14,8 +14,8 @@ import {
 } from '@/features/seller/store/loanProductsSlice';
 import type { CreateLoanProductCompoundInput, CreateLoanProductPayload } from '@/features/seller/types/loan-products.types';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { Loader2, Package, Plus, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { CheckCircle2, Image as ImageIcon, Loader2, Package, Plus, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 interface AddLoanProductModalProps {
   isOpen: boolean;
@@ -61,6 +61,8 @@ export function AddLoanProductModal({ isOpen, onClose }: AddLoanProductModalProp
   const [selectedAttributeTermIds, setSelectedAttributeTermIds] = useState<string[]>([]);
   const [isSuccess, setIsSuccess] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -71,6 +73,7 @@ export function AddLoanProductModal({ isOpen, onClose }: AddLoanProductModalProp
       setSelectedAttributeTermIds([]);
       setIsSuccess(false);
       setLocalError(null);
+      setImagePreview(null);
       dispatch(clearMutationError());
     }
   }, [dispatch, isOpen]);
@@ -80,6 +83,21 @@ export function AddLoanProductModal({ isOpen, onClose }: AddLoanProductModalProp
       setSelectedAttributeTermIds((prev) => prev.filter((id) => id !== termId));
     } else {
       setSelectedAttributeTermIds((prev) => [...prev, termId]);
+    }
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setLocalError('Image size must be less than 5MB.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -99,12 +117,11 @@ export function AddLoanProductModal({ isOpen, onClose }: AddLoanProductModalProp
     setLocalError(null);
     setIsSuccess(false);
 
-    // Group selected attributes by their backend slug/taxonomy key
+    // Dynamic grouping of selected attributes by taxonomy key/slug
     const attributesPayload: Record<string, string[]> = {};
     selectedAttributeTermIds.forEach((termId) => {
       const matched = fetchedAttributes.find((attr) => attr.term_id === termId);
       if (matched) {
-        // Fallback to term_id if slug is not defined
         const taxonomyKey = matched.slug || matched.term_id;
         if (!attributesPayload[taxonomyKey]) {
           attributesPayload[taxonomyKey] = [];
@@ -165,7 +182,6 @@ export function AddLoanProductModal({ isOpen, onClose }: AddLoanProductModalProp
       ? fetchedTags.map((t) => ({ term_id: t.term_id, term_name: t.term_name }))
       : undefined;
 
-  // Filter out terms prefixed with Category_ or Tag_ just in case mock backend terms bleed over
   const realAttributes = fetchedAttributes?.filter(
     (attr) => !attr.term_name.startsWith('Tag_') && !attr.term_name.startsWith('Category_')
   );
@@ -173,7 +189,7 @@ export function AddLoanProductModal({ isOpen, onClose }: AddLoanProductModalProp
   return (
     <Portal>
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-        <div className="flex max-h-[90vh] w-full max-w-[700px] flex-col overflow-hidden rounded-xl bg-white shadow-xl animate-in zoom-in-95 duration-200">
+        <div className="flex max-h-[92vh] w-full max-w-[620px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl animate-in zoom-in-95 duration-200">
           {isSuccess ? (
             <LoanProductCreatedSuccess
               onDone={() => {
@@ -184,14 +200,14 @@ export function AddLoanProductModal({ isOpen, onClose }: AddLoanProductModalProp
           ) : (
             <>
               {/* Header */}
-              <div className="flex items-center justify-between border-b border-[#E5E7EB] p-6">
-                <div className="flex items-center space-x-4">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#E6F9F3]">
-                    <Package className="h-6 w-6 text-[#00C48C]" />
+              <div className="flex items-center justify-between border-b border-gray-100 p-6">
+                <div className="flex items-center space-x-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 border border-emerald-100">
+                    <Package className="h-5 w-5 text-[#16A34A]" />
                   </div>
                   <div>
-                    <h2 className="text-[18px] font-bold text-[#1F2937]">New Loan Product</h2>
-                    <p className="text-[14px] text-[#6B7280]">
+                    <h2 className="text-lg font-bold text-gray-900">New Loan Product</h2>
+                    <p className="text-xs text-gray-500">
                       Products you create are published immediately as Active.
                     </p>
                   </div>
@@ -202,28 +218,74 @@ export function AddLoanProductModal({ isOpen, onClose }: AddLoanProductModalProp
                   className="rounded-full p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
                   aria-label="Close create loan product modal"
                 >
-                  <X size={24} />
+                  <X size={20} />
                 </button>
               </div>
 
               {/* Form Body */}
-              <div className="flex-1 space-y-6 overflow-y-auto p-6">
-                <div className="space-y-1.5">
-                  <label className="text-[14px] font-bold text-[#1F2937]">
-                    Product Name <span className="text-red-500">*</span>
+              <div className="flex-1 space-y-5 overflow-y-auto p-6">
+                
+                {/* Product Image Dropzone */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-900 mb-1.5">
+                    Product Image <span className="text-red-500">*</span>
                   </label>
                   <input
-                    type="text"
-                    value={form.productName}
-                    onChange={(event) => setForm((current) => ({ ...current, productName: event.target.value }))}
-                    placeholder="Enter Product Name"
-                    className="w-full rounded-lg border border-[#D1D5DB] px-4 py-2.5 text-[14px] focus:border-[#00C48C] focus:outline-none focus:ring-2 focus:ring-[#00C48C]"
+                    type="file"
+                    ref={fileInputRef}
+                    accept="image/png, image/jpeg, image/jpg"
+                    className="hidden"
+                    onChange={handleImageSelect}
                   />
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50/50 p-6 text-center transition-colors hover:bg-gray-50 cursor-pointer"
+                  >
+                    {imagePreview ? (
+                      <div className="relative w-full h-32 rounded-xl overflow-hidden">
+                        <img src={imagePreview} alt="Product Preview" className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setImagePreview(null);
+                          }}
+                          className="absolute top-2 right-2 p-1 bg-black/60 text-white rounded-full hover:bg-black/80"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm border border-gray-100 text-gray-400">
+                          <ImageIcon className="h-5 w-5" />
+                        </div>
+                        <p className="text-xs font-semibold text-gray-700">
+                          Drag and drop an image, or click to upload
+                        </p>
+                        <p className="text-[11px] text-gray-400 mt-1">PNG, JPG up to 5MB</p>
+                      </>
+                    )}
+                  </div>
                 </div>
 
+                {/* 2-Column Fields Grid */}
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <label className="text-[14px] font-bold text-[#1F2937]">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-900 mb-1.5">
+                      Product Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={form.productName}
+                      onChange={(e) => setForm((curr) => ({ ...curr, productName: e.target.value }))}
+                      placeholder="Enter Product Name"
+                      className="w-full rounded-xl border border-gray-300 px-3.5 py-2 text-xs text-gray-900 focus:border-[#16A34A] focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-900 mb-1.5">
                       Loan Type <span className="text-red-500">*</span>
                     </label>
                     <LoanTypeDropdown
@@ -234,153 +296,158 @@ export function AddLoanProductModal({ isOpen, onClose }: AddLoanProductModalProp
                       onChange={setSelectedCategoryTermIds}
                     />
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[14px] font-bold text-[#1F2937]">
-                      Loan Tags
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-900 mb-1.5">
+                      Tags <span className="text-red-500">*</span>
                     </label>
                     <LoanTypeDropdown
                       selectedTypes={selectedTagTermIds}
                       options={tagOptions}
-                      placeholder="Select Loan Tags"
+                      placeholder="Select Tags"
                       onChange={setSelectedTagTermIds}
                     />
                   </div>
-                </div>
 
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <label className="text-[14px] font-bold text-[#1F2937]">
-                      Interest rate (% p.a.) <span className="text-red-500">*</span>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-900 mb-1.5">
+                      Tenure (months) <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="number"
-                      min="0"
-                      step="0.01"
-                      value={form.minInterestRate}
-                      onChange={(event) => setForm((current) => ({ ...current, minInterestRate: event.target.value }))}
-                      placeholder="Enter Interest rate (% p.a.)"
-                      className="w-full rounded-lg border border-[#D1D5DB] px-4 py-2.5 text-[14px] focus:border-[#00C48C] focus:outline-none focus:ring-2 focus:ring-[#00C48C]"
+                      min="1"
+                      value={form.tenureMonths}
+                      onChange={(e) => setForm((curr) => ({ ...curr, tenureMonths: e.target.value }))}
+                      placeholder="Enter Tenure (months)"
+                      className="w-full rounded-xl border border-gray-300 px-3.5 py-2 text-xs text-gray-900 focus:border-[#16A34A] focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20"
                     />
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[14px] font-bold text-[#1F2937]">Max interest rate (% p.a.)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={form.maxInterestRate}
-                      onChange={(event) => setForm((current) => ({ ...current, maxInterestRate: event.target.value }))}
-                      placeholder="Optional"
-                      className="w-full rounded-lg border border-[#D1D5DB] px-4 py-2.5 text-[14px] focus:border-[#00C48C] focus:outline-none focus:ring-2 focus:ring-[#00C48C]"
-                    />
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <label className="text-[14px] font-bold text-[#1F2937]">Min amount (ETB)</label>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-900 mb-1.5">
+                      Minimum Interest Rate (%) <span className="text-red-500">*</span>
+                    </label>
                     <input
                       type="number"
-                      min="0"
-                      step="1"
-                      value={form.minAmount}
-                      onChange={(event) => setForm((current) => ({ ...current, minAmount: event.target.value }))}
-                      placeholder="Enter Min amount (ETB)"
-                      className="w-full rounded-lg border border-[#D1D5DB] px-4 py-2.5 text-[14px] focus:border-[#00C48C] focus:outline-none focus:ring-2 focus:ring-[#00C48C]"
+                      step="0.1"
+                      value={form.minInterestRate}
+                      onChange={(e) => setForm((curr) => ({ ...curr, minInterestRate: e.target.value }))}
+                      placeholder="Enter Interest rate (% p.a.)"
+                      className="w-full rounded-xl border border-gray-300 px-3.5 py-2 text-xs text-gray-900 focus:border-[#16A34A] focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20"
                     />
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[14px] font-bold text-[#1F2937]">
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-900 mb-1.5">
+                      Maximum Interest Rate (%)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={form.maxInterestRate}
+                      onChange={(e) => setForm((curr) => ({ ...curr, maxInterestRate: e.target.value }))}
+                      placeholder="Enter Interest rate (% p.a.)"
+                      className="w-full rounded-xl border border-gray-300 px-3.5 py-2 text-xs text-gray-900 focus:border-[#16A34A] focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-900 mb-1.5">
+                      Min amount (ETB)
+                    </label>
+                    <input
+                      type="number"
+                      value={form.minAmount}
+                      onChange={(e) => setForm((curr) => ({ ...curr, minAmount: e.target.value }))}
+                      placeholder="Enter Min amount (ETB)"
+                      className="w-full rounded-xl border border-gray-300 px-3.5 py-2 text-xs text-gray-900 focus:border-[#16A34A] focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-900 mb-1.5">
                       Max amount (ETB) <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="number"
-                      min="0"
-                      step="1"
                       value={form.maxAmount}
-                      onChange={(event) => setForm((current) => ({ ...current, maxAmount: event.target.value }))}
+                      onChange={(e) => setForm((curr) => ({ ...curr, maxAmount: e.target.value }))}
                       placeholder="Enter Max amount (ETB)"
-                      className="w-full rounded-lg border border-[#D1D5DB] px-4 py-2.5 text-[14px] focus:border-[#00C48C] focus:outline-none focus:ring-2 focus:ring-[#00C48C]"
+                      className="w-full rounded-xl border border-gray-300 px-3.5 py-2 text-xs text-gray-900 focus:border-[#16A34A] focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-[14px] font-bold text-[#1F2937]">
-                    Tenure (months) <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    step="1"
-                    value={form.tenureMonths}
-                    onChange={(event) => setForm((current) => ({ ...current, tenureMonths: event.target.value }))}
-                    placeholder="Enter Tenure (months)"
-                    className="w-full rounded-lg border border-[#D1D5DB] px-4 py-2.5 text-[14px] focus:border-[#00C48C] focus:outline-none focus:ring-2 focus:ring-[#00C48C]"
+                {/* Description */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-900 mb-1.5">Description</label>
+                  <textarea
+                    rows={3}
+                    value={form.description}
+                    onChange={(e) => setForm((curr) => ({ ...curr, description: e.target.value }))}
+                    placeholder="Provide a brief description of this product for farmers."
+                    className="w-full rounded-xl border border-gray-300 px-3.5 py-2 text-xs text-gray-900 focus:border-[#16A34A] focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20"
                   />
                 </div>
 
-                {/* Attributes Selection */}
-                <div className="space-y-3 pt-2">
-                  <h3 className="text-[15px] font-bold text-[#1F2937]">
-                    Eligibility Attributes
+                {/* Dynamic Eligibility Attributes Section */}
+                <div className="pt-2">
+                  <h3 className="text-xs font-bold text-gray-900 mb-3">
+                    Eligibility Criteria &mdash; Auto-applied to consented profiles
                   </h3>
                   {realAttributes && realAttributes.length > 0 ? (
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                      {realAttributes.map((attr) => {
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      {realAttributes.map((attr, idx) => {
                         const isSelected = selectedAttributeTermIds.includes(attr.term_id);
+                        // Dynamic color themes for attributes
+                        const theme = idx % 3 === 0
+                          ? 'bg-[#FEFCE8] border-[#FEF08A] text-[#854D0E] subtext-[#A16207]'
+                          : idx % 3 === 1
+                          ? 'bg-[#F0FDF4] border-[#BBF7D0] text-[#166534] subtext-[#15803D]'
+                          : 'bg-[#FAF5FF] border-[#E9D5FF] text-[#6B21A8] subtext-[#7E22CE]';
+
+                        const bgClass = isSelected ? `${theme.split(' ')[0]} ${theme.split(' ')[1]}` : 'bg-white border-gray-200 opacity-70 hover:opacity-100';
+
                         return (
                           <div
                             key={attr.term_id}
-                            className={`cursor-pointer rounded-xl border-2 p-4 transition-all duration-200 ${
-                              isSelected
-                                ? 'scale-[1.02] border-[#00C48C] bg-[#E6F9F3] shadow-sm'
-                                : 'border-gray-200 bg-white opacity-70 hover:border-gray-300 hover:opacity-100'
-                            }`}
                             onClick={() => toggleAttribute(attr.term_id)}
+                            className={`cursor-pointer rounded-xl border-2 p-3.5 transition-all duration-200 ${bgClass}`}
                           >
-                            <div className={`text-[14px] font-bold ${isSelected ? 'text-[#00C48C]' : 'text-gray-700'}`}>
-                              {attr.term_name}
+                            <div className="flex items-center justify-between">
+                              <p className={`text-xs font-bold ${isSelected ? theme.split(' ')[2] : 'text-gray-700'}`}>
+                                {attr.term_name}
+                              </p>
+                              {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-[#16A34A]" />}
                             </div>
-                            {attr.slug ? (
-                              <div className="mt-1 font-mono text-[12px] text-gray-500 opacity-80">
+                            {attr.slug && (
+                              <p className={`text-xs font-mono mt-1 ${isSelected ? theme.split(' ')[3] : 'text-gray-400'}`}>
                                 {attr.slug}
-                              </div>
-                            ) : null}
+                              </p>
+                            )}
                           </div>
                         );
                       })}
                     </div>
                   ) : (
-                    <p className="text-[13px] text-gray-500 italic">No eligibility attributes configured.</p>
+                    <p className="text-xs text-gray-500 italic">No eligibility criteria attributes configured.</p>
                   )}
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-[14px] font-bold text-[#1F2937]">Description</label>
-                  <textarea
-                    value={form.description}
-                    onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
-                    placeholder="Optional product description"
-                    rows={3}
-                    className="w-full rounded-lg border border-[#D1D5DB] px-4 py-2.5 text-[14px] focus:border-[#00C48C] focus:outline-none focus:ring-2 focus:ring-[#00C48C]"
-                  />
-                </div>
-
                 {localError || mutationError ? (
-                  <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-[14px] text-red-700">
+                  <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700 font-medium">
                     {localError ?? mutationError}
                   </div>
                 ) : null}
               </div>
 
               {/* Footer */}
-              <div className="flex items-center justify-end gap-4 border-t border-[#E5E7EB] p-6">
+              <div className="flex items-center justify-end gap-3 border-t border-gray-100 p-6 bg-white">
                 <button
                   type="button"
                   onClick={onClose}
                   disabled={isSubmitting}
-                  className="rounded-lg border border-[#D1D5DB] px-6 py-2.5 text-[14px] font-bold text-[#374151] transition-colors hover:bg-gray-50 disabled:opacity-50"
+                  className="rounded-xl border border-gray-300 px-6 py-2.5 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -388,9 +455,9 @@ export function AddLoanProductModal({ isOpen, onClose }: AddLoanProductModalProp
                   type="button"
                   onClick={handleCreatePublish}
                   disabled={isSubmitting}
-                  className="flex min-w-[170px] items-center justify-center gap-2 rounded-lg bg-[#16A34A] px-6 py-2.5 text-[14px] font-bold text-white shadow-sm transition-colors hover:bg-[#15803d] disabled:cursor-not-allowed disabled:opacity-80"
+                  className="flex items-center justify-center gap-2 rounded-xl bg-[#16A34A] px-6 py-2.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-[#15803d] disabled:cursor-not-allowed disabled:opacity-80"
                 >
-                  {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <Plus size={18} strokeWidth={2.5} />}
+                  {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} strokeWidth={2.5} />}
                   <span>{isSubmitting ? 'Publishing...' : 'Create & Publish'}</span>
                 </button>
               </div>

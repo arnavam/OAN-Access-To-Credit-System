@@ -20,10 +20,10 @@ export const teamService = {
     }) as Promise<ApiResponse<{ message: string }>>;
   },
 
-  async deactivateUser(email: string): Promise<ApiResponse<{ message: string }>> {
-    return fetchApi('oan_a2c.api.v1.seller.onboarding.deactivate_user', {
+  async setUserStatus(payload: { email: string; enabled: boolean }): Promise<ApiResponse<{ message: string }>> {
+    return fetchApi('oan_a2c.api.v1.seller.onboarding.set_user_status', {
       method: 'POST',
-      body: JSON.stringify({ email }),
+      body: JSON.stringify(payload),
     }) as Promise<ApiResponse<{ message: string }>>;
   },
 

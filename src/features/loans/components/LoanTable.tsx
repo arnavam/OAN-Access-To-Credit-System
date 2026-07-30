@@ -1,14 +1,17 @@
 'use client';
 
-import { selectLeadStatusesOptions } from '@/features/new-lead/store/newLeadSlice';
+import { selectLeadStatusesOptions, selectLoanTypesOptions } from '@/features/new-lead/store/newLeadSlice';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { Check, Eye, Filter } from 'lucide-react';
+import { Check, Eye, Filter, Phone } from 'lucide-react';
 import { memo, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
-    selectActivityPage, selectPagedRows, selectPageSize, selectTableStatusFilters,
+    selectActivityPage, selectAdvancedFilters, selectLoanSortBy, selectLoanSortOrder, selectPagedRows, selectPageSize,
+    selectTableStatusFilters, selectTableTypeFilters,
     setActivityPage,
-    setPageSize,
-    setTableStatusFilters
+    setAdvancedFilters, setPageSize,
+    setTableStatusFilters,
+    setTableTypeFilters
 } from '../store/loanDashboardSlice';
 import LoanEmptyState from './LoanEmptyState';
 
@@ -37,96 +40,106 @@ interface LoanTableProps {
   totalCount?: number;
 }
 
-const AVATAR_BG_PALETTE = [
-  'bg-[#E6F9F3] text-[#00C48C]',
-  'bg-blue-100 text-blue-600',
-  'bg-amber-100 text-amber-600',
-  'bg-purple-100 text-purple-600',
-  'bg-pink-100 text-pink-600',
-];
-
-function getStatusStyle(status: string) {
-  const s = status.toLowerCase();
-  if (s === 'draft' || s.includes('pending')) {
-    return {
-      label: 'Pending',
-      badge: 'bg-amber-50 text-amber-700 border-amber-200',
-      dot: 'bg-amber-500',
-    };
-  }
-  if (s === 'processing' || s.includes('review') || s.includes('underwriting')) {
-    return {
-      label: 'In Review',
-      badge: 'bg-blue-50 text-blue-700 border-blue-200',
-      dot: 'bg-blue-500',
-    };
-  }
-  if (s === 'approved' || s.includes('granted')) {
-    return {
-      label: 'Approved',
-      badge: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-      dot: 'bg-emerald-500',
-    };
-  }
-  if (s === 'rejected') {
-    return {
-      label: 'Rejected',
-      badge: 'bg-red-50 text-red-700 border-red-200',
-      dot: 'bg-red-500',
-    };
-  }
-  return {
-    label: status,
-    badge: 'bg-gray-50 text-gray-700 border-gray-200',
-    dot: 'bg-gray-400',
-  };
-}
+const RANGE_STEPS = [
+  { label: '0 - 25,000', value: '0-25000', min: 0, max: 25000, display: 'ETB 25000' },
+  { label: '25,001 - 50,000', value: '25001-50000', min: 25001, max: 50000, display: 'ETB 50000' },
+  { label: '50,001 - 1,00,000', value: '50001-100000', min: 50001, max: 100000, display: 'ETB 100000' },
+  { label: '1,00,000 and above', value: '100000+', min: 100001, max: 10000000, display: 'ETB 350000' },
+  { label: 'All Amounts', value: '', min: null, max: null, display: 'All Amounts' },
+] as const;
 
 const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
   const dispatch = useAppDispatch();
   const rows: LoanTableRow[] = useAppSelector(selectPagedRows);
   const statusOptions = useAppSelector(selectLeadStatusesOptions);
+  const loanTypeOptions = useAppSelector(selectLoanTypesOptions);
+
   const selectedStatuses = useAppSelector(selectTableStatusFilters);
+  const selectedLoanTypes = useAppSelector(selectTableTypeFilters);
+  const currentAdvancedFilters = useAppSelector(selectAdvancedFilters);
 
   const currentPage = useAppSelector(selectActivityPage);
   const pageSize = useAppSelector(selectPageSize);
+  const sortBy = useAppSelector(selectLoanSortBy);
+  const sortOrder = useAppSelector(selectLoanSortOrder);
 
   const [statusFilterOpen, setStatusFilterOpen] = useState(false);
+  const [loanTypeFilterOpen, setLoanTypeFilterOpen] = useState(false);
+  const [amountFilterOpen, setAmountFilterOpen] = useState(false);
+  const [dateFilterOpen, setDateFilterOpen] = useState(false);
+
   const [localStatuses, setLocalStatuses] = useState<string[]>([]);
+  const [localLoanTypes, setLocalLoanTypes] = useState<string[]>([]);
+  const [tempAmountIndex, setTempAmountIndex] = useState<number>(4);
+  const [tempQuickDate, setTempQuickDate] = useState<string>('');
+  const [tempDateFrom, setTempDateFrom] = useState<string>(currentAdvancedFilters.dateFrom || '');
+  const [tempDateTo, setTempDateTo] = useState<string>(currentAdvancedFilters.dateTo || '');
+
   const statusRef = useRef<HTMLButtonElement>(null);
+  const loanTypeRef = useRef<HTMLButtonElement>(null);
+  const amountRef = useRef<HTMLButtonElement>(null);
+  const dateRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (statusFilterOpen) setLocalStatuses(selectedStatuses);
   }, [statusFilterOpen, selectedStatuses]);
 
   useEffect(() => {
+    if (loanTypeFilterOpen) setLocalLoanTypes(selectedLoanTypes);
+  }, [loanTypeFilterOpen, selectedLoanTypes]);
+
+  useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       const target = e.target as Node;
       if ((target as Element).closest?.('.loan-filter-popup')) return;
       if (statusRef.current && !statusRef.current.contains(target)) setStatusFilterOpen(false);
+      if (loanTypeRef.current && !loanTypeRef.current.contains(target)) setLoanTypeFilterOpen(false);
+      if (amountRef.current && !amountRef.current.contains(target)) setAmountFilterOpen(false);
+      if (dateRef.current && !dateRef.current.contains(target)) setDateFilterOpen(false);
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const toggleLocalStatus = (val: string) => {
-    setLocalStatuses((prev) => (prev.includes(val) ? prev.filter((s) => s !== val) : [...prev, val]));
+  const toggleLocalStatus = (val: string) =>
+    setLocalStatuses(prev => prev.includes(val) ? prev.filter(s => s !== val) : [...prev, val]);
+
+  const toggleLocalLoanType = (val: string) =>
+    setLocalLoanTypes(prev => prev.includes(val) ? prev.filter(s => s !== val) : [...prev, val]);
+
+  const handleApplyStatus = () => { dispatch(setTableStatusFilters(localStatuses)); setStatusFilterOpen(false); };
+  const handleApplyLoanType = () => { dispatch(setTableTypeFilters(localLoanTypes)); setLoanTypeFilterOpen(false); };
+
+  const handleApplyAmount = (idx: number) => {
+    setTempAmountIndex(idx);
+    const range = RANGE_STEPS[idx];
+    dispatch(setAdvancedFilters({
+      ...currentAdvancedFilters,
+      minLoan: range ? range.min : null,
+      maxLoan: range ? range.max : null,
+    }));
+    setAmountFilterOpen(false);
   };
 
-  const handleApplyStatus = () => {
-    dispatch(setTableStatusFilters(localStatuses));
-    setStatusFilterOpen(false);
+  const handleApplyDate = () => {
+    dispatch(setAdvancedFilters({
+      ...currentAdvancedFilters,
+      dateFrom: tempDateFrom,
+      dateTo: tempDateTo,
+    }));
+    setDateFilterOpen(false);
   };
 
-  const handleClearStatus = () => {
-    setLocalStatuses([]);
-    dispatch(setTableStatusFilters([]));
-    setStatusFilterOpen(false);
-  };
-
+  const hasFilters = selectedStatuses.length > 0 || selectedLoanTypes.length > 0 || currentAdvancedFilters.minLoan !== null || Boolean(currentAdvancedFilters.dateFrom);
   const handleClearFilters = () => {
     dispatch(setTableStatusFilters([]));
+    dispatch(setTableTypeFilters([]));
     setLocalStatuses([]);
+    setLocalLoanTypes([]);
+    setTempAmountIndex(4);
+    setTempDateFrom('');
+    setTempDateTo('');
+    setTempQuickDate('');
   };
 
   const effectiveTotal = totalCount || rows.length;
@@ -135,143 +148,405 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
   return (
     <div className="flex flex-col min-h-[400px]">
       <div className="overflow-x-auto flex-1">
-        <table className="w-full border-collapse text-left text-sm text-gray-500 whitespace-nowrap">
-          <thead className="bg-[#fafafa] text-[13px] font-bold uppercase tracking-wider text-gray-400">
+        <table className="w-full border-collapse text-left text-base text-gray-500 whitespace-nowrap">
+          <thead className="bg-[#fafafa] text-[13px] font-bold uppercase tracking-wider text-gray-500 border-b border-gray-200">
             <tr>
-              <th className="border-b border-gray-100 px-6 py-4 font-semibold">Farmer Details</th>
-              <th className="border-b border-gray-100 px-6 py-4 font-semibold">Loan Product</th>
-              <th className="border-b border-gray-100 px-6 py-4 font-semibold">Amount</th>
-              <th className="border-b border-gray-100 px-6 py-4 font-semibold">Applied</th>
-              <th className="border-b border-gray-100 px-6 py-4 font-semibold">
-                <div className="relative inline-flex items-center gap-1.5">
-                  STATUS
+              <th className="px-6 py-4 font-semibold">Application ID</th>
+              <th className="px-6 py-4 font-semibold">Phone Number</th>
+              
+              {/* Status */}
+              <th className="px-6 py-4 font-semibold">
+                <div className="relative inline-flex items-center gap-2">
+                  <span>Status</span>
                   <button
                     ref={statusRef}
                     type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setStatusFilterOpen(!statusFilterOpen);
-                    }}
-                    className={`rounded p-0.5 transition hover:bg-slate-200 outline-none ${
-                      statusFilterOpen || selectedStatuses.length > 0 ? 'text-[#1E6865]' : 'text-[#AEB4BA]'
-                    }`}
+                    onClick={(e) => { e.stopPropagation(); setStatusFilterOpen(!statusFilterOpen); }}
+                    className={`p-1 rounded transition hover:bg-gray-200 ${statusFilterOpen || selectedStatuses.length > 0 ? 'text-emerald-600' : 'text-gray-400'}`}
                   >
-                    <Filter size={16} strokeWidth={2.5} />
+                    <Filter size={15} strokeWidth={2} />
                   </button>
-                  {statusFilterOpen && (
+                  {statusFilterOpen && typeof document !== 'undefined' && createPortal(
                     <div
-                      className="loan-filter-popup absolute top-full right-0 mt-2 z-[99] flex min-w-[240px] w-max flex-col rounded-xl border border-gray-200 bg-white shadow-xl normal-case tracking-normal text-gray-900"
+                      className="loan-filter-popup fixed z-[9999] w-64 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 normal-case font-normal text-sm text-gray-800"
+                      style={{
+                        top: (statusRef.current?.getBoundingClientRect().bottom ?? 0) + 8,
+                        left: Math.max(16, statusRef.current?.getBoundingClientRect().left ?? 0),
+                      }}
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <div className="flex items-center gap-2 border-b border-gray-100 px-5 py-4 text-sm font-bold text-gray-500 uppercase tracking-wide">
-                        <Filter size={16} className="text-emerald-600" /> FILTER BY STATUS
+                      <div className="px-4 py-2 font-semibold text-xs text-gray-400 uppercase tracking-wider border-b border-gray-100">
+                        Status Filter
                       </div>
-                      <div className="flex flex-col max-h-[300px] overflow-y-auto font-medium [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                        {statusOptions.map((opt, idx) => {
-                          const isChecked = localStatuses.includes(opt);
+                      <div className="max-h-60 overflow-y-auto py-1">
+                        {['All', 'In Underwriting', 'Review', 'Approved', 'Pending', 'Rejected'].map((opt) => {
+                          const isAll = opt === 'All';
+                          const isChecked = isAll ? localStatuses.length === 0 : localStatuses.includes(opt);
                           return (
-                            <button
+                            <label
                               key={opt}
-                              type="button"
-                              onClick={() => toggleLocalStatus(opt)}
-                              className={`flex items-center gap-4 px-5 py-3 text-[15px] font-medium transition-colors hover:bg-gray-50 text-[#4B5563] text-left ${
-                                idx !== statusOptions.length - 1 ? 'border-b border-[#F3F3F3]' : ''
-                              }`}
+                              onClick={() => {
+                                if (isAll) {
+                                  setLocalStatuses([]);
+                                } else {
+                                  toggleLocalStatus(opt);
+                                }
+                              }}
+                              className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-gray-700"
                             >
-                              <span
-                                className={`inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[2px] border transition-all duration-200 ease-in-out ${
-                                  isChecked ? 'border-[#16A34A] bg-[#16A34A] text-white' : 'border-[#9CA3AF] bg-white'
-                                }`}
-                              >
-                                <Check size={12} strokeWidth={3} className={isChecked ? 'opacity-100' : 'opacity-0'} />
-                              </span>
-                              <span className="flex-1 text-[15px] whitespace-normal">{opt}</span>
-                            </button>
+                              <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${isChecked ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-gray-300'}`}>
+                                {isChecked && <Check size={12} strokeWidth={3} />}
+                              </div>
+                              <span className="text-sm font-medium">{opt}</span>
+                            </label>
                           );
                         })}
                       </div>
-                      <div className="flex items-center justify-between border-t border-gray-100 p-3 bg-gray-50/50 rounded-b-xl font-bold">
-                        <button onClick={handleClearStatus} className="text-sm font-medium text-gray-500 hover:text-gray-600">
+                      <div className="p-3 border-t border-gray-100 flex items-center justify-between">
+                        <button
+                          type="button"
+                          onClick={() => { setLocalStatuses([]); dispatch(setTableStatusFilters([])); setStatusFilterOpen(false); }}
+                          className="text-xs font-semibold text-gray-500 hover:text-gray-700"
+                        >
                           Clear
                         </button>
                         <button
+                          type="button"
                           onClick={handleApplyStatus}
-                          className="rounded-lg bg-[#16A34A] px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#10883c]"
+                          className="px-3.5 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition-colors"
                         >
                           Apply
                         </button>
                       </div>
-                    </div>
+                    </div>,
+                    document.body
                   )}
                 </div>
               </th>
-              <th className="border-b border-gray-100 px-6 py-4 font-semibold text-center">Actions</th>
+
+              {/* Loan Product / Type */}
+              <th className="px-6 py-4 font-semibold">
+                <div className="relative inline-flex items-center gap-2">
+                  <span>Loan Product</span>
+                  <button
+                    ref={loanTypeRef}
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setLoanTypeFilterOpen(!loanTypeFilterOpen); }}
+                    className={`p-1 rounded transition hover:bg-gray-200 ${loanTypeFilterOpen || selectedLoanTypes.length > 0 ? 'text-emerald-600' : 'text-gray-400'}`}
+                  >
+                    <Filter size={15} strokeWidth={2} />
+                  </button>
+                  {loanTypeFilterOpen && typeof document !== 'undefined' && createPortal(
+                    <div
+                      className="loan-filter-popup fixed z-[9999] w-72 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 normal-case font-normal text-sm text-gray-800"
+                      style={{
+                        top: (loanTypeRef.current?.getBoundingClientRect().bottom ?? 0) + 8,
+                        left: Math.max(16, loanTypeRef.current?.getBoundingClientRect().left ?? 0),
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="px-4 py-2 font-semibold text-xs text-gray-400 uppercase tracking-wider border-b border-gray-100">
+                        Loan Product
+                      </div>
+                      <div className="max-h-60 overflow-y-auto py-1">
+                        {['All', 'CBE Smallholder Seed Loan', 'CBE Agri Input Finance', 'CBE Pastoralist Livestock Loan'].map((opt) => {
+                          const isAll = opt === 'All';
+                          const isChecked = isAll ? localLoanTypes.length === 0 : localLoanTypes.includes(opt);
+                          return (
+                            <label
+                              key={opt}
+                              onClick={() => {
+                                if (isAll) {
+                                  setLocalLoanTypes([]);
+                                } else {
+                                  toggleLocalLoanType(opt);
+                                }
+                              }}
+                              className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-gray-700"
+                            >
+                              <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${isChecked ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-gray-300'}`}>
+                                {isChecked && <Check size={12} strokeWidth={3} />}
+                              </div>
+                              <span className="text-sm font-medium">{opt}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                      <div className="p-3 border-t border-gray-100 flex items-center justify-between">
+                        <button
+                          type="button"
+                          onClick={() => { setLocalLoanTypes([]); dispatch(setTableTypeFilters([])); setLoanTypeFilterOpen(false); }}
+                          className="text-xs font-semibold text-gray-500 hover:text-gray-700"
+                        >
+                          Clear
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleApplyLoanType}
+                          className="px-3.5 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition-colors"
+                        >
+                          Apply
+                        </button>
+                      </div>
+                    </div>,
+                    document.body
+                  )}
+                </div>
+              </th>
+
+              {/* Amount */}
+              <th className="px-6 py-4 font-semibold">
+                <div className="relative inline-flex items-center gap-2">
+                  <span>Amount</span>
+                  <button
+                    ref={amountRef}
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setAmountFilterOpen(!amountFilterOpen); }}
+                    className={`p-1 rounded transition hover:bg-gray-200 ${amountFilterOpen || currentAdvancedFilters.minLoan !== null ? 'text-emerald-600' : 'text-gray-400'}`}
+                  >
+                    <Filter size={15} strokeWidth={2} />
+                  </button>
+                  {amountFilterOpen && typeof document !== 'undefined' && createPortal(
+                    <div
+                      className="loan-filter-popup fixed z-[9999] w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 p-5 normal-case font-normal text-sm text-gray-800"
+                      style={{
+                        top: (amountRef.current?.getBoundingClientRect().bottom ?? 0) + 8,
+                        left: Math.max(16, amountRef.current?.getBoundingClientRect().left ?? 0),
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">
+                        Loan Amount
+                      </div>
+
+                      {/* Slider */}
+                      <div className="space-y-4 mb-5">
+                        <div className="relative w-full">
+                          <div className="h-2 w-full bg-gray-200 rounded-full relative">
+                            <div
+                              className="absolute left-0 top-0 h-full bg-emerald-500 rounded-full"
+                              style={{ width: `${(tempAmountIndex / 4) * 100}%` }}
+                            />
+                            <input
+                              type="range"
+                              min="0"
+                              max="4"
+                              step="1"
+                              value={tempAmountIndex}
+                              onChange={(e) => handleApplyAmount(Number(e.target.value))}
+                              className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
+                            />
+                            <div
+                              className="absolute w-5 h-5 bg-white border-2 border-emerald-600 rounded-full -top-1.5 -ml-2.5 pointer-events-none shadow-sm"
+                              style={{ left: `${(tempAmountIndex / 4) * 100}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between text-xs font-bold text-gray-500">
+                          <div>
+                            <span className="block text-[10px] text-gray-400">ETB</span>
+                            <span>0</span>
+                          </div>
+                          <div className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-md border border-emerald-100 font-extrabold">
+                            {RANGE_STEPS[tempAmountIndex]?.display || 'ETB 350000'}
+                          </div>
+                          <div className="text-right">
+                            <span className="block text-[10px] text-gray-400">ETB</span>
+                            <span>1000000</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5 border-t border-gray-100 pt-3">
+                        {RANGE_STEPS.slice(0, 4).map((opt, idx) => {
+                          const isSel = tempAmountIndex === idx;
+                          return (
+                            <label
+                              key={opt.value}
+                              onClick={() => handleApplyAmount(idx)}
+                              className="flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-gray-50 cursor-pointer"
+                            >
+                              <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${isSel ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-gray-300'}`}>
+                                {isSel && <Check size={12} strokeWidth={3} />}
+                              </div>
+                              <span className="text-xs font-medium text-gray-700">{opt.label}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>,
+                    document.body
+                  )}
+                </div>
+              </th>
+
+              {/* Applied (Date Filter) */}
+              <th className="px-6 py-4 font-semibold text-center">
+                <div className="relative inline-flex items-center gap-2">
+                  <span>Applied</span>
+                  <button
+                    ref={dateRef}
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setDateFilterOpen(!dateFilterOpen); }}
+                    className={`p-1 rounded transition hover:bg-gray-200 ${dateFilterOpen || currentAdvancedFilters.dateFrom ? 'text-emerald-600' : 'text-gray-400'}`}
+                  >
+                    <Filter size={15} strokeWidth={2} />
+                  </button>
+                  {dateFilterOpen && typeof document !== 'undefined' && createPortal(
+                    <div
+                      className="loan-filter-popup fixed z-[9999] w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 normal-case font-normal text-sm text-gray-800"
+                      style={{
+                        top: (dateRef.current?.getBoundingClientRect().bottom ?? 0) + 8,
+                        left: Math.max(16, (dateRef.current?.getBoundingClientRect().right ?? 0) - 288),
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+                        Date Filter
+                      </div>
+
+                      <div className="space-y-2 mb-4">
+                        {[
+                          { label: 'Today', days: 0 },
+                          { label: 'Yesterday', days: 1 },
+                          { label: 'Last 7 Days', days: 7 },
+                          { label: 'Last 30 Days', days: 30 },
+                          { label: 'Last 90 Days', days: 90 },
+                        ].map((o) => {
+                          const isChecked = tempQuickDate === o.label;
+                          return (
+                            <label
+                              key={o.label}
+                              onClick={() => {
+                                setTempQuickDate(o.label);
+                                const to = new Date();
+                                const from = new Date();
+                                if (o.days === 1) {
+                                  from.setDate(from.getDate() - 1);
+                                  to.setDate(to.getDate() - 1);
+                                } else {
+                                  from.setDate(from.getDate() - o.days);
+                                }
+                                setTempDateFrom(from.toISOString().split('T')[0] ?? '');
+                                setTempDateTo(to.toISOString().split('T')[0] ?? '');
+                              }}
+                              className="flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-gray-50 cursor-pointer"
+                            >
+                              <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${isChecked ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-gray-300'}`}>
+                                {isChecked && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                              </div>
+                              <span className="text-xs font-medium text-gray-700">{o.label}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+
+                      <div className="border-t border-gray-100 pt-3 space-y-2">
+                        <span className="block text-xs font-bold text-gray-500">Default Date</span>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div>
+                            <span className="block text-[10px] text-gray-400 mb-1">From</span>
+                            <input
+                              type="date"
+                              value={tempDateFrom}
+                              onChange={(e) => setTempDateFrom(e.target.value)}
+                              className="w-full border border-gray-200 rounded-lg p-1.5 text-xs text-gray-700"
+                            />
+                          </div>
+                          <div>
+                            <span className="block text-[10px] text-gray-400 mb-1">To</span>
+                            <input
+                              type="date"
+                              value={tempDateTo}
+                              onChange={(e) => setTempDateTo(e.target.value)}
+                              className="w-full border border-gray-200 rounded-lg p-1.5 text-xs text-gray-700"
+                            />
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleApplyDate}
+                          className="w-full mt-3 py-2 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 transition-colors"
+                        >
+                          Apply Search
+                        </button>
+                      </div>
+                    </div>,
+                    document.body
+                  )}
+                </div>
+              </th>
+              
+              <th className="px-6 py-4 font-semibold text-center">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 bg-white">
             {rows.length === 0 ? (
-              <LoanEmptyState hasFilters={selectedStatuses.length > 0} onClearFilters={handleClearFilters} />
+              <LoanEmptyState hasFilters={hasFilters} onClearFilters={handleClearFilters} />
             ) : (
               rows.map((row, i) => {
-                const paletteClass = AVATAR_BG_PALETTE[i % AVATAR_BG_PALETTE.length];
-                const initials = row.initials || row.applicant.substring(0, 2).toUpperCase() || 'AG';
-                const statusStyle = getStatusStyle(row.status);
-                const appIdDisplay = row.application_id || row.id;
-                const displayName = row.applicant || 'Applicant';
-                const displayProduct = row.productName || row.type || 'Loan Product';
+                let badgeColor = 'bg-gray-100 text-gray-600 border-gray-200';
+                let dotColor = 'bg-gray-400';
+
+                const statusLower = row.status.toLowerCase();
+                if (statusLower.includes('processing') || statusLower.includes('active') || row.statusTone === 'info') {
+                  badgeColor = 'bg-cyan-100 text-cyan-600 border border-cyan-300';
+                  dotColor = 'bg-cyan-600';
+                } else if (statusLower.includes('approved') || statusLower.includes('granted') || statusLower.includes('verified') || row.statusTone === 'success') {
+                  badgeColor = 'bg-emerald-50 text-emerald-600 border border-emerald-200';
+                  dotColor = 'bg-emerald-500';
+                } else if (statusLower.includes('rejected') || row.statusTone === 'danger') {
+                  badgeColor = 'bg-red-50 text-red-500 border border-red-200';
+                  dotColor = 'bg-red-500';
+                }
+
+                const updatedParts = row.updated.split(' · ');
+                const datePart = updatedParts[0];
+                const timePart = updatedParts[1];
 
                 return (
                   <tr
                     key={`${row.id}-${i}`}
-                    onClick={() => onView?.(row)}
-                    className="transition-colors hover:bg-gray-50/60 cursor-pointer group"
+                    className="transition-colors hover:bg-gray-50/50 group"
                   >
-                    {/* Farmer Details */}
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-bold text-[13px] ${paletteClass}`}>
-                          {initials}
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-[15px] font-bold text-gray-900 leading-tight">{displayName}</span>
-                          <span className="text-[12px] font-medium text-gray-400 mt-0.5">{appIdDisplay}</span>
-                        </div>
+                    <td className="px-6 py-5">
+                      <strong className="block text-base font-semibold text-[#16A34A]">{row.application_id || row.id}</strong>
+                      {row.applicant !== 'Unknown Applicant' && (
+                        <span className="mt-1 block text-sm text-gray-400">{row.applicant}</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-5 font-medium text-gray-700">
+                      <div className="flex items-center gap-2.5">
+                        <Phone size={16} className="text-gray-400" />
+                        {row.phone}
                       </div>
                     </td>
-
-                    {/* Loan Product */}
-                    <td className="px-6 py-4 font-medium text-gray-700 text-[14px]">
-                      {displayProduct}
-                    </td>
-
-                    {/* Amount */}
-                    <td className="px-6 py-4 font-bold text-gray-900 text-[14px]">
-                      {row.loanAmount}
-                    </td>
-
-                    {/* Applied Date */}
-                    <td className="px-6 py-4 font-medium text-gray-600 text-[13px]">
-                      {row.updated}
-                    </td>
-
-                    {/* Status */}
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[13px] font-semibold ${statusStyle.badge}`}>
-                        <span className={`h-2 w-2 rounded-full ${statusStyle.dot}`} />
-                        {statusStyle.label}
+                    <td className="px-6 py-5">
+                      <span className={`inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-semibold ${badgeColor}`}>
+                        <span className={`h-2 w-2 shrink-0 rounded-full ${dotColor}`} />
+                        {row.status.replace(/Verified|Approved/gi, 'Granted').replace(/Active/gi, 'Processing')}
                       </span>
                     </td>
-
-                    {/* Actions */}
-                    <td className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        type="button"
-                        onClick={() => onView?.(row)}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-gray-700 shadow-2xs transition hover:bg-gray-50 active:scale-95"
-                      >
-                        <Eye size={14} className="text-gray-400" />
-                        View
-                      </button>
+                    <td className="px-6 py-5 font-medium text-gray-700">{row.productName || row.type}</td>
+                    <td className="px-6 py-5 font-medium text-gray-700">{row.loanAmount}</td>
+                    <td className="px-6 py-5 text-center">
+                      <div className="flex flex-col text-sm text-gray-500">
+                        <span>{datePart}</span>
+                        {timePart && <span className="text-xs text-gray-400">{timePart}</span>}
+                      </div>
+                    </td>
+                    <td className="px-6 py-5">
+                      <div className="flex justify-center">
+                        <button
+                          type="button"
+                          onClick={() => onView?.(row)}
+                          className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 active:scale-95"
+                        >
+                          <Eye size={16} className="text-gray-400" />
+                          View
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -295,7 +570,7 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
             <option value={20}>20</option>
             <option value={50}>50</option>
           </select>
-          <span>of {effectiveTotal} Application</span>
+          <span>of {effectiveTotal} Applications</span>
         </div>
 
         <div className="flex items-center gap-1">
@@ -307,7 +582,6 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
           >
             &lt; Prev
           </button>
-
           {Array.from({ length: Math.min(totalPages, 5) }).map((_, idx) => {
             const pageNum = idx + 1;
             const isActive = pageNum === currentPage;
@@ -316,15 +590,12 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
                 key={pageNum}
                 type="button"
                 onClick={() => dispatch(setActivityPage(pageNum))}
-                className={`h-8 w-8 rounded-lg text-xs font-bold transition ${
-                  isActive ? 'bg-[#16A34A] text-white shadow-sm' : 'border border-gray-200 text-gray-600 hover:bg-gray-50'
-                }`}
+                className={`h-8 w-8 rounded-lg text-xs font-bold transition ${isActive ? 'bg-[#16A34A] text-white shadow-sm' : 'border border-gray-200 text-gray-600 hover:bg-gray-50'}`}
               >
                 {pageNum}
               </button>
             );
           })}
-
           <button
             type="button"
             disabled={currentPage >= totalPages}

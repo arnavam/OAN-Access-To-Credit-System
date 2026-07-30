@@ -63,3 +63,55 @@ export async function getMe(): Promise<RawUserResponse> {
 
   return validateResponse(rawUserResponseSchema, data.data, 'auth.get_me');
 }
+
+export interface UserProfileResponse {
+  personal_information: {
+    user_image: string | null;
+    full_name: string;
+    email_address: string;
+    phone_number: string;
+    language: string;
+  };
+  account_information: {
+    user_role: string;
+    organization: string;
+    employee_id: string;
+    member_since: string;
+  };
+}
+
+function normalizeFileUrl(url: string | null | undefined): string | null {
+  if (!url) return url ?? null;
+  return url.replace(/^https?:\/\/[^/]+\/files\//, '/api/files/');
+}
+
+export async function getUserProfile(): Promise<UserProfileResponse> {
+  const res = await fetchApi('oan_a2c.api.auth.get_user_profile', {
+    method: 'GET',
+  });
+  const data = res.data as UserProfileResponse;
+  if (data?.personal_information?.user_image) {
+    data.personal_information.user_image = normalizeFileUrl(data.personal_information.user_image);
+  }
+  return data;
+}
+
+
+export interface UpdateProfilePayload {
+  full_name?: string;
+  phone_number?: string;
+  language?: string;
+  user_image?: string;
+}
+
+export async function updateProfile(payload: UpdateProfilePayload): Promise<UserProfileResponse> {
+  const res = await fetchApi('oan_a2c.api.auth.update_profile', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  const data = res.data as UserProfileResponse;
+  if (data?.personal_information?.user_image) {
+    data.personal_information.user_image = normalizeFileUrl(data.personal_information.user_image);
+  }
+  return data;
+}
