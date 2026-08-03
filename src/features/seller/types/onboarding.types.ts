@@ -30,6 +30,6 @@ export interface RegisterBankPayload {
 }
 
 export interface UpdateBankStatusPayload {
-  new_status: 'Onboarding' | 'Active' | 'Suspended';
+  new_status: 'In Review' | 'Active' | 'Suspended';
 }
 

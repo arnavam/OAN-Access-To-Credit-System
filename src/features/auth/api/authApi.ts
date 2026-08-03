@@ -130,9 +130,9 @@ export async function resetPassword(email: string, key: string, new_password: st
   });
 }
 
-export async function changePassword(old_password: string, new_password: string): Promise<void> {
-  await fetchApi('frappe.core.doctype.user.user.update_password', {
+export async function changePassword(current_password: string, new_password: string): Promise<void> {
+  await fetchApi('oan_a2c.api.auth.change_password', {
     method: 'POST',
-    body: JSON.stringify({ old_password, new_password, logout_all_sessions: 0 }),
+    body: JSON.stringify({ current_password, new_password }),
   });
 }

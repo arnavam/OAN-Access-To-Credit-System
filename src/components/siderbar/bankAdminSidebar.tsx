@@ -28,7 +28,7 @@ export default function FarmerSidebar({ isExpanded, setIsExpanded: _setIsExpande
     ? Math.max(0, (sellerStats.total_products ?? 0) - (sellerStats.active_products ?? 0))
     : 0;
 
-  const shouldShowKycCompliance = bankStatus === 'Onboarding';
+  const shouldShowKycCompliance = bankStatus === 'In Review';
 
   return (
     <aside className={`bg-[#074728] min-h-screen hidden md:flex flex-col text-white sticky top-0 h-screen shadow-xl transition-all duration-300 ease-in-out ${isExpanded ? 'w-[280px]' : 'w-20'}`}>
