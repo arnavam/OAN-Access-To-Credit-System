@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
 import { Search, SlidersHorizontal } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 interface LeadToolbarProps {
   search: string;

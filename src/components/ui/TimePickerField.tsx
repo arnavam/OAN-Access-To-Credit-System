@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
 import { Clock } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import styles from './TimePickerField.module.css';
 
 interface TimePickerFieldProps {

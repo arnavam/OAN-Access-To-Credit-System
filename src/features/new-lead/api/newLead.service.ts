@@ -1,20 +1,10 @@
-import { z } from 'zod';
+import {
+    addCreditInfoResponseSchema, creditInfoApiSchema, sendOtpAndCreateConsentResponseSchema, submitConsentResponseSchema, validateResponse, verifyOtpResponseSchema, type AddCreditInfoResponse, type CreditInfoAPI, type SendOtpAndCreateConsentResponse, type SubmitConsentResponse, type VerifyOtpResponse
+} from '@/lib/api/api.schemas';
 import { fetchApi } from '@/lib/api/fetchApi';
 import { normalizeLeadId } from '@/lib/utils';
 import type { ApiResponse } from '@/types/api';
-import {
-  sendOtpAndCreateConsentResponseSchema,
-  verifyOtpResponseSchema,
-  submitConsentResponseSchema,
-  creditInfoApiSchema,
-  addCreditInfoResponseSchema,
-  validateResponse,
-  type SendOtpAndCreateConsentResponse,
-  type VerifyOtpResponse,
-  type SubmitConsentResponse,
-  type CreditInfoAPI,
-  type AddCreditInfoResponse
-} from '@/lib/api/api.schemas';
+import { z } from 'zod';
 
 export interface FarmerDetails {
   firstName: string;
@@ -33,6 +23,7 @@ export interface FarmerDetails {
   farmer_profile_created?: boolean | undefined;
   consent_request_status?: string | undefined;
   consent_request_otp_verified?: boolean | undefined;
+  faydaId?: string | undefined;
 }
 
 export interface ConsentReason {
@@ -201,7 +192,9 @@ export interface BasicProfileBackendData {
     name?: string;
     status?: string;
     otp_verified?: boolean;
+    farmer_fayda_id?: string;
   };
+  fayda_id?: string;
 }
 
 const cleanId = (id: string): string => normalizeLeadId(id);
@@ -334,7 +327,8 @@ export const newLeadService = {
       requested_data_fields: lead.requested_data_fields ?? [],
       farmer_profile_created: lead.farmer_profile_created,
       consent_request_status: lead.consent_request?.status,
-      consent_request_otp_verified: lead.consent_request?.otp_verified
+      consent_request_otp_verified: lead.consent_request?.otp_verified,
+      faydaId: lead.fayda_id ?? lead.consent_request?.farmer_fayda_id ?? ''
     };
   },
 
@@ -374,7 +368,7 @@ export const newLeadService = {
   },
 
   // Add credit information for a lead
-  async addCreditInfo(data: { lead_id: string; loan_type: string; loan_amount: number; purpose_message?: string }): Promise<AddCreditInfoResponse> {
+  async addCreditInfo(data: { lead_id: string; loan_type?: string; loan_product?: string; loan_amount: number; purpose_message?: string }): Promise<AddCreditInfoResponse> {
     const response = await fetchApi('oan_a2c.api.v1.leads.add_lead_credit_info', {
       method: 'POST',
       body: JSON.stringify(data),

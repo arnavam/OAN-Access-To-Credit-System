@@ -1,6 +1,6 @@
-import React from 'react';
-import { LucideIcon } from 'lucide-react';
 import { useAppSelector } from '@/store/hooks';
+import { LucideIcon } from 'lucide-react';
+import React from 'react';
 import { selectLiveMetrics } from '../store/loanDashboardSlice';
 
 export interface MetricConfig {

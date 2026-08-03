@@ -1,9 +1,9 @@
-import { logger } from '@/lib/logger';
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { loanService, type LoanApplicationSummary } from '@/features/loans/api/loan.service';
 import { newLeadService } from '@/features/new-lead/api/newLead.service';
-import type { RootState } from '../../../store';
+import { logger } from '@/lib/logger';
 import { normalizeLeadId } from '@/lib/utils';
+import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
+import type { RootState } from '../../../store';
 
 // Highest reachable form step (steps 1–3); step 4 is the post-submit success view.
 const MAX_FORM_STEP = 3;

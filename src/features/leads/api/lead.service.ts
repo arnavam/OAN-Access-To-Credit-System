@@ -1,46 +1,30 @@
-import { logger } from '@/lib/logger';
-import { httpStatusToErrorCode } from '@/lib/api/apiErrors';
 import type {
-  Lead,
-  GetLeadsParams,
-  GetLeadsResponse,
-  LeadSummaryResponse,
-  VisitSchedule,
-  RawLead,
-  AssignableUser,
-  AssignLeadBackendData,
-  UpdateLeadStatusResponseData,
-  LeadStatus,
+    AssignableUser,
+    AssignLeadBackendData, GetLeadsParams,
+    GetLeadsResponse, Lead, LeadStatus, LeadSummaryResponse, RawLead, UpdateLeadStatusResponseData, VisitSchedule
 } from '@/features/leads/types/leads.types';
+import { httpStatusToErrorCode } from '@/lib/api/apiErrors';
+import { logger } from '@/lib/logger';
 
 export const leadService = {
   async getLeads(params?: GetLeadsParams, signal?: AbortSignal): Promise<GetLeadsResponse> {
-    const searchParams = new URLSearchParams({
-      start: params?.start?.toString() || '0',
-      page_length: params?.page_length?.toString() || '20',
-      search_query: params?.search_query || '',
-      status: params?.status || '',
-      lead_source: params?.lead_source || '',
-      start_date: params?.start_date || '',
-      end_date: params?.end_date || '',
-    });
+    const searchParams = new URLSearchParams();
+    searchParams.set('start', params?.start?.toString() ?? '0');
+    searchParams.set('page_length', params?.page_length?.toString() ?? '20');
+    if (params?.search_query) searchParams.set('search_query', params.search_query);
+    if (params?.status) searchParams.set('status', params.status);
+    if (params?.lead_source) searchParams.set('lead_source', params.lead_source);
+    if (params?.start_date) searchParams.set('start_date', params.start_date);
+    if (params?.end_date) searchParams.set('end_date', params.end_date);
     // Backend reads min_loan_amount / max_loan_amount (see api-flow-backend.md
     // §4.2 get_leads). Sending min_amount/max_amount is silently ignored — the
     // amount filter is dropped rather than erroring.
-    if (params?.min_amount !== undefined) {
-      searchParams.set('min_loan_amount', params.min_amount.toString());
-    }
-    if (params?.max_amount !== undefined) {
-      searchParams.set('max_loan_amount', params.max_amount.toString());
-    }
-    if (params?.loan_type !== undefined) {
-      searchParams.set('loan_type', params.loan_type);
-    }
-    // Server-side queue scoping: agent email, or the literal 'unassigned'
-    // (api-flow-backend.md §4.2 get_leads `assigned_to`).
-    if (params?.assigned_to) {
-      searchParams.set('assigned_to', params.assigned_to);
-    }
+    if (params?.min_amount !== undefined) searchParams.set('min_loan_amount', params.min_amount.toString());
+    if (params?.max_amount !== undefined) searchParams.set('max_loan_amount', params.max_amount.toString());
+    if (params?.loan_type) searchParams.set('loan_type', params.loan_type);
+    if (params?.assigned_to) searchParams.set('assigned_to', params.assigned_to);
+    if (params?.sort_by) searchParams.set('sort_by', params.sort_by);
+    if (params?.sort_order) searchParams.set('sort_order', params.sort_order);
 
     // TODO: [OAN-452] Temporary client-side join. We are fetching up to 2000 visit schedules because 
     // the backend get_leads API doesn't currently include the latest visit schedule details.

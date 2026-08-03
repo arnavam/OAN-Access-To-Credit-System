@@ -1,10 +1,10 @@
-import { useRef } from 'react';
-import { Phone, Filter } from 'lucide-react';
-import { LeadStatusBadge } from './LeadStatusBadge';
-import LeadActionCell, { getLeadRoute } from './LeadActionCell';
-import LeadEmptyState from './LeadEmptyState';
-import { LeadColFilterPopup } from './LeadColFilterPopup';
 import { Lead } from '@/features/leads/types/leads.types';
+import { ArrowDown, ArrowUp, ArrowUpDown, Filter, Phone } from 'lucide-react';
+import { useRef } from 'react';
+import LeadActionCell, { getLeadRoute } from './LeadActionCell';
+import { LeadColFilterPopup } from './LeadColFilterPopup';
+import LeadEmptyState from './LeadEmptyState';
+import { LeadStatusBadge } from './LeadStatusBadge';
 
 type Align = 'left' | 'center' | 'right';
 
@@ -14,6 +14,7 @@ interface ColumnDef {
   align: Align;
   isFilterable?: boolean;
   isSortable?: boolean;
+  minWidth?: string;
 }
 
 const TABLE_COLS: ColumnDef[] = [
@@ -22,7 +23,7 @@ const TABLE_COLS: ColumnDef[] = [
   { id: 'STATUS', label: 'STATUS', align: 'center', isFilterable: true },
   { id: 'LOAN TYPE', label: 'LOAN TYPE', align: 'center', isFilterable: true },
   { id: 'LOAN AMOUNT', label: 'LOAN AMOUNT', align: 'center', isSortable: true },
-  { id: 'STATUS CHANGE DATE', label: 'STATUS CHANGE DATE', align: 'center' },
+  { id: 'STATUS CHANGE DATE', label: 'STATUS CHANGE DATE', align: 'center', isSortable: true, minWidth: '200px' },
   { id: 'ACTIONS', label: 'ACTIONS', align: 'center' }
 ];
 
@@ -44,6 +45,9 @@ interface LeadTableProps {
   onApplyCallTimeFilter: (selected: string[]) => void;
   onClearFilters: () => void;
   isLoading: boolean;
+  sortBy?: 'loan_amount' | 'creation';
+  sortOrder?: 'asc' | 'desc';
+  onSortChange?: (sortBy?: 'loan_amount' | 'creation', sortOrder?: 'asc' | 'desc') => void;
 }
 
 // Utility to format date to: May 28, 2026, 10:42 AM
@@ -99,6 +103,9 @@ function LeadTable({
   onApplyCallTimeFilter,
   onClearFilters,
   isLoading,
+  sortBy,
+  sortOrder,
+  onSortChange,
 }: LeadTableProps) {
   const anchorRefs = useRef<Record<string, { current: HTMLButtonElement | null }>>({});
 
@@ -190,7 +197,7 @@ function LeadTable({
               const isActive = col.isFilterable && ((colFilterCfg[col.id]?.value?.length ?? 0) > 0);
 
               return (
-                <th key={col.id} className={getCellClassName(col.align, true)}>
+                <th key={col.id} className={getCellClassName(col.align, true)} style={col.minWidth ? { minWidth: col.minWidth } : undefined}>
                   <div className={`relative flex items-center gap-1.5 whitespace-nowrap ${col.align === 'center' ? 'justify-center' : col.align === 'right' ? 'justify-end' : 'justify-start'}`}>
                     <span className="font-sans font-bold text-[13px] uppercase tracking-wider text-[#6B7280]">
                       {col.label}
@@ -222,11 +229,37 @@ function LeadTable({
                         onClose={() => onSetOpenColFilter(null)}
                       />
                     )}
-                    {col.isSortable && (
-                      <span className="inline-flex cursor-pointer text-[#AEB4BA] hover:text-[#3A474E] text-[12px] select-none">
-
-                      </span>
-                    )}
+                    {col.isSortable && (() => {
+                      const targetSortBy = col.id === 'LOAN AMOUNT' ? 'loan_amount' : 'creation';
+                      const isSortActive = sortBy === targetSortBy;
+                      return (
+                        <button
+                          type="button"
+                          title={`Sort by ${col.label}`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (!onSortChange) return;
+                            if (!isSortActive) {
+                              onSortChange(targetSortBy, 'desc');
+                            } else if (sortOrder === 'desc') {
+                              onSortChange(targetSortBy, 'asc');
+                            } else {
+                              onSortChange(undefined, undefined);
+                            }
+                          }}
+                          className={`inline-flex items-center justify-center p-1 rounded transition-colors hover:bg-slate-200 outline-none ${
+                            isSortActive ? 'text-[#16A34A] font-bold' : 'text-[#AEB4BA] hover:text-[#374151]'
+                          }`}
+                        >
+                          {isSortActive ? (
+                            sortOrder === 'asc' ? <ArrowUp size={14} strokeWidth={2.5} /> : <ArrowDown size={14} strokeWidth={2.5} />
+                          ) : (
+                            <ArrowUpDown size={14} strokeWidth={2} />
+                          )}
+                        </button>
+                      );
+                    })()}
                   </div>
                 </th>
               );

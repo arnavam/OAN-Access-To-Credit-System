@@ -1,5 +1,5 @@
-import { GENDER_OPTIONS } from './loans.constants';
 import { type LoanApplicationFull } from '../api/loan.service';
+import { GENDER_OPTIONS } from './loans.constants';
 
 export type FarmerDetails = Record<string, string>;
 

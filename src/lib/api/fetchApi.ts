@@ -22,6 +22,15 @@ export class ApiError extends Error {
   }
 }
 
+export function extractFieldErrors(error: unknown): Record<string, string> {
+  if (!(error instanceof ApiError)) return {};
+  const details = (error.responseData as any)?.message?.details;
+  if (!details || typeof details !== 'object') return {};
+  return Object.fromEntries(
+    Object.entries(details).filter(([, v]) => typeof v === 'string')
+  ) as Record<string, string>;
+}
+
 let activeRefresh: Promise<boolean> | null = null;
 
 async function refreshSession(): Promise<boolean> {
@@ -128,6 +137,15 @@ export async function fetchApi(path: string, options: RequestInit = {}) {
       } catch (e) {
         // ignore
       }
+    } else if (responseData?.message?.details && typeof responseData.message.details === 'object') {
+      const detailEntries = Object.entries(responseData.message.details).filter(([, v]) => Boolean(v));
+      if (detailEntries.length > 0) {
+        errorMsg = detailEntries
+          .map(([k, v]) => `${k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}: ${v}`)
+          .join('. ');
+      } else if (responseData?.message?.message) {
+        errorMsg = responseData.message.message;
+      }
     } else if (responseData?.message?.message) {
       errorMsg = responseData.message.message;
     } else if (responseData?.message) {
@@ -138,7 +156,16 @@ export async function fetchApi(path: string, options: RequestInit = {}) {
 
   // Handle "200 OK" application-level errors
   if (responseData?.message?.status === 'error') {
-    throw new ApiError(responseData.message.message || 'Application Error', responseData);
+    let errorMsg = responseData.message.message || 'Application Error';
+    if (responseData.message.details && typeof responseData.message.details === 'object') {
+      const detailEntries = Object.entries(responseData.message.details).filter(([, v]) => Boolean(v));
+      if (detailEntries.length > 0) {
+        errorMsg = detailEntries
+          .map(([k, v]) => `${k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}: ${v}`)
+          .join('. ');
+      }
+    }
+    throw new ApiError(errorMsg, responseData);
   }
 
   return responseData?.message ?? responseData;

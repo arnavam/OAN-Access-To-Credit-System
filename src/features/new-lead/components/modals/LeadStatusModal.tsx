@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { AlertTriangle, Ban, Circle, CircleDot, Lock, ThumbsUp, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, ThumbsUp, Ban, AlertTriangle, Circle, CircleDot, Lock } from 'lucide-react';
 
 export type LeadStatusOutcome = 'Verified' | 'Rejected' | null;
 

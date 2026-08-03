@@ -1,7 +1,7 @@
-import { useState, useRef, useEffect } from 'react';
-import { Check, Filter } from 'lucide-react';
+import { selectLeadStatusesOptions, selectLoanTypesOptions } from '@/features/new-lead/store/newLeadSlice';
 import { useAppSelector } from '@/store/hooks';
-import { selectLoanTypesOptions, selectLeadStatusesOptions } from '@/features/new-lead/store/newLeadSlice';
+import { Check, Filter } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 
 /* ─── LeadColFilterPopup ────────────────────────────────────────────── */

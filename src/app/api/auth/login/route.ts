@@ -1,7 +1,7 @@
+import { checkCsrf } from '@/lib/csrf';
+import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import { NextResponse } from 'next/server';
-import { env } from '@/lib/env';
-import { checkCsrf } from '@/lib/csrf';
 
 export async function POST(request: Request) {
   try {
@@ -64,18 +64,24 @@ export async function POST(request: Request) {
       path: '/',
     };
 
+    // Both cookies live for the session (refresh-token) lifetime. The access
+    // token's own 15-min expiry is enforced separately (inside the JWT and by
+    // the backend); the cookie is only the container. Keeping auth_token from
+    // outliving the session means "auth_token present" reliably signals an
+    // intended-alive session — which the routing layer relies on.
+    const sessionMaxAge = rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60; // 30 days if rememberMe, 1 day if not
+
     if (token) {
       nextResponse.cookies.set('auth_token', token, {
         ...cookieOptions,
-        maxAge: 7 * 24 * 60 * 60, // 7 days Max age for the cookie container (the backend token handles its own 15 min expiry)
+        maxAge: sessionMaxAge,
       });
     }
 
     if (refreshToken) {
-      const refreshMaxAge = rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60; // 30 days if rememberMe, 1 day if not
       nextResponse.cookies.set('refresh_token', refreshToken, {
         ...cookieOptions,
-        maxAge: refreshMaxAge,
+        maxAge: sessionMaxAge,
       });
     }
 

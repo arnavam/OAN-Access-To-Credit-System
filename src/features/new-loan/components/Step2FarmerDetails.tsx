@@ -1,22 +1,19 @@
 'use client';
 
-import { logger } from '@/lib/logger';
-import React, { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { nextStepAPI, prevStepAPI, setFormData as setFormDataAction } from '@/features/new-loan/store/newLoanFormSlice';
-import { ArrowLeft, ArrowRight, Check, Loader2, Eye, EyeOff } from 'lucide-react';
-import { TextField } from '@/components/ui/TextField';
-import { maskSensitiveId } from '@/lib/utils';
 import { SelectField } from '@/components/ui/SelectField';
-import { GENDER_OPTIONS } from '@/features/loans/constants/loans.constants';
+import { TextField } from '@/components/ui/TextField';
 import { loanService } from '@/features/loans/api/loan.service';
-import type { AppDispatch, RootState } from '@/store';
-import { 
-  FORM_SECTIONS, 
-  DEFAULT_FARMER_DETAILS, 
-  mapApiToFarmerDetails, 
-  type FarmerDetails 
+import {
+    DEFAULT_FARMER_DETAILS, FORM_SECTIONS, mapApiToFarmerDetails,
+    type FarmerDetails
 } from '@/features/loans/constants/form-sections';
+import { nextStepAPI, prevStepAPI, setFormData as setFormDataAction } from '@/features/new-loan/store/newLoanFormSlice';
+import { logger } from '@/lib/logger';
+import { maskSensitiveId } from '@/lib/utils';
+import type { AppDispatch, RootState } from '@/store';
+import { ArrowLeft, ArrowRight, Check, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 
 
 export function Step2FarmerDetails() {

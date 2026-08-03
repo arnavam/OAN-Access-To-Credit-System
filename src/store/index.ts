@@ -1,14 +1,40 @@
-import { configureStore, Middleware, isRejectedWithValue, UnknownAction } from '@reduxjs/toolkit';
-import { ApiErrorCode } from '../lib/api/apiErrors';
+import { combineReducers, configureStore, isRejectedWithValue, Middleware, UnknownAction } from '@reduxjs/toolkit';
 import { authReducer, logout } from '../features/auth/store/authSlice';
 import { leadReducer } from '../features/leads/store/leadSlice';
-import { loanFormReducer } from '../features/new-loan/store/newLoanFormSlice';
 import { loanDashboardReducer } from '../features/loans/store/loanDashboardSlice';
-import { newLeadReducer } from '../features/new-lead/store/newLeadSlice';
-import { farmerReducer } from '../features/new-lead/store/farmerSlice';
-import { consentReducer } from '../features/new-lead/store/consentSlice';
-import { visitReducer } from '../features/new-lead/store/visitSlice';
 import { assignmentReducer } from '../features/new-lead/store/assignmentSlice';
+import { consentReducer } from '../features/new-lead/store/consentSlice';
+import { farmerReducer } from '../features/new-lead/store/farmerSlice';
+import { newLeadReducer } from '../features/new-lead/store/newLeadSlice';
+import { visitReducer } from '../features/new-lead/store/visitSlice';
+import { loanFormReducer } from '../features/new-loan/store/newLoanFormSlice';
+import { sellerProductsReducer } from '../features/seller/store/loanProductsSlice';
+import { sellerOnboardingReducer } from '../features/seller/store/onboardingSlice';
+import { sellerTeamReducer } from '../features/seller/store/teamSlice';
+import { ApiErrorCode } from '../lib/api/apiErrors';
+import { toast } from '../lib/toast';
+
+import { notificationReducer } from '../features/notifications/store/notificationSlice';
+
+// Shows a toast for permission-denied rejections that no component explicitly handles.
+// Extracts the message from either a plain string payload or a { message } object payload.
+const permissionToastMiddleware: Middleware = () => (next) => (action) => {
+  const result = next(action);
+  const a = action as UnknownAction;
+  if (isRejectedWithValue(a) || a.type?.toString().endsWith('/rejected')) {
+    const payload = a.payload;
+    const msg: string =
+      typeof payload === 'string'
+        ? payload
+        : typeof (payload as any)?.message === 'string'
+        ? (payload as any).message
+        : '';
+    if (msg && /permission denied/i.test(msg)) {
+      toast.error('You don\'t have permission to perform this action. Please complete KYC setup first.');
+    }
+  }
+  return result;
+};
 
 const storageMiddleware: Middleware = (store) => (next) => (action) => {
   const result = next(action);
@@ -62,20 +88,34 @@ const unauthenticatedMiddleware: Middleware = (api) => (next) => (action) => {
   return next(action);
 };
 
+const appReducer = combineReducers({
+  auth: authReducer,
+  leads: leadReducer,
+  newLead: newLeadReducer,
+  farmer: farmerReducer,
+  consent: consentReducer,
+  visit: visitReducer,
+  assignment: assignmentReducer,
+  loanForm: loanFormReducer,
+  loanDashboard: loanDashboardReducer,
+  sellerProducts: sellerProductsReducer,
+  sellerOnboarding: sellerOnboardingReducer,
+  sellerTeam: sellerTeamReducer,
+  notifications: notificationReducer,
+});
+
+const rootReducer = (state: ReturnType<typeof appReducer> | undefined, action: UnknownAction) => {
+  if (action.type === logout.type) {
+    // Reset all state to undefined so each slice returns its initial state
+    return appReducer(undefined, action);
+  }
+  return appReducer(state, action);
+};
+
 export const store = configureStore({
-  reducer: {
-    auth: authReducer,
-    leads: leadReducer,
-    newLead: newLeadReducer,
-    farmer: farmerReducer,
-    consent: consentReducer,
-    visit: visitReducer,
-    assignment: assignmentReducer,
-    loanForm: loanFormReducer,
-    loanDashboard: loanDashboardReducer,
-  },
+  reducer: rootReducer,
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(storageMiddleware, unauthenticatedMiddleware),
+    getDefaultMiddleware().concat(storageMiddleware, unauthenticatedMiddleware, permissionToastMiddleware),
 });
 
 export type RootState = ReturnType<typeof store.getState>;

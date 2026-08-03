@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
-import { useDispatch } from 'react-redux';
-import { X, ChevronDown, FolderOpen, Loader2, AlertTriangle } from 'lucide-react';
 import { uploadDocumentAPI } from '@/features/new-loan/store/newLoanFormSlice';
-import type { AppDispatch } from '@/store';
 import { logger } from '@/lib/logger';
+import type { AppDispatch } from '@/store';
+import { AlertTriangle, ChevronDown, FolderOpen, Loader2, X } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { useDispatch } from 'react-redux';
 
 interface AddSupportingDocModalProps {
   isOpen: boolean;

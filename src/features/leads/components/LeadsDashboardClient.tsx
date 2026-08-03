@@ -1,48 +1,33 @@
 'use client';
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import { FileOutput, Plus } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { KPI_CARDS_LAYOUT, LEAD_STATUS_MAP, resolveDateFilter } from '@/features/leads/constants/leads.constants';
-import type { Lead, KpiStat } from '@/features/leads/types/leads.types';
+import type { KpiStat, Lead } from '@/features/leads/types/leads.types';
 
 import LeadKpiCard from '@/features/leads/components/LeadKpiCard';
-import LeadToolbar from '@/features/leads/components/LeadToolbar';
-import LeadTable from '@/features/leads/components/LeadTable';
 import LeadPagination from '@/features/leads/components/LeadPagination';
+import LeadTable from '@/features/leads/components/LeadTable';
+import LeadToolbar from '@/features/leads/components/LeadToolbar';
 import dynamic from 'next/dynamic';
 
 const LeadAdvancedFilters = dynamic(() => import('@/features/leads/components/LeadAdvancedFilters'), {
   ssr: false,
 });
 
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import {
-  fetchLeads,
-  fetchLeadSummary,
-  selectLeads,
-  selectIsLeadsLoading,
-  selectLeadSummary,
-  selectSearch,
-  selectActiveTab,
-  selectDateFilter,
-  selectColStatusFilter,
-  selectColCallTimeFilter,
-  setSearch,
-  setActiveTab,
-  setColStatusFilter,
-  setColCallTimeFilter,
-  resetFilters,
-  selectTotalCount,
-  selectAdvFilters,
-  selectLeadsError,
-} from '@/features/leads/store/leadSlice';
-import { fetchLeadMetadataThunk } from '@/features/new-lead/store/newLeadSlice';
-import { selectOfficerName, selectUserEmail } from '@/features/auth/store/authSlice';
 import { AccessDenied } from '@/components/AccessDenied';
 import { ConnectionError } from '@/components/ConnectionError';
+import { selectOfficerName, selectUserEmail } from '@/features/auth/store/authSlice';
+import {
+    fetchLeads,
+    fetchLeadSummary, resetFilters, selectActiveTab, selectAdvFilters, selectColCallTimeFilter, selectColStatusFilter, selectDateFilter, selectIsLeadsLoading, selectLeads, selectLeadsError, selectLeadSummary,
+    selectSearch, selectTotalCount, setActiveTab, setColCallTimeFilter, setColStatusFilter, setSearch, setSort
+} from '@/features/leads/store/leadSlice';
+import { fetchLeadMetadataThunk } from '@/features/new-lead/store/newLeadSlice';
 import { ApiErrorCode, classifyError } from '@/lib/api/apiErrors';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
 
 export function LeadsDashboardClient() {
   const router = useRouter();
@@ -68,13 +53,15 @@ export function LeadsDashboardClient() {
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [openColFilter, setOpenColFilter] = useState<string | null>(null);
   const [sliderIndex, setSliderIndex] = useState(0);
+  const [isMounted, setIsMounted] = useState(false);
 
-  // Tab badge counts come from get_lead_summary.tab_counts (RBAC-scoped). The
-  // backend's `assigned` count maps to the "My" tab. Until the summary loads,
-  // fall back to the active tab's backend total (others blank → '—').
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   const tabCounts = useMemo(() => {
     const tc = leadSummary?.tab_counts;
-    if (tc) return { all: tc.all, my: tc.assigned, unassigned: tc.unassigned };
+    if (tc) return { all: tc.all, my: tc.my, unassigned: tc.unassigned };
     return {
       all: activeTab === 'all' ? totalCount : 0,
       my: activeTab === 'my' ? totalCount : 0,
@@ -115,9 +102,9 @@ export function LeadsDashboardClient() {
     // Scope the queue server-side: "My" → my email, "Unassigned" → the literal
     // 'unassigned', "All" → omit. (Falls back to no scope if email isn't loaded.)
     const assigned_to =
-      activeTab === 'my' ? (userEmail ?? undefined)
-      : activeTab === 'unassigned' ? 'unassigned'
-      : undefined;
+      activeTab === 'my' ? 'my'
+        : activeTab === 'unassigned' ? 'unassigned'
+          : undefined;
 
     return dispatch(fetchLeads({
       start: (page - 1) * pageSize,
@@ -130,7 +117,9 @@ export function LeadsDashboardClient() {
       max_amount,
       loan_type,
       lead_source,
-      assigned_to
+      assigned_to,
+      sort_by: advFilters.sortBy,
+      sort_order: advFilters.sortOrder,
     }));
   }, [dispatch, colStatusFilter, colCallTimeFilter, search, advFilters, dateFilter, activeTab, userEmail, pageSize]);
 
@@ -254,17 +243,11 @@ export function LeadsDashboardClient() {
     return <ConnectionError onRetry={() => loadLeads(currentPage)} />;
   }
 
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
   return (
     <div className="space-y-4">
       <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-0 rounded-2xl border border-[#e9e9e9] bg-white px-6 py-5 shadow-sm hover:-translate-y-0.5 hover:shadow-lg transition-all">
         <div>
-          <h1 className="text-2xl font-bold text-text-primary">Welcome back, {isMounted && officerName ? officerName : 'Agent'}</h1>
+          <h1 className="text-2xl font-bold text-text-primary">Welcome, {isMounted && officerName ? officerName : 'Agent'}</h1>
           <p className="mt-1 text-base text-text-muted">Manage, filter, and process your entire lead pipeline.</p>
         </div>
         <div className="flex flex-wrap items-center gap-3 font-semibold w-full md:w-auto mt-2 md:mt-0">
@@ -343,6 +326,12 @@ export function LeadsDashboardClient() {
           onApplyCallTimeFilter={(v: string[]) => { dispatch(setColCallTimeFilter(v)); setCurrentPage(1); }}
           onClearFilters={clearAllFilters}
           isLoading={isLoading}
+          sortBy={advFilters.sortBy}
+          sortOrder={advFilters.sortOrder}
+          onSortChange={(sortBy, sortOrder) => {
+            dispatch(setSort({ sortBy, sortOrder }));
+            setCurrentPage(1);
+          }}
         />
         {(visible.length > 0 || isLoading) && (
           <LeadPagination

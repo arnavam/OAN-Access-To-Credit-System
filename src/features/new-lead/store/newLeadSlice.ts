@@ -1,22 +1,17 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import type { RootState } from '@/store';
-import {
-  newLeadService,
-  SpecificLeadAPI,
-  GetLeadMetadataResponse,
-  GetCallDetailsResponse,
-  GetActivitiesResponse,
-  AddActivityNoteResponse,
-  CreateLeadResponse,
-  UpdateLeadStatusResponse
-} from '../api/newLead.service';
-import type { CreditInfoAPI, AddCreditInfoResponse } from '@/lib/api/api.schemas';
-import { formatTiming } from './helpers';
-import { fetchAssignmentInfoThunk } from './assignmentSlice';
-import { initializeLead, clearForm } from './actions';
-import { fetchLeadDetailsThunk } from './farmerSlice';
+import type { AddCreditInfoResponse, CreditInfoAPI } from '@/lib/api/api.schemas';
 import { ApiError } from '@/lib/api/fetchApi';
 import { normalizeLeadId } from '@/lib/utils';
+import type { RootState } from '@/store';
+import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
+import {
+    AddActivityNoteResponse,
+    CreateLeadResponse, GetActivitiesResponse, GetCallDetailsResponse, GetLeadMetadataResponse, newLeadService,
+    SpecificLeadAPI, UpdateLeadStatusResponse
+} from '../api/newLead.service';
+import { clearForm, initializeLead } from './actions';
+import { fetchAssignmentInfoThunk } from './assignmentSlice';
+import { fetchLeadDetailsThunk } from './farmerSlice';
+import { formatTiming } from './helpers';
 
 
 
@@ -154,7 +149,7 @@ export const addActivityNoteThunk = createAsyncThunk<
   async (payload, { getState, rejectWithValue }) => {
     try {
       const state = getState() as RootState;
-      const officerName = state.auth?.user?.officerName || 'Current User';
+      const officerName = state.auth?.user?.name || 'Current User';
       const cleanLeadId = (payload.leadId || '').replace(/^#/, '');
 
       if (cleanLeadId === 'new') {
@@ -205,15 +200,16 @@ export const fetchCreditInfoThunk = createAsyncThunk<
 );
 
 export const addCreditInfoThunk = createAsyncThunk<
-  { response: AddCreditInfoResponse; payload: { leadId: string; loan_type: string; loan_amount: number | string; purpose_message?: string } },
-  { leadId: string; loan_type: string; loan_amount: number | string; purpose_message?: string }
+  { response: AddCreditInfoResponse; payload: { leadId: string; loan_product?: string; loan_type?: string; loan_amount: number | string; purpose_message?: string } },
+  { leadId: string; loan_product?: string; loan_type?: string; loan_amount: number | string; purpose_message?: string }
 >(
   'newLead/addCreditInfo',
   async (payload, { rejectWithValue }) => {
     try {
       const response = await newLeadService.addCreditInfo({
         lead_id: normalizeLeadId(payload.leadId),
-        loan_type: payload.loan_type,
+        ...(payload.loan_product !== undefined ? { loan_product: payload.loan_product } : {}),
+        ...(payload.loan_type !== undefined ? { loan_type: payload.loan_type } : {}),
         loan_amount: Number(payload.loan_amount),
         ...(payload.purpose_message !== undefined ? { purpose_message: payload.purpose_message } : {})
       });
@@ -247,7 +243,11 @@ export const submitNewLeadThunk = createAsyncThunk<
 
       return await newLeadService.createLead(payload);
     } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Unknown Cause: Failed to create lead');
+      if (error instanceof ApiError) {
+        const details = (error.responseData as { message?: { details?: Record<string, string> } })?.message?.details;
+        if (details) return rejectWithValue({ message: error.message, details });
+      }
+      return rejectWithValue({ message: error instanceof Error ? error.message : 'Unknown Cause: Failed to create lead' });
     }
   }
 );
@@ -380,7 +380,7 @@ const newLeadSlice = createSlice({
         const { payload, response } = action.payload;
         state.creditInfo.push({
           id: response.credit_info_id, // Fallback just in case
-          type: payload.loan_type,
+          type: payload.loan_product || payload.loan_type || 'Unknown',
           amount: String(payload.loan_amount),
           purpose: payload.purpose_message || ''
         });
