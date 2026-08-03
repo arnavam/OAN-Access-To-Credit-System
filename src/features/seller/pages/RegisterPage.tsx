@@ -53,6 +53,11 @@ export default function RegisterPage() {
     }));
     if (registerBank.fulfilled.match(result)) {
       setIsSuccessPopupOpen(true);
+    } else if (registerBank.rejected.match(result)) {
+      const msg = (result.payload as string) ?? '';
+      if (msg.toLowerCase().includes('already associated')) {
+        router.push('/dashboard');
+      }
     }
   };
 

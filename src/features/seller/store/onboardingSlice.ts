@@ -34,8 +34,9 @@ export const registerBank = createAsyncThunk(
       const response = await onboardingService.registerBank(payload);
       return response.data;
     } catch (error) {
-      logger.error('registerBank thunk failed', { error });
-      return rejectWithValue(error instanceof Error ? error.message : 'Failed to register bank organisation');
+      const msg = error instanceof Error ? error.message : 'Failed to register bank organisation';
+      logger.error('registerBank thunk failed', msg);
+      return rejectWithValue(msg);
     }
   }
 );

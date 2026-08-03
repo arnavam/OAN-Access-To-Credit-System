@@ -2,7 +2,7 @@ import { teamUserSchema, validateResponse, type TeamUser } from '@/lib/api/api.s
 import { fetchApi } from '@/lib/api/fetchApi';
 import type { ApiResponse } from '@/types/api';
 import { z } from 'zod';
-import type { InviteUserPayload, UpdateUserProfilePayload } from '../types/team.types';
+import type { InviteUserPayload, UpdateUserPayload } from '../types/team.types';
 
 export const teamService = {
   async listUsers(): Promise<ApiResponse<TeamUser[]>> {
@@ -20,17 +20,12 @@ export const teamService = {
     }) as Promise<ApiResponse<{ message: string }>>;
   },
 
-  async setUserStatus(payload: { email: string; enabled: boolean }): Promise<ApiResponse<{ message: string }>> {
-    return fetchApi('oan_a2c.api.v1.seller.onboarding.set_user_status', {
+  // Consolidated update endpoint: change full_name, role and/or enabled in one
+  // call. Send only the fields that should change.
+  async updateUser(payload: UpdateUserPayload): Promise<ApiResponse<null>> {
+    return fetchApi('oan_a2c.api.v1.seller.onboarding.update_user', {
       method: 'POST',
       body: JSON.stringify(payload),
-    }) as Promise<ApiResponse<{ message: string }>>;
-  },
-
-  async updateUserProfile(payload: UpdateUserProfilePayload): Promise<ApiResponse<{ message: string }>> {
-    return fetchApi('oan_a2c.api.v1.seller.onboarding.update_user_profile', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    }) as Promise<ApiResponse<{ message: string }>>;
+    }) as Promise<ApiResponse<null>>;
   },
 };

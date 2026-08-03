@@ -3,9 +3,12 @@ import { SearchX, Users, X } from 'lucide-react';
 interface LoanEmptyStateProps {
   hasFilters: boolean;
   onClearFilters: () => void;
+  title?: string;
+  description?: string;
+  icon?: React.ReactNode;
 }
 
-function LoanEmptyState({ hasFilters, onClearFilters }: LoanEmptyStateProps) {
+function LoanEmptyState({ hasFilters, onClearFilters, title, description, icon }: LoanEmptyStateProps) {
   return (
     <tr>
       <td colSpan={8}>
@@ -21,18 +24,18 @@ function LoanEmptyState({ hasFilters, onClearFilters }: LoanEmptyStateProps) {
               <style>{`@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }`}</style>
               {hasFilters
                 ? <SearchX size={36} className="text-slate-400" strokeWidth={1.5} />
-                : <Users   size={36} className="text-slate-400" strokeWidth={1.5} />
+                : (icon || <Users size={36} className="text-slate-400" strokeWidth={1.5} />)
               }
             </div>
           </div>
           <div className="space-y-1.5 text-center">
             <h3 className="text-lg font-semibold text-[#232F34]">
-              {hasFilters ? 'No loans match your filters' : 'No loans yet'}
+              {hasFilters ? 'No loans match your filters' : (title || 'No loans yet')}
             </h3>
             <p className="mx-auto max-w-xs text-sm text-[#AEB4BA] leading-relaxed">
               {hasFilters
                 ? 'Try adjusting or clearing your active filters to see more results.'
-                : 'Create your first loan to get started with the pipeline.'
+                : (description || 'Create your first loan to get started with the pipeline.')
               }
             </p>
           </div>

@@ -12,11 +12,11 @@ function throwContractViolation(detail: string): never {
 }
 
 export type User =
-  | { kind: 'bank_admin'; email: string; name: string; bankId: string | null; bankCode: string | null; bankName: string | null; bankStatus: 'Onboarding' | 'Active' | 'Suspended' | null }
-  | { kind: 'bank_agent'; email: string; name: string; bankId: string; bankCode: string; bankName: string; bankStatus: 'Onboarding' | 'Active' | 'Suspended' }
-  | { kind: 'dev_agent'; email: string; name: string }
-  | { kind: 'marketplace'; email: string; name: string }
-  | { kind: 'farmer'; email: string; name: string };
+  | { kind: 'bank_admin'; email: string; name: string; bankId: string | null; bankCode: string | null; bankName: string | null; bankStatus: 'In Review' | 'Active' | 'Suspended' | null; userImage?: string | null }
+  | { kind: 'bank_agent'; email: string; name: string; bankId: string; bankCode: string; bankName: string; bankStatus: 'In Review' | 'Active' | 'Suspended'; userImage?: string | null }
+  | { kind: 'dev_agent'; email: string; name: string; userImage?: string | null }
+  | { kind: 'marketplace'; email: string; name: string; userImage?: string | null }
+  | { kind: 'farmer'; email: string; name: string; userImage?: string | null };
 
 export type AuthStatus = 'idle' | 'loading' | 'succeeded' | 'failed';
 

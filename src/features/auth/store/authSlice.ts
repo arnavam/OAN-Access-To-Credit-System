@@ -56,13 +56,18 @@ const authSlice = createSlice({
       state.status = 'idle';
       state.error = null;
     },
-    setBankStatus(state, action: PayloadAction<'Onboarding' | 'Active' | 'Suspended'>) {
+    setBankStatus(state, action: PayloadAction<'In Review' | 'Active' | 'Suspended'>) {
       if (state.user?.kind === 'bank_admin' || state.user?.kind === 'bank_agent') {
         state.user.bankStatus = action.payload;
       }
     },
     clearAuthError(state) {
       state.error = null;
+    },
+    setUserImage(state, action: PayloadAction<string | null>) {
+      if (state.user) {
+        state.user.userImage = action.payload;
+      }
     },
   },
   extraReducers: (builder) => {
@@ -94,7 +99,7 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout, clearAuthError, hydrate, setBankStatus } = authSlice.actions;
+export const { logout, clearAuthError, hydrate, setBankStatus, setUserImage } = authSlice.actions;
 
 export const selectUser = (state: RootState) => state.auth.user;
 export const selectOfficerName = (state: RootState) => state.auth.user?.name ?? null;
@@ -119,6 +124,7 @@ export const selectBankStatus = (state: RootState) => {
   return null;
 };
 export const selectUserEmail = (state: RootState) => state.auth.user?.email ?? null;
+export const selectUserImage = (state: RootState) => state.auth.user?.userImage ?? null;
 export const selectUserKind = (state: RootState) => state.auth.user?.kind ?? null;
 export const selectAuthStatus = (state: RootState) => state.auth.status;
 export const selectAuthError = (state: RootState) => state.auth.error;

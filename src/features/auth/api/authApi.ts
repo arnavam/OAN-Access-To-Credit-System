@@ -115,3 +115,24 @@ export async function updateProfile(payload: UpdateProfilePayload): Promise<User
   }
   return data;
 }
+
+export async function forgotPassword(email: string): Promise<void> {
+  await fetchApi('oan_a2c.api.auth.forgot_password', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function resetPassword(email: string, key: string, new_password: string): Promise<void> {
+  await fetchApi('oan_a2c.api.auth.reset_password', {
+    method: 'POST',
+    body: JSON.stringify({ email, key, new_password }),
+  });
+}
+
+export async function changePassword(old_password: string, new_password: string): Promise<void> {
+  await fetchApi('frappe.core.doctype.user.user.update_password', {
+    method: 'POST',
+    body: JSON.stringify({ old_password, new_password, logout_all_sessions: 0 }),
+  });
+}

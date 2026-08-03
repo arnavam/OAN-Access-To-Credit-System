@@ -20,6 +20,7 @@ export interface CreateLoanProductPayload {
   max_interest_rate?: number;
   min_amount?: number;
   description?: string;
+  image?: string;
   product_meta?: Array<{ meta_key: string; meta_value: string }>;
 }
 
@@ -32,6 +33,7 @@ export interface UpdateLoanProductPayload {
   max_amount?: number;
   tenure_months?: number;
   description?: string;
+  image?: string;
   product_meta?: Array<{ meta_key: string; meta_value: string }>;
 }
 

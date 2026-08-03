@@ -1,7 +1,6 @@
 'use client';
 import { DashboardHeader as DashboardTopNav } from '@/components/header/DashboardHeader';
 import BankAdminSidebar from '@/components/siderbar/bankAdminSidebar';
-import { fetchLoans } from '@/features/loans/store/loanDashboardSlice';
 import { DashboardHeader } from '@/features/seller/components/dashboard/DashboardHeader';
 import { KycAlertBanner } from '@/features/seller/components/dashboard/KycAlertBanner';
 import { LoanApplicationsTable } from '@/features/seller/components/dashboard/LoanApplicationsTable';
@@ -17,7 +16,7 @@ export default function BankAdminDashboardPage() {
 
   useEffect(() => {
     dispatch(fetchDashboardStats());
-    dispatch(fetchLoans());
+    // Loan fetching (with active filters) is owned by <LoanApplicationsTable/>.
   }, [dispatch]);
 
   return (
@@ -34,7 +33,7 @@ export default function BankAdminDashboardPage() {
               activeProducts={stats?.active_products ?? 0}
               totalApplicants={stats?.total_applications ?? 0}
               pendingLabel="Pending Approvals"
-              pendingValue={String(stats?.pending_applications ?? 0)}
+              pendingValue={String(stats?.pending_products ?? 0)}
             />
             <LoanApplicationsTable />
           </div>

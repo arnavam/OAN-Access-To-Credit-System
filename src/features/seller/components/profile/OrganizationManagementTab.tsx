@@ -2,6 +2,7 @@
 
 import { onboardingService, type BankProfile } from '@/features/seller/api/onboarding.service';
 import { toast } from '@/lib/toast';
+import { toProxiedFileUrl } from '@/lib/utils';
 import { ArrowRight, Camera, Eye, FileText, Folder, Loader2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -96,11 +97,25 @@ export default function OrganizationManagementTab({ readOnly = false }: { readOn
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => setLogoPreview(reader.result as string);
-      reader.readAsDataURL(file);
-    }
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const dataUri = reader.result as string;
+      setLogoPreview(dataUri); // show preview immediately
+      try {
+        const res = await onboardingService.uploadImage({
+          filename: file.name,
+          filedata: dataUri.split(',')[1] ?? '',
+        });
+        if (res?.data?.file_url) {
+          setLogoPreview(res.data.file_url); // replace preview with the real URL
+        }
+      } catch (err: any) {
+        toast.error(err.message || 'Failed to upload logo');
+        setLogoPreview(null);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   if (loading) return <div className="py-12 text-center text-gray-500 font-medium bg-white rounded-2xl border border-gray-200 p-8 shadow-sm">Loading organization details...</div>;
@@ -164,7 +179,7 @@ export default function OrganizationManagementTab({ readOnly = false }: { readOn
             <div className="relative">
               <div className="w-16 h-16 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center overflow-hidden">
                 {logoPreview || profile.logo ? (
-                  <img src={logoPreview || profile.logo} alt="Logo" className="w-full h-full object-cover" />
+                  <img src={toProxiedFileUrl(logoPreview || profile.logo)} alt="Logo" className="w-full h-full object-cover" />
                 ) : (
                   <span className="text-[#16A34A] font-bold text-lg">oan</span>
                 )}
@@ -273,7 +288,7 @@ export default function OrganizationManagementTab({ readOnly = false }: { readOn
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-bold text-gray-900 truncate">
-                          {kycFile?.name ?? 'KYC_Compliance.pdf'}
+                          {kycFile?.name ?? (profile?.kyc_document ? profile.kyc_document.split('/').pop() : 'KYC_Document.pdf')}
                         </p>
                         {kycFile && (
                           <p className="text-[11px] text-gray-400 mt-0.5">
@@ -281,12 +296,12 @@ export default function OrganizationManagementTab({ readOnly = false }: { readOn
                           </p>
                         )}
                       </div>
-                      <span className="text-xs font-bold text-gray-500">{kycProgress || 100}%</span>
+                      <span className="text-xs font-bold text-gray-500">{kycFile ? kycProgress : 100}%</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
                       <div
                         className="bg-[#16A34A] h-full rounded-full transition-all duration-300"
-                        style={{ width: `${kycProgress || 100}%` }}
+                        style={{ width: `${kycFile ? kycProgress : 100}%` }}
                       />
                     </div>
                   </>

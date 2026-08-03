@@ -1,15 +1,32 @@
 'use client';
 import { teamService } from '@/features/seller/api/team.service';
 import type { TeamUser } from '@/lib/api/api.schemas';
+import type { InviteUserPayload } from '@/features/seller/types/team.types';
 import { toast } from '@/lib/toast';
 import { CheckCircle2, Search, Trash2, UserPlus, XCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
+
+// Backend returns a space-separated timestamp (e.g. "2026-07-31 16:07:09.337795").
+// Normalise to ISO so Date parses it reliably across browsers, then show a
+// compact local date/time. Falls back to "Never" when absent/unparseable.
+function formatLastActive(value?: string | null): string {
+  if (!value) return 'Never';
+  const parsed = new Date(value.replace(' ', 'T'));
+  if (Number.isNaN(parsed.getTime())) return 'Never';
+  return parsed.toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
 
 export default function TeamManagementTab() {
   const [users, setUsers] = useState<TeamUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-  const [inviteForm, setInviteForm] = useState({ email: '', full_name: '', role: 'A2C Bank Agent', password: '' });
+  const [inviteForm, setInviteForm] = useState<InviteUserPayload>({ email: '', full_name: '', role: 'A2C Bank Agent', password: '' });
   const [inviteErrors, setInviteErrors] = useState<Record<string, string>>({});
   const [inviting, setInviting] = useState(false);
 
@@ -50,7 +67,7 @@ export default function TeamManagementTab() {
 
   const toggleUserStatus = async (email: string, currentEnabled: boolean) => {
     try {
-      await teamService.setUserStatus({ email, enabled: !currentEnabled });
+      await teamService.updateUser({ email, enabled: !currentEnabled });
       toast.success(`User ${!currentEnabled ? 'activated' : 'deactivated'} successfully`);
       fetchUsers();
     } catch (err: any) {
@@ -115,7 +132,7 @@ export default function TeamManagementTab() {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-green-100 text-green-700 font-bold flex items-center justify-center shrink-0">
-                        {user.first_name?.[0]?.toUpperCase() || user.email[0].toUpperCase()}
+                        {user.first_name?.[0]?.toUpperCase() || user.email[0]?.toUpperCase()}
                       </div>
                       <div>
                         <p className="font-bold text-gray-900">{user.first_name || user.name}</p>
@@ -144,7 +161,7 @@ export default function TeamManagementTab() {
                     </div>
                   </td>
                   <td className="px-6 py-4 text-gray-500">
-                    {user.last_active || 'Never'}
+                    {formatLastActive(user.last_active)}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <button 
@@ -206,7 +223,7 @@ export default function TeamManagementTab() {
                 <select 
                   required
                   value={inviteForm.role}
-                  onChange={e => setInviteForm(f => ({ ...f, role: e.target.value }))}
+                  onChange={e => setInviteForm(f => ({ ...f, role: e.target.value as InviteUserPayload['role'] }))}
                   className={`w-full px-3 py-2 bg-white border ${inviteErrors.role ? 'border-red-500' : 'border-gray-300'} rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500`}
                 >
                   <option value="A2C Bank Agent">Bank Agent (Read/Write)</option>

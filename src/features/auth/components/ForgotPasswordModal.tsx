@@ -2,6 +2,9 @@
 import { Portal } from '@/components/Portal';
 import { CheckCircle2, Mail, X } from 'lucide-react';
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { forgotPassword } from '@/features/auth/api/authApi';
+import { toast } from '@/lib/toast';
 
 interface ForgotPasswordModalProps {
   isOpen: boolean;
@@ -9,19 +12,24 @@ interface ForgotPasswordModalProps {
 }
 
 export function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProps) {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      await forgotPassword(email);
       setIsSuccess(true);
-    }, 1200);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to send reset link');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -49,10 +57,13 @@ export function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProp
                   We've sent password reset instructions to <span className="font-semibold text-gray-700">{email}</span>
                 </p>
                 <button
-                  onClick={onClose}
+                  onClick={() => {
+                    onClose();
+                    router.push(`/reset-password?email=${encodeURIComponent(email)}`);
+                  }}
                   className="w-full bg-[#16A34A] hover:bg-[#15803d] text-white py-3 rounded-xl font-bold text-[14px] transition-colors"
                 >
-                  Return to login
+                  Enter OTP to Reset Password
                 </button>
               </div>
             ) : (

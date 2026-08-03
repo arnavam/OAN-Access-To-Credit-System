@@ -1,7 +1,7 @@
 'use client';
 import { LanguageSelector } from '@/app/(portal-account)/components/LanguageSelector';
-import { logoutUser } from '@/features/auth/api/authApi';
-import { logout, selectBankName, selectOfficerName } from '@/features/auth/store/authSlice';
+import { logoutUser, getUserProfile } from '@/features/auth/api/authApi';
+import { logout, selectBankName, selectOfficerName, selectUserImage, setUserImage } from '@/features/auth/store/authSlice';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { Bell, Building2, ChevronDown, LogOut, Menu, UserRound, UsersRound } from 'lucide-react';
 import Link from 'next/link';
@@ -11,6 +11,7 @@ import { useEffect, useRef, useState } from 'react';
 import { fetchNotifications } from '@/features/notifications/store/notificationSlice';
 import { NotificationDropdown } from './NotificationDropdown';
 import { ProfileModal } from './ProfileModal';
+import { toProxiedFileUrl } from '@/lib/utils';
 
 export type DashboardRole = 'bank-admin' | 'bank-agent' | 'farmer' | 'officer';
 
@@ -49,6 +50,7 @@ export function DashboardHeader({ role, onMenuClick, title = 'Dashboard', subtit
   const profileRef = useRef<HTMLDivElement>(null);
   const officerName = useAppSelector(selectOfficerName);
   const bankName = useAppSelector(selectBankName);
+  const userImage = useAppSelector(selectUserImage);
   const unreadCount = useAppSelector((state) => state.notifications.unreadCount);
 
   const config = ROLE_CONFIG[role];
@@ -56,6 +58,15 @@ export function DashboardHeader({ role, onMenuClick, title = 'Dashboard', subtit
   // Initial fetch of unread count on header mount
   useEffect(() => {
     dispatch(fetchNotifications({ read_status: 'all', limit: 20, start: 0 }));
+    if (!userImage) {
+      getUserProfile()
+        .then((data) => {
+          if (data?.personal_information?.user_image) {
+            dispatch(setUserImage(data.personal_information.user_image));
+          }
+        })
+        .catch(() => {});
+    }
   }, [dispatch]);
 
   // Close dropdown when clicking outside
@@ -125,15 +136,23 @@ export function DashboardHeader({ role, onMenuClick, title = 'Dashboard', subtit
             onClick={() => setIsProfileOpen(!isProfileOpen)}
             className="flex items-center gap-3 px-3 py-1.5 bg-white border border-gray-200 rounded-full hover:border-gray-300 hover:shadow-sm transition-all cursor-pointer group"
           >
-            <div className="w-9 h-9 rounded-full bg-[#16A34A] flex items-center justify-center border-2 border-emerald-100 shadow-sm shrink-0 group-hover:scale-105 transition-all duration-300">
-              <span className="text-white text-xs font-bold leading-none select-none">
-                {(() => {
-                  const parts = userName.trim().split(/\s+/).filter(Boolean);
-                  if (parts.length === 0) return '?';
-                  if (parts.length === 1) return (parts[0]?.[0] ?? '?').toUpperCase();
-                  return ((parts[0]?.[0] ?? '') + (parts[parts.length - 1]?.[0] ?? '')).toUpperCase();
-                })()}
-              </span>
+            <div className="w-9 h-9 rounded-full bg-[#16A34A] flex items-center justify-center border-2 border-emerald-100 shadow-sm shrink-0 group-hover:scale-105 transition-all duration-300 overflow-hidden">
+              {userImage ? (
+                <img
+                  src={toProxiedFileUrl(userImage)}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-white text-xs font-bold leading-none select-none">
+                  {(() => {
+                    const parts = userName.trim().split(/\s+/).filter(Boolean);
+                    if (parts.length === 0) return '?';
+                    if (parts.length === 1) return (parts[0]?.[0] ?? '?').toUpperCase();
+                    return ((parts[0]?.[0] ?? '') + (parts[parts.length - 1]?.[0] ?? '')).toUpperCase();
+                  })()}
+                </span>
+              )}
             </div>
             <div className="text-left hidden sm:block">
               <p className="text-sm font-bold text-gray-900 leading-tight">{userName}</p>

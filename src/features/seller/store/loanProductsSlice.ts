@@ -2,6 +2,7 @@ import type {
     LoanProductDetail, LoanProductSummary, SellerDashboardStats, TaxonomyAttribute, TaxonomyCategory,
     TaxonomyTag
 } from '@/lib/api/api.schemas';
+import { extractFieldErrors } from '@/lib/api/fetchApi';
 import { logger } from '@/lib/logger';
 import type { RootState } from '@/store';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
@@ -28,6 +29,7 @@ interface LoanProductsState {
   listError: string | null;
   detailError: string | null;
   mutationError: string | null;
+  mutationFieldErrors: Record<string, string> | null;
 }
 
 const initialState: LoanProductsState = {
@@ -45,6 +47,7 @@ const initialState: LoanProductsState = {
   listError: null,
   detailError: null,
   mutationError: null,
+  mutationFieldErrors: null,
 };
 
 export const fetchProducts = createAsyncThunk(
@@ -127,8 +130,9 @@ export const createProductCompound = createAsyncThunk(
       await dispatch(fetchProducts(input.refetchParams));
       return created.data;
     } catch (error) {
-      logger.error('createProductCompound thunk failed', { input, error });
-      return rejectWithValue(error instanceof Error ? error.message : 'Failed to create loan product');
+      const msg = error instanceof Error ? error.message : 'Failed to create loan product';
+      logger.error('createProductCompound thunk failed', msg);
+      return rejectWithValue({ message: msg, fieldErrors: extractFieldErrors(error) });
     }
   }
 );
@@ -153,8 +157,9 @@ export const updateProductCompound = createAsyncThunk(
       await dispatch(fetchProducts(input.refetchParams));
       return updated.data;
     } catch (error) {
-      logger.error('updateProductCompound thunk failed', { input, error });
-      return rejectWithValue(error instanceof Error ? error.message : 'Failed to update loan product');
+      const msg = error instanceof Error ? error.message : 'Failed to update loan product';
+      logger.error('updateProductCompound thunk failed', msg);
+      return rejectWithValue({ message: msg, fieldErrors: extractFieldErrors(error) });
     }
   }
 );
@@ -195,6 +200,7 @@ const loanProductsSlice = createSlice({
   reducers: {
     clearMutationError(state) {
       state.mutationError = null;
+      state.mutationFieldErrors = null;
       state.mutationStatus = 'idle';
     },
     clearSelectedProductDetail(state) {
@@ -221,12 +227,22 @@ const loanProductsSlice = createSlice({
       .addCase(fetchDashboardStats.pending, (s) => { s.statsStatus = 'loading'; })
       .addCase(fetchDashboardStats.fulfilled, (s, action) => { s.statsStatus = 'succeeded'; s.stats = action.payload; })
       .addCase(fetchDashboardStats.rejected, (s) => { s.statsStatus = 'failed'; })
-      .addCase(createProductCompound.pending, (s) => { s.mutationStatus = 'loading'; s.mutationError = null; })
-      .addCase(createProductCompound.fulfilled, (s) => { s.mutationStatus = 'succeeded'; })
-      .addCase(createProductCompound.rejected, (s, action) => { s.mutationStatus = 'failed'; s.mutationError = action.payload as string; })
-      .addCase(updateProductCompound.pending, (s) => { s.mutationStatus = 'loading'; s.mutationError = null; })
+      .addCase(createProductCompound.pending, (s) => { s.mutationStatus = 'loading'; s.mutationError = null; s.mutationFieldErrors = null; })
+      .addCase(createProductCompound.fulfilled, (s) => { s.mutationStatus = 'succeeded'; s.mutationFieldErrors = null; })
+      .addCase(createProductCompound.rejected, (s, action) => {
+        const p = action.payload as { message: string; fieldErrors: Record<string, string> } | undefined;
+        s.mutationStatus = 'failed';
+        s.mutationError = p?.message ?? 'Failed to create loan product';
+        s.mutationFieldErrors = p?.fieldErrors ?? null;
+      })
+      .addCase(updateProductCompound.pending, (s) => { s.mutationStatus = 'loading'; s.mutationError = null; s.mutationFieldErrors = null; })
       .addCase(updateProductCompound.fulfilled, (s) => { s.mutationStatus = 'succeeded'; })
-      .addCase(updateProductCompound.rejected, (s, action) => { s.mutationStatus = 'failed'; s.mutationError = action.payload as string; })
+      .addCase(updateProductCompound.rejected, (s, action) => {
+        const p = action.payload as { message: string; fieldErrors: Record<string, string> } | undefined;
+        s.mutationStatus = 'failed';
+        s.mutationError = p?.message ?? 'Failed to update loan product';
+        s.mutationFieldErrors = p?.fieldErrors ?? null;
+      })
       .addCase(archiveProduct.pending, (s) => { s.mutationStatus = 'loading'; s.mutationError = null; })
       .addCase(archiveProduct.fulfilled, (s) => { s.mutationStatus = 'succeeded'; })
       .addCase(archiveProduct.rejected, (s, action) => { s.mutationStatus = 'failed'; s.mutationError = action.payload as string; });
@@ -249,3 +265,4 @@ export const selectProductsMutationStatus = (state: RootState) => state.sellerPr
 export const selectProductsMutationError = (state: RootState) => state.sellerProducts.mutationError;
 export const selectDetailStatus = (state: RootState) => state.sellerProducts.detailStatus;
 export const selectDetailError = (state: RootState) => state.sellerProducts.detailError;
+export const selectMutationFieldErrors = (state: RootState) => state.sellerProducts.mutationFieldErrors;

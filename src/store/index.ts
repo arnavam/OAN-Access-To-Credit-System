@@ -12,9 +12,29 @@ import { sellerProductsReducer } from '../features/seller/store/loanProductsSlic
 import { sellerOnboardingReducer } from '../features/seller/store/onboardingSlice';
 import { sellerTeamReducer } from '../features/seller/store/teamSlice';
 import { ApiErrorCode } from '../lib/api/apiErrors';
-
+import { toast } from '../lib/toast';
 
 import { notificationReducer } from '../features/notifications/store/notificationSlice';
+
+// Shows a toast for permission-denied rejections that no component explicitly handles.
+// Extracts the message from either a plain string payload or a { message } object payload.
+const permissionToastMiddleware: Middleware = () => (next) => (action) => {
+  const result = next(action);
+  const a = action as UnknownAction;
+  if (isRejectedWithValue(a) || a.type?.toString().endsWith('/rejected')) {
+    const payload = a.payload;
+    const msg: string =
+      typeof payload === 'string'
+        ? payload
+        : typeof (payload as any)?.message === 'string'
+        ? (payload as any).message
+        : '';
+    if (msg && /permission denied/i.test(msg)) {
+      toast.error('You don\'t have permission to perform this action. Please complete KYC setup first.');
+    }
+  }
+  return result;
+};
 
 const storageMiddleware: Middleware = (store) => (next) => (action) => {
   const result = next(action);
@@ -95,7 +115,7 @@ const rootReducer = (state: ReturnType<typeof appReducer> | undefined, action: U
 export const store = configureStore({
   reducer: rootReducer,
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(storageMiddleware, unauthenticatedMiddleware),
+    getDefaultMiddleware().concat(storageMiddleware, unauthenticatedMiddleware, permissionToastMiddleware),
 });
 
 export type RootState = ReturnType<typeof store.getState>;

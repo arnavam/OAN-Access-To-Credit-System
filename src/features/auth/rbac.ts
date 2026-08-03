@@ -62,10 +62,10 @@ export function canAccess(kind: UserKind, pathname: string): boolean {
   return match[1].includes(kind);
 }
 
-// Decodes (does NOT verify) the user_type claim from a JWT's payload segment.
-// Verification is intentionally omitted: the frontend has no signing secret/JWKS,
-// and this value is used only for routing. The backend verifies the signature.
-export function readUserKindFromJwt(token: string): UserKind | null {
+// Decodes (does NOT verify) the JWT payload segment. Verification is
+// intentionally omitted: the frontend has no signing secret/JWKS, and these
+// values are used only for routing. The backend verifies the signature.
+function decodeJwtClaims(token: string): { user_type?: string; exp?: number } | null {
   try {
     const payload = token.split('.')[1];
     if (!payload) return null;
@@ -75,24 +75,36 @@ export function readUserKindFromJwt(token: string): UserKind | null {
       typeof atob === 'function'
         ? atob(base64)
         : Buffer.from(base64, 'base64').toString('utf-8');
-    const claims = JSON.parse(json) as { user_type?: string; exp?: number };
-
-    if (typeof claims.exp === 'number' && claims.exp * 1000 < Date.now()) {
-      return null; // expired
-    }
-
-    const kind = claims.user_type;
-    if (
-      kind === 'bank_admin' ||
-      kind === 'bank_agent' ||
-      kind === 'dev_agent' ||
-      kind === 'marketplace' ||
-      kind === 'farmer'
-    ) {
-      return kind;
-    }
-    return null;
+    return JSON.parse(json) as { user_type?: string; exp?: number };
   } catch {
     return null;
   }
+}
+
+// Narrows the raw user_type claim to a known UserKind (or null).
+function toUserKind(userType: string | undefined): UserKind | null {
+  if (
+    userType === 'bank_admin' ||
+    userType === 'bank_agent' ||
+    userType === 'dev_agent' ||
+    userType === 'marketplace' ||
+    userType === 'farmer'
+  ) {
+    return userType;
+  }
+  return null;
+}
+
+// Reads the user_type claim for routing, REGARDLESS of token expiry.
+//
+// The access token's 15-min `exp` governs API-call validity, not login state —
+// the session stays alive via the refresh token for days. For routing (e.g.
+// bouncing a logged-in user off /login) we only need the role, and an expired
+// JWT is still parseable. The `auth_token` cookie is cleared on logout and on
+// refresh failure, so its mere presence is a safe signal that a session is
+// intended to be alive. This must never be used for authorization.
+export function readUserKindForRouting(token: string): UserKind | null {
+  const claims = decodeJwtClaims(token);
+  if (!claims) return null;
+  return toUserKind(claims.user_type);
 }

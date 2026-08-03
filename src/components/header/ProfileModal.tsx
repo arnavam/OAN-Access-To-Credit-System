@@ -1,12 +1,13 @@
 'use client';
-import { selectBankName, selectOfficerName } from '@/features/auth/store/authSlice';
-import { useAppSelector } from '@/store/hooks';
+import { selectBankName, selectOfficerName, setUserImage } from '@/features/auth/store/authSlice';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { Camera, Eye, EyeOff, X, Loader2 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { getUserProfile, updateProfile, type UserProfileResponse } from '@/features/auth/api/authApi';
+import { getUserProfile, updateProfile, changePassword, type UserProfileResponse } from '@/features/auth/api/authApi';
 import { onboardingService } from '@/features/seller/api/onboarding.service';
 import { toast } from '@/lib/toast';
+import { toProxiedFileUrl } from '@/lib/utils';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -15,10 +16,15 @@ interface ProfileModalProps {
 }
 
 export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalProps) {
+  const dispatch = useAppDispatch();
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isEditingPassword, setIsEditingPassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   
   const [profile, setProfile] = useState<UserProfileResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -55,6 +61,9 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
         phone_number: data.personal_information.phone_number || '',
         language: data.personal_information.language || 'English',
       });
+      if (data.personal_information.user_image) {
+        dispatch(setUserImage(data.personal_information.user_image));
+      }
     } catch (error: any) {
       toast.error('Failed to load profile');
     } finally {
@@ -79,6 +88,31 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
     }
   };
 
+  const handleChangePassword = async () => {
+    if (newPassword !== confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+    if (newPassword.length < 8) {
+      toast.error('Password must be at least 8 characters long');
+      return;
+    }
+    
+    try {
+      setIsChangingPassword(true);
+      await changePassword(currentPassword, newPassword);
+      toast.success('Password updated successfully');
+      setIsEditingPassword(false);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update password');
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
   const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -89,7 +123,7 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
       reader.onloadend = async () => {
         const base64Data = reader.result as string;
         // The endpoint expects just the base64 part, not the data URI prefix
-        const base64Content = base64Data.split(',')[1];
+        const base64Content = base64Data.split(',')[1] ?? '';
         
         try {
           const uploadRes = await onboardingService.uploadImage({
@@ -102,6 +136,7 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
               user_image: uploadRes.data.file_url
             });
             setProfile(updated);
+            dispatch(setUserImage(uploadRes.data.file_url));
             toast.success('Photo updated successfully');
           }
         } catch (error) {
@@ -173,9 +208,9 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
                   <div className="flex flex-col items-center justify-center min-w-[200px]">
                     <div className="relative">
                       {profile?.personal_information.user_image ? (
-                        <img 
-                          src={profile.personal_information.user_image} 
-                          alt="Profile" 
+                        <img
+                          src={toProxiedFileUrl(profile.personal_information.user_image)}
+                          alt="Profile"
                           className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-sm"
                         />
                       ) : (
@@ -333,6 +368,8 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
                           <input 
                             type={showCurrentPassword ? "text" : "password"} 
                             placeholder="••••••••••••"
+                            value={currentPassword}
+                            onChange={(e) => setCurrentPassword(e.target.value)}
                             className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-colors font-mono tracking-widest text-gray-600"
                           />
                           <button 
@@ -350,6 +387,8 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
                           <input 
                             type={showNewPassword ? "text" : "password"} 
                             placeholder="New password"
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
                             className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-colors font-mono tracking-widest text-gray-600"
                           />
                           <button 
@@ -367,6 +406,8 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
                           <input 
                             type={showConfirmPassword ? "text" : "password"} 
                             placeholder="Confirm password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
                             className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-colors font-mono tracking-widest text-gray-600"
                           />
                           <button 
@@ -381,7 +422,12 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
                     </div>
                     
                     <div className="flex justify-end">
-                      <button className="bg-[#16A34A] hover:bg-[#15803d] text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors">
+                      <button 
+                        onClick={handleChangePassword}
+                        disabled={isChangingPassword || !currentPassword || !newPassword || !confirmPassword}
+                        className="bg-[#16A34A] hover:bg-[#15803d] text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-70 flex items-center"
+                      >
+                        {isChangingPassword && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                         Save Password
                       </button>
                     </div>

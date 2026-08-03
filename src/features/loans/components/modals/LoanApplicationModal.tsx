@@ -3,7 +3,7 @@
 import { logger } from '@/lib/logger';
 import { toast } from '@/lib/toast';
 import { CheckCircle2, ChevronDown, Loader2, Package, X, XCircle } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { LoanApplicationFull, loanService } from '../../api/loan.service';
 import { LoanTableRow } from '../LoanTable';
@@ -21,8 +21,11 @@ export default function LoanApplicationModal({ isOpen, onClose, data, onStatusCh
   const [fullProfile, setFullProfile] = useState<LoanApplicationFull | null>(null);
 
   const [isRejecting, setIsRejecting] = useState(false);
-  const [rejectReason, setRejectReason] = useState('');
-  const [rejectNote, setRejectNote] = useState('');
+  const [isApproving, setIsApproving] = useState(false);
+  const [decisionReason, setDecisionReason] = useState('');
+  const [decisionNote, setDecisionNote] = useState('');
+
+  const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -48,8 +51,9 @@ export default function LoanApplicationModal({ isOpen, onClose, data, onStatusCh
 
     if (isOpen) {
       setIsRejecting(false);
-      setRejectReason('');
-      setRejectNote('');
+      setIsApproving(false);
+      setDecisionReason('');
+      setDecisionNote('');
     }
   }, [isOpen, data?.application_id, data?.id]);
 
@@ -59,43 +63,48 @@ export default function LoanApplicationModal({ isOpen, onClose, data, onStatusCh
     data.status === 'Approved'
       ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
       : data.status === 'Rejected'
-      ? 'bg-red-50 text-red-700 border-red-200'
-      : 'bg-amber-50 text-amber-700 border-amber-200';
+        ? 'bg-red-50 text-red-700 border-red-200'
+        : 'bg-amber-50 text-amber-700 border-amber-200';
 
-  const handleConfirmReject = () => {
-    if (!rejectReason) {
-      toast.error('Please select a reason for rejection');
+  const handleConfirmDecision = () => {
+    if (!decisionReason) {
+      toast.error('Please select a reason for your decision');
       return;
     }
+    const statusToSet = isRejecting ? 'Rejected' : 'Approved';
     if (onStatusChange) {
-      onStatusChange(data.id, 'Rejected', rejectReason, rejectNote);
+      onStatusChange(data.id, statusToSet, decisionReason, decisionNote);
     }
-    toast.success(`Application #${data.id} has been rejected`);
+    toast.success(`Application #${data.id} has been ${statusToSet.toLowerCase()}`);
     setIsRejecting(false);
+    setIsApproving(false);
     onClose();
   };
 
-  const handleApprove = () => {
-    if (onStatusChange) {
-      onStatusChange(data.id, 'Approved');
+  const handleActionClick = (action: 'approve' | 'reject') => {
+    if (action === 'reject') {
+      setIsApproving(false);
+      setIsRejecting(true);
+    } else {
+      setIsRejecting(false);
+      setIsApproving(true);
     }
-    toast.success(`Application #${data.id} has been approved`);
-    onClose();
+    setTimeout(() => {
+      endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }, 100);
   };
 
   // Extract dynamic values safely from data & fullProfile
-  const farmerName = data.applicant || fullProfile?.farmer_name || '—';
+  const farmerName = data.applicant || (fullProfile?.first_name || fullProfile?.last_name ? `${fullProfile.first_name || ''} ${fullProfile.last_name || ''}`.trim() : '—');
   const phone = data.phone || fullProfile?.phone_number || '—';
-  const region = data.region || fullProfile?.region || '—';
-  const loanProduct = data.productName || fullProfile?.loan_product || '—';
-  const amount = data.amount || data.loanAmount || (fullProfile?.requested_amount ? `ETB ${fullProfile.requested_amount.toLocaleString()}` : '—');
-  const appliedDate = data.updated || data.creation || fullProfile?.submission_date || '—';
-  const purpose = fullProfile?.purpose_of_loan || null;
-  const farmSize = fullProfile?.farm_size ? `${fullProfile.farm_size} hectares` : null;
+  const loanProduct = fullProfile?.loan_product_name || '—';
+  const amount = data.amount || data.loanAmount || (fullProfile?.loan_amount ? `ETB ${fullProfile.loan_amount.toLocaleString()}` : ('—'));
+  const appliedDate = data.updated || data.creation || '—';
+  const purpose = fullProfile?.loan_reason || null;
 
   const modalContent = (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm overflow-y-auto">
-      <div 
+      <div
         className="relative flex flex-col w-full max-w-[620px] bg-white rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 my-8"
         onClick={(e) => e.stopPropagation()}
       >
@@ -179,16 +188,35 @@ export default function LoanApplicationModal({ isOpen, onClose, data, onStatusCh
                       <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">PHONE NUMBER</p>
                       <p className="text-sm font-bold text-gray-900 mt-0.5">{phone}</p>
                     </div>
-                    <div>
-                      <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">REGION</p>
-                      <p className="text-sm font-bold text-gray-900 mt-0.5">{region}</p>
-                    </div>
-                    {farmSize && (
-                      <div>
-                        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">FARM SIZE</p>
-                        <p className="text-sm font-bold text-gray-900 mt-0.5">{farmSize}</p>
-                      </div>
-                    )}
+
+                    {fullProfile && Object.entries(fullProfile)
+                      .filter(([key, value]) => {
+                        const excludedKeys = [
+                          'application_id', 'lead_id', 'farmer_profile', 'consent_id',
+                          'loan_type', 'loan_product', 'loan_product_name', 'loan_amount',
+                          'requested_amount', 'loan_reason', 'purpose_of_loan', 'status',
+                          'current_step', 'loan_officer', 'creation', 'submission_date',
+                          'internal_notes', 'first_name', 'last_name', 'farmer_name',
+                          'phone_number', 'applicant', 'amount', 'updated',
+                          'phone', 'productName',
+                        ];
+                        return !excludedKeys.includes(key) && value !== null && value !== '' && typeof value !== 'object';
+                      })
+                      .map(([key, value]) => {
+                        // Some values like source_of_income might be long, so we handle them below or let them span 2 cols if needed.
+                        // Here we just render them normally. If we want them to look good, we can just use normal div.
+                        return (
+                          <div key={key} className={String(value).length > 40 ? "col-span-2 pt-2 border-t border-gray-200/60" : ""}>
+                            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                              {key.replace(/_/g, ' ')}
+                            </p>
+                            <p className="text-sm font-bold text-gray-900 mt-0.5">
+                              {String(value)}
+                            </p>
+                          </div>
+                        );
+                      })
+                    }
                   </div>
                 </div>
               </div>
@@ -216,26 +244,39 @@ export default function LoanApplicationModal({ isOpen, onClose, data, onStatusCh
                 </div>
               )}
 
-              {/* Rejection Confirmation Form */}
-              {isRejecting && (
-                <div className="border-2 border-red-200 bg-red-50/30 rounded-2xl p-5 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
-                  <h4 className="text-sm font-bold text-gray-900">Confirm Rejection</h4>
-                  
+              {/* Decision Confirmation Form */}
+              {(isRejecting || isApproving) && (
+                <div className={`border-2 rounded-2xl p-5 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200 ${isRejecting ? 'border-red-200 bg-red-50/30' : 'border-emerald-200 bg-emerald-50/30'}`}>
+                  <h4 className="text-sm font-bold text-gray-900">
+                    {isRejecting ? 'Confirm Rejection' : 'Confirm Approval'}
+                  </h4>
+
                   <div>
                     <label className="block text-xs font-bold text-gray-700 mb-1.5">
-                      Reason for Decision <span className="text-red-500">*</span>
+                      Reason for Decision <span className={isRejecting ? 'text-red-500' : 'text-emerald-500'}>*</span>
                     </label>
                     <div className="relative">
-                      <select 
-                        value={rejectReason}
-                        onChange={(e) => setRejectReason(e.target.value)}
-                        className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 appearance-none"
+                      <select
+                        value={decisionReason}
+                        onChange={(e) => setDecisionReason(e.target.value)}
+                        className={`w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 appearance-none ${isRejecting ? 'focus:ring-red-500/20 focus:border-red-500' : 'focus:ring-emerald-500/20 focus:border-emerald-500'}`}
                       >
                         <option value="">Select Reason for Decison</option>
-                        <option value="Insufficient Income">Insufficient Income</option>
-                        <option value="Incomplete Documentation">Incomplete Documentation</option>
-                        <option value="Eligibility Criteria Not Met">Eligibility Criteria Not Met</option>
-                        <option value="High Risk Profile">High Risk Profile</option>
+                        {isRejecting ? (
+                          <>
+                            <option value="Insufficient Income">Insufficient Income</option>
+                            <option value="Incomplete Documentation">Incomplete Documentation</option>
+                            <option value="Eligibility Criteria Not Met">Eligibility Criteria Not Met</option>
+                            <option value="High Risk Profile">High Risk Profile</option>
+                          </>
+                        ) : (
+                          <>
+                            <option value="Meets All Criteria">Meets All Criteria</option>
+                            <option value="Good Credit History">Good Credit History</option>
+                            <option value="Verified Income">Verified Income</option>
+                            <option value="Strong Collateral">Strong Collateral</option>
+                          </>
+                        )}
                         <option value="Other">Other</option>
                       </select>
                       <ChevronDown className="w-4 h-4 text-gray-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -246,33 +287,34 @@ export default function LoanApplicationModal({ isOpen, onClose, data, onStatusCh
                     <label className="block text-xs font-bold text-gray-700 mb-1.5">
                       Add Note (Optional)
                     </label>
-                    <textarea 
+                    <textarea
                       rows={3}
-                      value={rejectNote}
-                      onChange={(e) => setRejectNote(e.target.value)}
+                      value={decisionNote}
+                      onChange={(e) => setDecisionNote(e.target.value)}
                       placeholder="Placeholder for notes"
-                      className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
+                      className={`w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 ${isRejecting ? 'focus:ring-red-500/20 focus:border-red-500' : 'focus:ring-emerald-500/20 focus:border-emerald-500'}`}
                     />
                   </div>
 
                   <div className="flex justify-end gap-3 pt-2">
                     <button
                       type="button"
-                      onClick={() => setIsRejecting(false)}
+                      onClick={() => { setIsRejecting(false); setIsApproving(false); }}
                       className="px-5 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold rounded-xl text-sm transition-colors"
                     >
                       Cancel
                     </button>
                     <button
                       type="button"
-                      onClick={handleConfirmReject}
-                      className="px-5 py-2 bg-[#DC2626] hover:bg-[#B91C1C] text-white font-bold rounded-xl text-sm transition-colors shadow-sm"
+                      onClick={handleConfirmDecision}
+                      className={`px-5 py-2 text-white font-bold rounded-xl text-sm transition-colors shadow-sm ${isRejecting ? 'bg-[#DC2626] hover:bg-[#B91C1C]' : 'bg-[#16A34A] hover:bg-[#15803d]'}`}
                     >
                       Confirm Decision
                     </button>
                   </div>
                 </div>
               )}
+              <div ref={endRef} />
             </>
           )}
         </div>
@@ -287,11 +329,11 @@ export default function LoanApplicationModal({ isOpen, onClose, data, onStatusCh
             Close
           </button>
 
-          {!isRejecting && (
+          {(!isRejecting && !isApproving) && (
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={() => setIsRejecting(true)}
+                onClick={() => handleActionClick('reject')}
                 className="px-6 py-2.5 bg-[#DC2626] hover:bg-[#B91C1C] text-white font-bold rounded-xl text-sm transition-colors flex items-center gap-2 shadow-sm"
               >
                 <XCircle className="w-4 h-4" />
@@ -299,7 +341,7 @@ export default function LoanApplicationModal({ isOpen, onClose, data, onStatusCh
               </button>
               <button
                 type="button"
-                onClick={handleApprove}
+                onClick={() => handleActionClick('approve')}
                 className="px-6 py-2.5 bg-[#16A34A] hover:bg-[#15803d] text-white font-bold rounded-xl text-sm transition-colors flex items-center gap-2 shadow-sm"
               >
                 <CheckCircle2 className="w-4 h-4" />

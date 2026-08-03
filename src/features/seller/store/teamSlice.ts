@@ -3,7 +3,7 @@ import { logger } from '@/lib/logger';
 import type { RootState } from '@/store';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { teamService } from '../api/team.service';
-import type { InviteUserPayload, UpdateUserProfilePayload } from '../types/team.types';
+import type { InviteUserPayload, UpdateUserPayload } from '../types/team.types';
 
 type AsyncStatus = 'idle' | 'loading' | 'succeeded' | 'failed';
 
@@ -54,7 +54,7 @@ export const deactivateUser = createAsyncThunk(
   'sellerTeam/deactivateUser',
   async (email: string, { dispatch, rejectWithValue }) => {
     try {
-      const response = await teamService.deactivateUser(email);
+      const response = await teamService.updateUser({ email, enabled: false });
       await dispatch(fetchTeamUsers());
       return response.data;
     } catch (error) {
@@ -64,16 +64,16 @@ export const deactivateUser = createAsyncThunk(
   }
 );
 
-export const updateUserProfile = createAsyncThunk(
-  'sellerTeam/updateUserProfile',
-  async (payload: UpdateUserProfilePayload, { dispatch, rejectWithValue }) => {
+export const updateUser = createAsyncThunk(
+  'sellerTeam/updateUser',
+  async (payload: UpdateUserPayload, { dispatch, rejectWithValue }) => {
     try {
-      const response = await teamService.updateUserProfile(payload);
+      const response = await teamService.updateUser(payload);
       await dispatch(fetchTeamUsers());
       return response.data;
     } catch (error) {
-      logger.error('updateUserProfile thunk failed', { email: payload.email, error });
-      return rejectWithValue(error instanceof Error ? error.message : 'Failed to update user profile');
+      logger.error('updateUser thunk failed', { email: payload.email, error });
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to update user');
     }
   }
 );
@@ -98,9 +98,9 @@ const teamSlice = createSlice({
       .addCase(deactivateUser.pending, (s) => { s.mutationStatus = 'loading'; s.mutationError = null; })
       .addCase(deactivateUser.fulfilled, (s) => { s.mutationStatus = 'succeeded'; })
       .addCase(deactivateUser.rejected, (s, action) => { s.mutationStatus = 'failed'; s.mutationError = action.payload as string; })
-      .addCase(updateUserProfile.pending, (s) => { s.mutationStatus = 'loading'; s.mutationError = null; })
-      .addCase(updateUserProfile.fulfilled, (s) => { s.mutationStatus = 'succeeded'; })
-      .addCase(updateUserProfile.rejected, (s, action) => { s.mutationStatus = 'failed'; s.mutationError = action.payload as string; });
+      .addCase(updateUser.pending, (s) => { s.mutationStatus = 'loading'; s.mutationError = null; })
+      .addCase(updateUser.fulfilled, (s) => { s.mutationStatus = 'succeeded'; })
+      .addCase(updateUser.rejected, (s, action) => { s.mutationStatus = 'failed'; s.mutationError = action.payload as string; });
   },
 });
 

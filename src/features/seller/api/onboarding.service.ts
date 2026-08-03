@@ -1,4 +1,5 @@
 import { fetchApi } from '@/lib/api/fetchApi';
+import { toProxiedFileUrl } from '@/lib/utils';
 import type { ApiResponse } from '@/types/api';
 import type {
     RegisterBankPayload,
@@ -90,7 +91,7 @@ export const onboardingService = {
       method: 'GET',
     }) as ApiResponse<BankProfile>;
     if (res?.data?.logo) {
-      res.data.logo = res.data.logo.replace(/^https?:\/\/[^/]+\/files\//, '/api/files/');
+      res.data.logo = toProxiedFileUrl(res.data.logo) ?? res.data.logo;
     }
     return res;
   },
@@ -102,6 +103,9 @@ export const onboardingService = {
     }) as Promise<ApiResponse<{ message: string }>>;
   },
 
+  // Returns the canonical backend file URL. Callers store this (in the product
+  // `image` field, bank `logo`, etc.); it is proxied to `/api/files/...` only at
+  // read/display time (see `toProxiedFileUrl`), never before persisting.
   async uploadImage(payload: { filename: string; filedata: string }): Promise<ApiResponse<{ message: string; file_url: string }>> {
     return fetchApi('oan_a2c.api.v1.seller.onboarding.upload_image', {
       method: 'POST',

@@ -1,4 +1,4 @@
-import { canAccess, homeRouteFor, readUserKindFromJwt } from '@/features/auth/rbac';
+import { canAccess, homeRouteFor, readUserKindForRouting } from '@/features/auth/rbac';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
@@ -34,7 +34,7 @@ export function proxy(request: NextRequest) {
 
   // 2. Role-based routing (routing/UX only — the backend authorizes every API
   //    call). Decode user_type from the signed JWT and bounce mismatches home.
-  const kind = token ? readUserKindFromJwt(token) : null;
+  const kind = token ? readUserKindForRouting(token) : null;
 
   // Prevent logged-in users from sitting on any login page — send them to the
   // home route for their actual role, not a hardcoded one.

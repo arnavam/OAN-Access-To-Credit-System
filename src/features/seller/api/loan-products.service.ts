@@ -2,6 +2,7 @@ import {
     loanProductDetailSchema, loanProductSummarySchema, sellerDashboardStatsSchema, validateResponse, type LoanProductDetail, type LoanProductSummary, type SellerDashboardStats
 } from '@/lib/api/api.schemas';
 import { fetchApi } from '@/lib/api/fetchApi';
+import { toProxiedFileUrl } from '@/lib/utils';
 import type { ApiResponse } from '@/types/api';
 import { z } from 'zod';
 import type {
@@ -37,9 +38,14 @@ export const loanProductsService = {
     const raw = (await fetchApi(path)) as ApiResponse<Record<string, unknown>>;
     const productData = raw.data?.product;
 
+    const detail = validateResponse(loanProductDetailSchema, productData, 'seller.get_product');
+    // Route the product image through the same-origin file proxy so it renders
+    // (backend file URLs need auth and are blocked by our CSP img-src).
+    if (detail.image) detail.image = toProxiedFileUrl(detail.image) ?? null;
+
     return {
       ...raw,
-      data: validateResponse(loanProductDetailSchema, productData, 'seller.get_product'),
+      data: detail,
     };
   },
 

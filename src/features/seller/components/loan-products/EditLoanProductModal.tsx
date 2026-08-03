@@ -16,11 +16,12 @@ import {
     selectTags,
     updateProductCompound
 } from '@/features/seller/store/loanProductsSlice';
+import { onboardingService } from '@/features/seller/api/onboarding.service';
 import type { UpdateLoanProductCompoundInput, UpdateLoanProductPayload } from '@/features/seller/types/loan-products.types';
 import type { LoanProductSummary } from '@/lib/api/api.schemas';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { Loader2, Package, Save, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Image as ImageIcon, Loader2, Package, Save, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 type EditableProduct = LoanProductSummary | { id?: string; name?: string; title?: string; product_name?: string };
 
@@ -80,12 +81,15 @@ export function EditLoanProductModal({ isOpen, onClose, product }: EditLoanProdu
   const [selectedAttributeTermIds, setSelectedAttributeTermIds] = useState<string[]>([]);
   const [isSuccess, setIsSuccess] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen && product) {
       void dispatch(fetchTaxonomy());
       setIsSuccess(false);
       setLocalError(null);
+      setImagePreview(null);
       dispatch(clearMutationError());
       const pId = getProductId(product);
       if (pId) {
@@ -106,6 +110,8 @@ export function EditLoanProductModal({ isOpen, onClose, product }: EditLoanProdu
         description: detail.description ?? '',
       });
 
+      if (detail.image) setImagePreview(detail.image);
+
       if (detail.categories && detail.categories.length > 0) {
         setSelectedCategoryTermIds(detail.categories);
       }
@@ -118,6 +124,15 @@ export function EditLoanProductModal({ isOpen, onClose, product }: EditLoanProdu
       }
     }
   }, [detail, detailStatus]);
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { setLocalError('Image size must be less than 5MB.'); return; }
+    const reader = new FileReader();
+    reader.onloadend = () => setImagePreview(reader.result as string);
+    reader.readAsDataURL(file);
+  };
 
   const toggleAttribute = (termId: string) => {
     if (selectedAttributeTermIds.includes(termId)) {
@@ -153,6 +168,19 @@ export function EditLoanProductModal({ isOpen, onClose, product }: EditLoanProdu
     setLocalError(null);
     setIsSuccess(false);
 
+    // Upload image if user selected a new one (base64 = new selection; URL = existing)
+    let imageUrl: string | undefined = imagePreview?.startsWith('http') ? imagePreview : undefined;
+    if (imagePreview && imagePreview.startsWith('data:')) {
+      try {
+        const base64Content = imagePreview.split(',')[1] ?? '';
+        const uploadRes = await onboardingService.uploadImage({ filename: 'product-image.jpg', filedata: base64Content });
+        imageUrl = uploadRes.data?.file_url;
+      } catch {
+        setLocalError('Failed to upload product image. Please try again.');
+        return;
+      }
+    }
+
     // Group selected attributes by their backend slug/taxonomy key
     const attributesPayload: Record<string, string[]> = {};
     selectedAttributeTermIds.forEach((termId) => {
@@ -180,9 +208,8 @@ export function EditLoanProductModal({ isOpen, onClose, product }: EditLoanProdu
     if (minAmount !== null) {
       updatePayload.min_amount = minAmount;
     }
-    if (form.description.trim() !== '') {
-      updatePayload.description = form.description.trim();
-    }
+    if (form.description.trim() !== '') updatePayload.description = form.description.trim();
+    if (imageUrl) updatePayload.image = imageUrl;
 
     const compoundInput: UpdateLoanProductCompoundInput = {
       payload: updatePayload,
@@ -267,6 +294,37 @@ export function EditLoanProductModal({ isOpen, onClose, product }: EditLoanProdu
                 </div>
               ) : (
                 <div className="flex-1 space-y-6 overflow-y-auto p-6">
+                  {/* Product Image */}
+                  <div className="space-y-1.5">
+                    <label className="text-[14px] font-bold text-[#1F2937]">Product Image</label>
+                    <input type="file" ref={fileInputRef} accept="image/png,image/jpeg,image/jpg" className="hidden" onChange={handleImageSelect} />
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50/50 p-6 text-center transition-colors hover:bg-gray-50 cursor-pointer"
+                    >
+                      {imagePreview ? (
+                        <div className="relative w-full h-32 rounded-xl overflow-hidden">
+                          <img src={imagePreview} alt="Product" className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setImagePreview(null); }}
+                            className="absolute top-2 right-2 p-1 bg-black/60 text-white rounded-full hover:bg-black/80"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm border border-gray-100 text-gray-400">
+                            <ImageIcon className="h-5 w-5" />
+                          </div>
+                          <p className="text-xs font-semibold text-gray-700">Click to upload product image</p>
+                          <p className="text-[11px] text-gray-400 mt-1">PNG, JPG up to 5MB</p>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
                   <div className="space-y-1.5">
                     <label className="text-[14px] font-bold text-[#1F2937]">
                       Product Name <span className="text-red-500">*</span>

@@ -8,10 +8,12 @@ import {
     fetchTaxonomy,
     selectAttributes,
     selectCategories,
+    selectMutationFieldErrors,
     selectProductsMutationError,
     selectProductsMutationStatus,
     selectTags
 } from '@/features/seller/store/loanProductsSlice';
+import { onboardingService } from '@/features/seller/api/onboarding.service';
 import type { CreateLoanProductCompoundInput, CreateLoanProductPayload } from '@/features/seller/types/loan-products.types';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { CheckCircle2, Image as ImageIcon, Loader2, Package, Plus, X } from 'lucide-react';
@@ -51,6 +53,7 @@ export function AddLoanProductModal({ isOpen, onClose }: AddLoanProductModalProp
   const dispatch = useAppDispatch();
   const mutationStatus = useAppSelector(selectProductsMutationStatus);
   const mutationError = useAppSelector(selectProductsMutationError);
+  const backendFieldErrors = useAppSelector(selectMutationFieldErrors);
   const fetchedCategories = useAppSelector(selectCategories);
   const fetchedTags = useAppSelector(selectTags);
   const fetchedAttributes = useAppSelector(selectAttributes);
@@ -61,6 +64,7 @@ export function AddLoanProductModal({ isOpen, onClose }: AddLoanProductModalProp
   const [selectedAttributeTermIds, setSelectedAttributeTermIds] = useState<string[]>([]);
   const [isSuccess, setIsSuccess] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -73,10 +77,21 @@ export function AddLoanProductModal({ isOpen, onClose }: AddLoanProductModalProp
       setSelectedAttributeTermIds([]);
       setIsSuccess(false);
       setLocalError(null);
+      setFieldErrors({});
       setImagePreview(null);
       dispatch(clearMutationError());
     }
   }, [dispatch, isOpen]);
+
+  // Merge backend field errors into local field errors when they arrive
+  useEffect(() => {
+    if (backendFieldErrors && Object.keys(backendFieldErrors).length > 0) {
+      setFieldErrors(backendFieldErrors);
+    }
+  }, [backendFieldErrors]);
+
+  const clearFieldError = (key: string) =>
+    setFieldErrors((prev) => { const next = { ...prev }; delete next[key]; return next; });
 
   const toggleAttribute = (termId: string) => {
     if (selectedAttributeTermIds.includes(termId)) {
@@ -101,21 +116,50 @@ export function AddLoanProductModal({ isOpen, onClose }: AddLoanProductModalProp
     }
   };
 
+  const validate = (): Record<string, string> => {
+    const errors: Record<string, string> = {};
+    if (!form.productName.trim()) errors.product_name = 'Product name is required.';
+    if (!form.minInterestRate.trim()) errors.min_interest_rate = 'Required.';
+    if (!form.maxAmount.trim()) errors.max_amount = 'Required.';
+    if (!form.tenureMonths.trim()) errors.tenure_months = 'Required.';
+    const minRate = toNumber(form.minInterestRate);
+    const maxRate = form.maxInterestRate.trim() ? toNumber(form.maxInterestRate) : null;
+    const minAmt = form.minAmount.trim() ? toNumber(form.minAmount) : null;
+    const maxAmt = toNumber(form.maxAmount);
+    if (maxRate !== null && minRate !== null && maxRate < minRate)
+      errors.max_interest_rate = 'Must be ≥ minimum interest rate.';
+    if (minAmt !== null && maxAmt !== null && minAmt > maxAmt)
+      errors.min_amount = 'Must be ≤ maximum amount.';
+    return errors;
+  };
+
   const handleCreatePublish = async () => {
+    const errors = validate();
+    if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
+
     const productName = form.productName.trim();
-    const minInterestRate = toNumber(form.minInterestRate);
+    const minInterestRate = toNumber(form.minInterestRate)!;
     const maxInterestRate = form.maxInterestRate.trim() ? toNumber(form.maxInterestRate) : null;
     const minAmount = form.minAmount.trim() ? toNumber(form.minAmount) : null;
-    const maxAmount = toNumber(form.maxAmount);
-    const tenureMonths = toNumber(form.tenureMonths);
+    const maxAmount = toNumber(form.maxAmount)!;
+    const tenureMonths = toNumber(form.tenureMonths)!;
 
-    if (!productName || minInterestRate === null || maxAmount === null || tenureMonths === null) {
-      setLocalError('Fill in product name, minimum interest rate, maximum amount, and tenure.');
-      return;
-    }
-
+    setFieldErrors({});
     setLocalError(null);
     setIsSuccess(false);
+
+    // Upload image first if one was selected
+    let imageUrl: string | undefined;
+    if (imagePreview) {
+      try {
+        const base64Content = imagePreview.split(',')[1] ?? '';
+        const uploadRes = await onboardingService.uploadImage({ filename: 'product-image.jpg', filedata: base64Content });
+        imageUrl = uploadRes.data?.file_url;
+      } catch {
+        setLocalError('Failed to upload product image. Please try again.');
+        return;
+      }
+    }
 
     // Dynamic grouping of selected attributes by taxonomy key/slug
     const attributesPayload: Record<string, string[]> = {};
@@ -137,15 +181,10 @@ export function AddLoanProductModal({ isOpen, onClose }: AddLoanProductModalProp
       tenure_months: tenureMonths,
     };
 
-    if (maxInterestRate !== null) {
-      createPayload.max_interest_rate = maxInterestRate;
-    }
-    if (minAmount !== null) {
-      createPayload.min_amount = minAmount;
-    }
-    if (form.description.trim() !== '') {
-      createPayload.description = form.description.trim();
-    }
+    if (maxInterestRate !== null) createPayload.max_interest_rate = maxInterestRate;
+    if (minAmount !== null) createPayload.min_amount = minAmount;
+    if (form.description.trim()) createPayload.description = form.description.trim();
+    if (imageUrl) createPayload.image = imageUrl;
 
     const compoundInput: CreateLoanProductCompoundInput = {
       payload: createPayload,
@@ -278,10 +317,11 @@ export function AddLoanProductModal({ isOpen, onClose }: AddLoanProductModalProp
                     <input
                       type="text"
                       value={form.productName}
-                      onChange={(e) => setForm((curr) => ({ ...curr, productName: e.target.value }))}
+                      onChange={(e) => { clearFieldError('product_name'); setForm((curr) => ({ ...curr, productName: e.target.value })); }}
                       placeholder="Enter Product Name"
-                      className="w-full rounded-xl border border-gray-300 px-3.5 py-2 text-xs text-gray-900 focus:border-[#16A34A] focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20"
+                      className={`w-full rounded-xl border px-3.5 py-2 text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20 ${fieldErrors.product_name ? 'border-red-400 focus:border-red-400' : 'border-gray-300 focus:border-[#16A34A]'}`}
                     />
+                    {fieldErrors.product_name && <p className="mt-1 text-[11px] text-red-600">{fieldErrors.product_name}</p>}
                   </div>
 
                   <div>
@@ -316,11 +356,13 @@ export function AddLoanProductModal({ isOpen, onClose }: AddLoanProductModalProp
                     <input
                       type="number"
                       min="1"
+                      step="1"
                       value={form.tenureMonths}
-                      onChange={(e) => setForm((curr) => ({ ...curr, tenureMonths: e.target.value }))}
+                      onChange={(e) => { clearFieldError('tenure_months'); setForm((curr) => ({ ...curr, tenureMonths: e.target.value })); }}
                       placeholder="Enter Tenure (months)"
-                      className="w-full rounded-xl border border-gray-300 px-3.5 py-2 text-xs text-gray-900 focus:border-[#16A34A] focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20"
+                      className={`w-full rounded-xl border px-3.5 py-2 text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20 ${fieldErrors.tenure_months ? 'border-red-400 focus:border-red-400' : 'border-gray-300 focus:border-[#16A34A]'}`}
                     />
+                    {fieldErrors.tenure_months && <p className="mt-1 text-[11px] text-red-600">{fieldErrors.tenure_months}</p>}
                   </div>
 
                   <div>
@@ -329,12 +371,15 @@ export function AddLoanProductModal({ isOpen, onClose }: AddLoanProductModalProp
                     </label>
                     <input
                       type="number"
+                      min="0"
+                      max="100"
                       step="0.1"
                       value={form.minInterestRate}
-                      onChange={(e) => setForm((curr) => ({ ...curr, minInterestRate: e.target.value }))}
-                      placeholder="Enter Interest rate (% p.a.)"
-                      className="w-full rounded-xl border border-gray-300 px-3.5 py-2 text-xs text-gray-900 focus:border-[#16A34A] focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20"
+                      onChange={(e) => { clearFieldError('min_interest_rate'); setForm((curr) => ({ ...curr, minInterestRate: e.target.value })); }}
+                      placeholder="e.g. 5"
+                      className={`w-full rounded-xl border px-3.5 py-2 text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20 ${fieldErrors.min_interest_rate ? 'border-red-400 focus:border-red-400' : 'border-gray-300 focus:border-[#16A34A]'}`}
                     />
+                    {fieldErrors.min_interest_rate && <p className="mt-1 text-[11px] text-red-600">{fieldErrors.min_interest_rate}</p>}
                   </div>
 
                   <div>
@@ -343,12 +388,15 @@ export function AddLoanProductModal({ isOpen, onClose }: AddLoanProductModalProp
                     </label>
                     <input
                       type="number"
+                      min="0"
+                      max="100"
                       step="0.1"
                       value={form.maxInterestRate}
-                      onChange={(e) => setForm((curr) => ({ ...curr, maxInterestRate: e.target.value }))}
-                      placeholder="Enter Interest rate (% p.a.)"
-                      className="w-full rounded-xl border border-gray-300 px-3.5 py-2 text-xs text-gray-900 focus:border-[#16A34A] focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20"
+                      onChange={(e) => { clearFieldError('max_interest_rate'); setForm((curr) => ({ ...curr, maxInterestRate: e.target.value })); }}
+                      placeholder="e.g. 20"
+                      className={`w-full rounded-xl border px-3.5 py-2 text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20 ${fieldErrors.max_interest_rate ? 'border-red-400 focus:border-red-400' : 'border-gray-300 focus:border-[#16A34A]'}`}
                     />
+                    {fieldErrors.max_interest_rate && <p className="mt-1 text-[11px] text-red-600">{fieldErrors.max_interest_rate}</p>}
                   </div>
 
                   <div>
@@ -357,11 +405,13 @@ export function AddLoanProductModal({ isOpen, onClose }: AddLoanProductModalProp
                     </label>
                     <input
                       type="number"
+                      min="0"
                       value={form.minAmount}
-                      onChange={(e) => setForm((curr) => ({ ...curr, minAmount: e.target.value }))}
+                      onChange={(e) => { clearFieldError('min_amount'); setForm((curr) => ({ ...curr, minAmount: e.target.value })); }}
                       placeholder="Enter Min amount (ETB)"
-                      className="w-full rounded-xl border border-gray-300 px-3.5 py-2 text-xs text-gray-900 focus:border-[#16A34A] focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20"
+                      className={`w-full rounded-xl border px-3.5 py-2 text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20 ${fieldErrors.min_amount ? 'border-red-400 focus:border-red-400' : 'border-gray-300 focus:border-[#16A34A]'}`}
                     />
+                    {fieldErrors.min_amount && <p className="mt-1 text-[11px] text-red-600">{fieldErrors.min_amount}</p>}
                   </div>
 
                   <div>
@@ -370,11 +420,13 @@ export function AddLoanProductModal({ isOpen, onClose }: AddLoanProductModalProp
                     </label>
                     <input
                       type="number"
+                      min="0"
                       value={form.maxAmount}
-                      onChange={(e) => setForm((curr) => ({ ...curr, maxAmount: e.target.value }))}
+                      onChange={(e) => { clearFieldError('max_amount'); setForm((curr) => ({ ...curr, maxAmount: e.target.value })); }}
                       placeholder="Enter Max amount (ETB)"
-                      className="w-full rounded-xl border border-gray-300 px-3.5 py-2 text-xs text-gray-900 focus:border-[#16A34A] focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20"
+                      className={`w-full rounded-xl border px-3.5 py-2 text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20 ${fieldErrors.max_amount ? 'border-red-400 focus:border-red-400' : 'border-gray-300 focus:border-[#16A34A]'}`}
                     />
+                    {fieldErrors.max_amount && <p className="mt-1 text-[11px] text-red-600">{fieldErrors.max_amount}</p>}
                   </div>
                 </div>
 
