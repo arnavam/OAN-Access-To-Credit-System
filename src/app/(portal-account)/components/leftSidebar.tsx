@@ -1,7 +1,9 @@
+// Bundled local assets — the CSP intentionally restricts img-src to 'self', so
+// these decorative avatars stay same-origin (no external host, works offline).
 const activeAgents = [
-  { src: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix', alt: 'Agent 1' },
-  { src: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka', alt: 'Agent 2' },
-  { src: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Jasper', alt: 'Agent 3' },
+  { src: '/bb4a5b79fae40c0a468fa967443678ee9eb31bee.jpg', alt: 'Agent 1' },
+  { src: '/c08326dd4541f98026723b0901e8ecaa33f73c17.jpg', alt: 'Agent 2' },
+  { src: '/15546d74033e37b4f05979285cbde9b0d8a08256.jpg', alt: 'Agent 3' },
 ];
 
 export function LeftSidebar() {

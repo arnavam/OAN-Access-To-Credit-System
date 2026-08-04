@@ -17,7 +17,7 @@ export type { FarmerDetails } from './store/farmerSlice';
 export {
     addActivityNoteThunk, addCreditInfo, addCreditInfoThunk, clearForm, fetchActivitiesThunk, fetchCallDetailsThunk, fetchCreditInfoThunk, fetchLeadMetadataThunk, fetchLeadProfileThunk, initializeLead, selectActiveLeadId, selectActivities, selectCallDetails, selectCreditInfo, selectIsLeadFinalized, selectIsSubmitting, selectLeadFirstName,
     selectLeadLastName, selectLeadPhoneNumber, selectLeadSource, selectLeadSourcesOptions, selectLeadStatus, selectLeadStatusesOptions,
-    selectLoanTypesOptions, selectNewLeadState, setLeadSource,
+    selectLoanTypesOptions, selectNewLeadState, selectVerificationBlocked, setLeadSource,
     setLeadStatus, submitNewLeadThunk,
     updateLeadStatusThunk
 } from './store/newLeadSlice';

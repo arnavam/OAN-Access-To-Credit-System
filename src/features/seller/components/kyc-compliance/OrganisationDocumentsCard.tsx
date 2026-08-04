@@ -1,5 +1,5 @@
 'use client';
-import { clearOnboardingErrors, selectOnboardingMutationError, selectOnboardingMutationStatus, selectUploadedFileUrl, updateBankStatus, uploadKycDocument } from '@/features/seller/store/onboardingSlice';
+import { clearOnboardingErrors, selectOnboardingMutationError, selectOnboardingMutationStatus, selectUploadedFileUrl, uploadKycDocument } from '@/features/seller/store/onboardingSlice';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { FileText, Loader2, Upload } from 'lucide-react';
 import React, { useRef, useState } from 'react';
@@ -60,19 +60,15 @@ export function OrganisationDocumentsCard() {
       setLocalError(null);
       dispatch(clearOnboardingErrors());
       const filedata = await readFileAsBase64(uploadedFile);
-      const result = await dispatch(
+      // Uploading the KYC document only persists the file. Activation happens
+      // separately when the organization contacts are saved (by then the KYC
+      // doc exists, so the backend's "KYC required" guard is satisfied).
+      await dispatch(
         uploadKycDocument({
           filename: uploadedFile.name,
           filedata,
         })
       );
-      if (uploadKycDocument.fulfilled.match(result)) {
-        await dispatch(
-          updateBankStatus({
-            new_status: 'Active',
-          })
-        );
-      }
     } catch (error) {
       setLocalError(error instanceof Error ? error.message : 'Unable to upload document.');
     }

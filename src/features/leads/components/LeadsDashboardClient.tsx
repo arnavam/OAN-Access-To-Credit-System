@@ -26,6 +26,7 @@ import {
     selectSearch, selectTotalCount, setActiveTab, setColCallTimeFilter, setColStatusFilter, setSearch, setSort
 } from '@/features/leads/store/leadSlice';
 import { fetchLeadMetadataThunk } from '@/features/new-lead/store/newLeadSlice';
+import { fetchTaxonomy } from '@/features/seller/store/loanProductsSlice';
 import { ApiErrorCode, classifyError } from '@/lib/api/apiErrors';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 
@@ -73,6 +74,7 @@ export function LeadsDashboardClient() {
   useEffect(() => {
     dispatch(fetchLeadSummary());
     dispatch(fetchLeadMetadataThunk());
+    dispatch(fetchTaxonomy());
   }, [dispatch]);
 
   // Load filtered leads data from backend

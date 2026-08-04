@@ -76,7 +76,7 @@ export function LeadDashboardActions({ leadId, status }: LeadDashboardActionsPro
             await dispatch(updateLeadStatusThunk({
                 leadId,
                 status: outcome as string,
-                reason: notes || 'No reason provided.'
+                reason: notes.trim()
             })).unwrap();
             if (outcome === 'Rejected') {
                 router.push('/leads');

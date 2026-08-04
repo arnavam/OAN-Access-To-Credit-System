@@ -45,9 +45,9 @@ interface LeadTableProps {
   onApplyCallTimeFilter: (selected: string[]) => void;
   onClearFilters: () => void;
   isLoading: boolean;
-  sortBy?: 'loan_amount' | 'creation';
-  sortOrder?: 'asc' | 'desc';
-  onSortChange?: (sortBy?: 'loan_amount' | 'creation', sortOrder?: 'asc' | 'desc') => void;
+  sortBy?: 'loan_amount' | 'creation' | undefined;
+  sortOrder?: 'asc' | 'desc' | undefined;
+  onSortChange?: ((sortBy?: 'loan_amount' | 'creation' | undefined, sortOrder?: 'asc' | 'desc' | undefined) => void) | undefined;
 }
 
 // Utility to format date to: May 28, 2026, 10:42 AM

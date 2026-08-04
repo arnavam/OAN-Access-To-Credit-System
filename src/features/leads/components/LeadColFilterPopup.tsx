@@ -1,4 +1,5 @@
-import { selectLeadStatusesOptions, selectLoanTypesOptions } from '@/features/new-lead/store/newLeadSlice';
+import { selectLeadStatusesOptions } from '@/features/new-lead/store/newLeadSlice';
+import { selectCategories } from '@/features/seller/store/loanProductsSlice';
 import { useAppSelector } from '@/store/hooks';
 import { Check, Filter } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -33,7 +34,7 @@ export function LeadColFilterPopup({ col, anchorRef, initialSelected = [], onApp
   }, [anchorRef, onClose]);
 
 
-  const loanTypesOptions = useAppSelector(selectLoanTypesOptions);
+  const loanTypesOptions = useAppSelector(selectCategories).map((c) => c.term_name);
   const leadStatusesOptions = useAppSelector(selectLeadStatusesOptions);
 
   const opts = col === 'STATUS'

@@ -1,7 +1,11 @@
 "use client";
 import { Portal } from '@/components/Portal';
+import { toast } from '@/lib/toast';
 import { Eye, FileText, UploadCloud, X } from 'lucide-react';
 import React, { useRef, useState } from 'react';
+
+const MAX_FILE_SIZE_MB = 10;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 export default function SignedConsentForm() {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -13,6 +17,22 @@ export default function SignedConsentForm() {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
       if (!file) return;
+
+      // MIME type check (LC-032)
+      const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+      if (!isPdf) {
+        toast.error('Invalid file type. Please upload a PDF document (.pdf).');
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        return;
+      }
+
+      // Size limit check (LC-033)
+      if (file.size > MAX_FILE_SIZE_BYTES) {
+        toast.error(`File size exceeds the ${MAX_FILE_SIZE_MB}MB limit. Please upload a smaller PDF file.`);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        return;
+      }
+
       setUploadedFile(file);
       if (fileUrl) URL.revokeObjectURL(fileUrl);
       setFileUrl(URL.createObjectURL(file));
@@ -118,7 +138,7 @@ export default function SignedConsentForm() {
         className="hidden"
         ref={fileInputRef}
         onChange={handleFileChange}
-        accept=".pdf,.png,.jpg,.jpeg"
+        accept=".pdf,application/pdf"
       />
     </>
   );

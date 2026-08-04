@@ -14,6 +14,7 @@ import {
     selectTags
 } from '@/features/seller/store/loanProductsSlice';
 import { onboardingService } from '@/features/seller/api/onboarding.service';
+import { toast } from '@/lib/toast';
 import type { CreateLoanProductCompoundInput, CreateLoanProductPayload } from '@/features/seller/types/loan-products.types';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { CheckCircle2, Image as ImageIcon, Loader2, Package, Plus, X } from 'lucide-react';
@@ -204,6 +205,14 @@ export function AddLoanProductModal({ isOpen, onClose }: AddLoanProductModalProp
     if (createProductCompound.fulfilled.match(result)) {
       setIsSuccess(true);
       setForm(initialFormState);
+    } else {
+      // Surface the server error (e.g. duplicate product name) as a toast — the
+      // inline error box sits at the bottom of a long scrollable form and is
+      // easy to miss.
+      const errMsg =
+        (result.payload as { message?: string } | undefined)?.message ??
+        'Failed to create loan product.';
+      toast.error(errMsg);
     }
   };
 
@@ -407,7 +416,8 @@ export function AddLoanProductModal({ isOpen, onClose }: AddLoanProductModalProp
                       type="number"
                       min="0"
                       value={form.minAmount}
-                      onChange={(e) => { clearFieldError('min_amount'); setForm((curr) => ({ ...curr, minAmount: e.target.value })); }}
+                      onKeyDown={(e) => { if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault(); }}
+                      onChange={(e) => { clearFieldError('min_amount'); setForm((curr) => ({ ...curr, minAmount: e.target.value.replace(/[eE\+\-]/g, '') })); }}
                       placeholder="Enter Min amount (ETB)"
                       className={`w-full rounded-xl border px-3.5 py-2 text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20 ${fieldErrors.min_amount ? 'border-red-400 focus:border-red-400' : 'border-gray-300 focus:border-[#16A34A]'}`}
                     />
@@ -422,7 +432,8 @@ export function AddLoanProductModal({ isOpen, onClose }: AddLoanProductModalProp
                       type="number"
                       min="0"
                       value={form.maxAmount}
-                      onChange={(e) => { clearFieldError('max_amount'); setForm((curr) => ({ ...curr, maxAmount: e.target.value })); }}
+                      onKeyDown={(e) => { if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault(); }}
+                      onChange={(e) => { clearFieldError('max_amount'); setForm((curr) => ({ ...curr, maxAmount: e.target.value.replace(/[eE\+\-]/g, '') })); }}
                       placeholder="Enter Max amount (ETB)"
                       className={`w-full rounded-xl border px-3.5 py-2 text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20 ${fieldErrors.max_amount ? 'border-red-400 focus:border-red-400' : 'border-gray-300 focus:border-[#16A34A]'}`}
                     />

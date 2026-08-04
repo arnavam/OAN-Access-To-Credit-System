@@ -27,6 +27,7 @@ export default function LeadStatusModal({
 }: LeadStatusModalProps) {
   const [outcome, setOutcome] = useState<LeadStatusOutcome>(initialOutcome);
   const [notes, setNotes] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -37,17 +38,39 @@ export default function LeadStatusModal({
     if (isOpen) {
       setOutcome(initialOutcome);
       setNotes('');
+      setError(null);
     }
   }, [isOpen, initialOutcome]);
 
   if (!isOpen || !mounted) return null;
 
   const isFinalize = variant === 'finalize';
+  const normalizedStatus = currentStatus?.toLowerCase() || '';
+  const isVerifiedDisabled = ['verified', 'processed', 'granted'].includes(normalizedStatus);
+  const isRejectedDisabled = ['rejected', 'processed', 'granted'].includes(normalizedStatus);
+
+  const isReasonRequired = Boolean(outcome);
+  const isFormValid =
+    Boolean(outcome) &&
+    Boolean(notes.trim()) &&
+    !(outcome === 'Verified' && isVerifiedDisabled) &&
+    !(outcome === 'Rejected' && isRejectedDisabled);
 
   const handleConfirm = () => {
-    if (outcome) {
-      onConfirm(outcome, notes);
+    if (!outcome) return;
+    if (outcome === 'Verified' && isVerifiedDisabled) {
+      setError('This lead is already verified or processed.');
+      return;
     }
+    if (outcome === 'Rejected' && isRejectedDisabled) {
+      setError('This lead is already rejected or processed.');
+      return;
+    }
+    if (!notes.trim()) {
+      setError(`A valid reason/note is required when setting status to ${outcome}.`);
+      return;
+    }
+    onConfirm(outcome, notes.trim());
   };
 
   const modalContent = (
@@ -95,11 +118,19 @@ export default function LeadStatusModal({
               {/* VERIFIED OPTION */}
               <button
                 type="button"
-                onClick={() => setOutcome('Verified')}
-                className={`flex flex-col flex-1 p-4 rounded-xl border-2 text-left transition-all ${outcome === 'Verified'
-                  ? 'bg-[rgba(237,250,242,0.42)] border-[#16A34A]'
-                  : 'bg-white border-[#EDEFF1] hover:border-[#D1DACE]'
-                  }`}
+                disabled={isVerifiedDisabled}
+                onClick={() => {
+                  if (isVerifiedDisabled) return;
+                  setOutcome('Verified');
+                  if (error) setError(null);
+                }}
+                className={`flex flex-col flex-1 p-4 rounded-xl border-2 text-left transition-all ${
+                  isVerifiedDisabled
+                    ? 'bg-gray-50 border-[#EDEFF1] opacity-50 cursor-not-allowed'
+                    : outcome === 'Verified'
+                    ? 'bg-[rgba(237,250,242,0.42)] border-[#16A34A]'
+                    : 'bg-white border-[#EDEFF1] hover:border-[#D1DACE]'
+                }`}
               >
                 <div className="flex flex-row justify-between items-start w-full mb-3">
                   <div className={`flex items-center justify-center w-12 h-12 rounded-full ${outcome === 'Verified' ? 'bg-[#F0FDFA]' : 'bg-[#F1F3F4]'
@@ -114,18 +145,30 @@ export default function LeadStatusModal({
                 </div>
                 <h4 className="font-inter font-bold text-lg leading-7 text-[#232F34] mb-1">Verified</h4>
                 <p className="font-inter font-normal text-sm leading-5 text-[#414141]">
-                  Lead meets criteria and is verified.
+                  {isVerifiedDisabled
+                    ? normalizedStatus === 'verified'
+                      ? 'Lead is already verified.'
+                      : 'Loan application created (Processed).'
+                    : 'Lead meets criteria and is verified.'}
                 </p>
               </button>
 
               {/* REJECTED OPTION */}
               <button
                 type="button"
-                onClick={() => setOutcome('Rejected')}
-                className={`flex flex-col flex-1 p-4 rounded-xl border-2 text-left transition-all ${outcome === 'Rejected'
-                  ? 'bg-[#FFE5E5] border-[#EF4444]'
-                  : 'bg-white border-[#EDEFF1] hover:border-[#D1DACE]'
-                  }`}
+                disabled={isRejectedDisabled}
+                onClick={() => {
+                  if (isRejectedDisabled) return;
+                  setOutcome('Rejected');
+                  if (error) setError(null);
+                }}
+                className={`flex flex-col flex-1 p-4 rounded-xl border-2 text-left transition-all ${
+                  isRejectedDisabled
+                    ? 'bg-gray-50 border-[#EDEFF1] opacity-50 cursor-not-allowed'
+                    : outcome === 'Rejected'
+                    ? 'bg-[#FFE5E5] border-[#EF4444]'
+                    : 'bg-white border-[#EDEFF1] hover:border-[#D1DACE]'
+                }`}
               >
                 <div className="flex flex-row justify-between items-start w-full mb-3">
                   <div className={`flex items-center justify-center w-12 h-12 rounded-full ${outcome === 'Rejected' ? 'bg-[#FF7676]' : 'bg-[#F1F3F4]'
@@ -140,7 +183,9 @@ export default function LeadStatusModal({
                 </div>
                 <h4 className="font-inter font-bold text-lg leading-7 text-[#232F34] mb-1">Rejected</h4>
                 <p className="font-inter font-normal text-sm leading-5 text-[#414141]">
-                  {isFinalize
+                  {isRejectedDisabled
+                    ? 'Lead is already finalized.'
+                    : isFinalize
                     ? 'Lead could not be processed or was rejected after processing.'
                     : 'Lead does not meet requirements or is uninterested.'}
                 </p>
@@ -152,16 +197,29 @@ export default function LeadStatusModal({
           <div className="flex flex-col gap-2">
             <label htmlFor="modal-notes" className="font-inter font-semibold text-base leading-6 text-[#232F34]">
               {isFinalize ? 'Finalization Notes' : 'Reason / Internal Notes'}
+              {isReasonRequired && <span className="text-red-500 ml-1">*</span>}
             </label>
-            <div className="flex flex-col border border-[#E5E7EB] rounded-lg bg-white overflow-hidden focus-within:border-[#16A34A] focus-within:ring-1 focus-within:ring-[#16A34A] transition-all">
+            <div className={`flex flex-col border rounded-lg bg-white overflow-hidden transition-all ${
+              error ? 'border-red-500 focus-within:ring-1 focus-within:ring-red-500' : 'border-[#E5E7EB] focus-within:border-[#16A34A] focus-within:ring-1 focus-within:ring-[#16A34A]'
+            }`}>
               <textarea
                 id="modal-notes"
                 value={notes}
-                onChange={(e) => setNotes(e.target.value.substring(0, 500))}
-                placeholder={isFinalize ? 'Provide details on why this lead was processed or rejected...' : 'Provide additional context about this decision (optional)...'}
+                onChange={(e) => {
+                  setNotes(e.target.value.substring(0, 500));
+                  if (error) setError(null);
+                }}
+                placeholder={
+                  outcome
+                    ? `Please enter reason / notes for marking as ${outcome} (required)...`
+                    : 'Select an outcome and enter reason/notes (required)...'
+                }
                 className="w-full h-[104px] p-4 text-base leading-6 text-[#414141] placeholder:text-[#bababa] resize-none outline-none"
               />
             </div>
+            {error && (
+              <p className="text-red-500 text-xs font-medium m-0 mt-0.5">{error}</p>
+            )}
             <div className="flex flex-row justify-between items-center w-full mt-1">
               <span className="font-inter font-normal text-sm leading-4 text-[#9CA3AF]">
                 {isFinalize ? 'This note will be added to the lead\'s final audit log.' : 'This note will be added to the lead\'s audit history.'}
@@ -196,9 +254,10 @@ export default function LeadStatusModal({
           </button>
           <button
             onClick={handleConfirm}
-            disabled={!outcome}
-            className={`flex flex-row items-center justify-center gap-2 px-6 py-[12px] rounded-lg font-inter font-semibold text-base leading-6 text-white shadow-[0px_1px_2px_rgba(0,0,0,0.05)] transition-colors ${outcome ? 'bg-[#16A34A] hover:bg-[#15803D] cursor-pointer' : 'bg-[#D1DACE] cursor-not-allowed'
-              }`}
+            disabled={!isFormValid}
+            className={`flex flex-row items-center justify-center gap-2 px-6 py-[12px] rounded-lg font-inter font-semibold text-base leading-6 text-white shadow-[0px_1px_2px_rgba(0,0,0,0.05)] transition-colors ${
+              isFormValid ? 'bg-[#16A34A] hover:bg-[#15803D] cursor-pointer' : 'bg-[#D1DACE] cursor-not-allowed'
+            }`}
           >
             {isFinalize && <Lock size={16} className="text-white font-semibold" />}
             {isFinalize ? 'Confirm Final Status' : 'Confirm Update'}

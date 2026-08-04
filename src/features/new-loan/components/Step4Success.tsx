@@ -1,7 +1,7 @@
 'use client';
 
 import { LoanTableRow } from '@/features/loans/components/LoanTable';
-import LoanApplicationModal from '@/features/loans/components/modals/LoanApplicationModal';
+import LoanApplicationModal from '@/features/loans/components/modals/LoanApplicationModalLegacy';
 import { resetForm } from '@/features/new-loan/store/newLoanFormSlice';
 import type { RootState } from '@/store';
 import { Calendar, Check, Download, FileText, LayoutDashboard, User } from 'lucide-react';

@@ -272,6 +272,10 @@ describe('newLeadService', () => {
         validity_from: '',
         validity_to: '',
         websub_delivered_at: '',
+        farmer_profile_created: undefined,
+        consent_request_status: undefined,
+        consent_request_otp_verified: undefined,
+        faydaId: '',
       });
     });
 

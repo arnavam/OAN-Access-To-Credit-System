@@ -6,12 +6,13 @@ import { OrganizationRegisteredPopup } from '@/features/seller/components/regist
 import { RegisteredAddressSection, type RegisteredAddressFields } from '@/features/seller/components/register/RegisteredAddressSection';
 import { RegisterFooterCard } from '@/features/seller/components/register/RegisterFooterCard';
 import { RegisterHeaderCard } from '@/features/seller/components/register/RegisterHeaderCard';
+import { selectAuthStatus, selectUser } from '@/features/auth/store/authSlice';
 import { registerBank, selectOnboardingRegistrationError, selectOnboardingRegistrationStatus } from '@/features/seller/store/onboardingSlice';
 import type { AppDispatch } from '@/store';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 export default function RegisterPage() {
@@ -20,6 +21,20 @@ export default function RegisterPage() {
 
   const registrationStatus = useSelector(selectOnboardingRegistrationStatus);
   const registrationError = useSelector(selectOnboardingRegistrationError);
+  const user = useSelector(selectUser);
+  const authStatus = useSelector(selectAuthStatus);
+
+  // Mirror of the dashboard's onboarding gate: a bank_admin whose bank is
+  // already provisioned (bankId set) has no reason to be here, so bounce them
+  // to the dashboard once auth has resolved.
+  const authResolved = authStatus === 'succeeded' || authStatus === 'failed';
+  const alreadyProvisioned = user?.kind === 'bank_admin' && !!user.bankId;
+
+  useEffect(() => {
+    if (authResolved && alreadyProvisioned) {
+      router.replace('/dashboard');
+    }
+  }, [authResolved, alreadyProvisioned, router]);
 
   const [isAgreed, setIsAgreed] = useState(false);
   const [isSuccessPopupOpen, setIsSuccessPopupOpen] = useState(false);
@@ -60,6 +75,12 @@ export default function RegisterPage() {
       }
     }
   };
+
+  // Don't flash the registration form while we resolve auth or redirect an
+  // already-provisioned admin away.
+  if (!authResolved || alreadyProvisioned) {
+    return null;
+  }
 
   return (
     <div className="flex-1 w-full flex flex-col bg-[#F8F9FA]">

@@ -1,5 +1,5 @@
 'use client';
-import { selectBankName } from '@/features/auth/store/authSlice';
+import { selectBankName, selectBankStatus } from '@/features/auth/store/authSlice';
 import { useAppSelector } from '@/store/hooks';
 import { Landmark, Plus } from 'lucide-react';
 import { useState } from 'react';
@@ -12,6 +12,10 @@ interface DashboardHeaderProps {
 export function DashboardHeader({ portalLabel = 'Bank Admin Portal - Loan Product Management' }: DashboardHeaderProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const bankName = useAppSelector(selectBankName);
+  const bankStatus = useAppSelector(selectBankStatus);
+
+  // Products can't be added until the bank is approved (out of "In Review").
+  const isAddDisabled = bankStatus === 'In Review';
 
   return (
     <>
@@ -27,7 +31,13 @@ export function DashboardHeader({ portalLabel = 'Bank Admin Portal - Loan Produc
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="bg-[#16A34A] hover:bg-[#15803d] text-white px-5 py-2.5 rounded-lg font-bold text-[14px] transition-colors flex items-center space-x-2 whitespace-nowrap shadow-sm"
+          disabled={isAddDisabled}
+          title={isAddDisabled ? 'Your bank is still under review. You can add loan products once it is approved.' : undefined}
+          className={`px-5 py-2.5 rounded-lg font-bold text-[14px] transition-colors flex items-center space-x-2 whitespace-nowrap shadow-sm ${
+            isAddDisabled
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              : 'bg-[#16A34A] hover:bg-[#15803d] text-white'
+          }`}
         >
           <Plus size={18} strokeWidth={2.5} />
           <span>Add Loan Product</span>

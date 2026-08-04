@@ -53,8 +53,8 @@ export interface AdvFilters {
   maxAmount: number | null;
   loanType: string[];
   leadSources: string[];
-  sortBy?: 'loan_amount' | 'creation';
-  sortOrder?: 'asc' | 'desc';
+  sortBy?: 'loan_amount' | 'creation' | undefined;
+  sortOrder?: 'asc' | 'desc' | undefined;
 }
 
 interface LeadState {
@@ -134,7 +134,7 @@ const leadSlice = createSlice({
     setAdvFilters(state, action: PayloadAction<AdvFilters>) {
       state.advFilters = action.payload;
     },
-    setSort(state, action: PayloadAction<{ sortBy?: 'loan_amount' | 'creation'; sortOrder?: 'asc' | 'desc' }>) {
+    setSort(state, action: PayloadAction<{ sortBy?: 'loan_amount' | 'creation' | undefined; sortOrder?: 'asc' | 'desc' | undefined }>) {
       state.advFilters.sortBy = action.payload.sortBy;
       state.advFilters.sortOrder = action.payload.sortOrder;
     },

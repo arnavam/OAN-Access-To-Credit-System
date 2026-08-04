@@ -52,7 +52,9 @@ export interface UpdateBankProfilePayload {
 
 export const onboardingService = {
   async registerSeller(payload: RegisterSellerPayload): Promise<ApiResponse<{ message: string }>> {
-    return fetchApi('oan_a2c.api.v1.seller.onboarding.register_seller', {
+    // Public self-registration endpoint (guest-accessible). `role` is omitted so
+    // the backend applies its default (BANK_ADMIN_ROLE), matching this page's intent.
+    return fetchApi('oan_a2c.api.v1.auth.register_user', {
       method: 'POST',
       body: JSON.stringify(payload),
     }) as Promise<ApiResponse<{ message: string }>>;

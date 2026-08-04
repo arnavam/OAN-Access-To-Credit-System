@@ -11,7 +11,7 @@ export default function AgentLoanProductsPage() {
     <div className="min-h-screen bg-[#F8F9FA] flex">
       <BankAgentSidebar isExpanded={isSidebarExpanded} setIsExpanded={setIsSidebarExpanded} />
       <div className="flex-1 flex flex-col min-w-0">
-        <DashboardHeader role="bank-agent" onMenuClick={() => setIsSidebarExpanded(!isSidebarExpanded)} title="Loan Products" />
+        <DashboardHeader onMenuClick={() => setIsSidebarExpanded(!isSidebarExpanded)} title="Loan Products" />
         <main className="flex-1 p-8 overflow-y-auto">
           <LoanProductsList portalLabel="Bank Agent Portal - Loan Product Management" />
         </main>

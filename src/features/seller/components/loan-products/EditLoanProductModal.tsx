@@ -17,6 +17,7 @@ import {
     updateProductCompound
 } from '@/features/seller/store/loanProductsSlice';
 import { onboardingService } from '@/features/seller/api/onboarding.service';
+import { toast } from '@/lib/toast';
 import type { UpdateLoanProductCompoundInput, UpdateLoanProductPayload } from '@/features/seller/types/loan-products.types';
 import type { LoanProductSummary } from '@/lib/api/api.schemas';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -222,6 +223,13 @@ export function EditLoanProductModal({ isOpen, onClose, product }: EditLoanProdu
 
     if (updateProductCompound.fulfilled.match(result)) {
       setIsSuccess(true);
+    } else {
+      // Surface the server error (e.g. duplicate product name) as a toast — the
+      // inline error box is easy to miss at the bottom of the form.
+      const errMsg =
+        (result.payload as { message?: string } | undefined)?.message ??
+        'Failed to update loan product.';
+      toast.error(errMsg);
     }
   };
 
@@ -399,7 +407,8 @@ export function EditLoanProductModal({ isOpen, onClose, product }: EditLoanProdu
                         min="0"
                         step="1"
                         value={form.minAmount}
-                        onChange={(event) => setForm((current) => ({ ...current, minAmount: event.target.value }))}
+                        onKeyDown={(event) => { if (['e', 'E', '+', '-'].includes(event.key)) event.preventDefault(); }}
+                        onChange={(event) => setForm((current) => ({ ...current, minAmount: event.target.value.replace(/[eE\+\-]/g, '') }))}
                         placeholder="Optional"
                         className="w-full rounded-lg border border-[#D1D5DB] px-4 py-2.5 text-[14px] focus:border-[#00C48C] focus:outline-none focus:ring-2 focus:ring-[#00C48C]"
                       />
@@ -413,7 +422,8 @@ export function EditLoanProductModal({ isOpen, onClose, product }: EditLoanProdu
                         min="0"
                         step="1"
                         value={form.maxAmount}
-                        onChange={(event) => setForm((current) => ({ ...current, maxAmount: event.target.value }))}
+                        onKeyDown={(event) => { if (['e', 'E', '+', '-'].includes(event.key)) event.preventDefault(); }}
+                        onChange={(event) => setForm((current) => ({ ...current, maxAmount: event.target.value.replace(/[eE\+\-]/g, '') }))}
                         placeholder="Enter maximum amount"
                         className="w-full rounded-lg border border-[#D1D5DB] px-4 py-2.5 text-[14px] focus:border-[#00C48C] focus:outline-none focus:ring-2 focus:ring-[#00C48C]"
                       />

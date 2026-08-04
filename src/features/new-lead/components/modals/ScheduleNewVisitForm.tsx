@@ -21,6 +21,46 @@ interface ScheduleNewVisitFormProps {
   onSave?: (scheduleDetails: any) => void | Promise<void>;
 }
 
+const isTodayDate = (dateStr: string): boolean => {
+  if (!dateStr) return false;
+  const selected = new Date(dateStr);
+  const today = new Date();
+  return (
+    selected.getFullYear() === today.getFullYear() &&
+    selected.getMonth() === today.getMonth() &&
+    selected.getDate() === today.getDate()
+  );
+};
+
+const isPastTimeForToday = (dateStr: string, timeStr: string): boolean => {
+  if (!dateStr || !timeStr || !isTodayDate(dateStr)) return false;
+
+  let hours = 0;
+  let minutes = 0;
+  const match12 = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (match12 && match12[1] && match12[2] && match12[3]) {
+    let h = parseInt(match12[1], 10);
+    const m = parseInt(match12[2], 10);
+    const period = match12[3].toUpperCase();
+    if (period === 'PM' && h < 12) h += 12;
+    if (period === 'AM' && h === 12) h = 0;
+    hours = h;
+    minutes = m;
+  } else {
+    const match24 = timeStr.match(/^(\d{1,2}):(\d{2})$/);
+    if (match24 && match24[1] && match24[2]) {
+      hours = parseInt(match24[1], 10);
+      minutes = parseInt(match24[2], 10);
+    } else {
+      return false;
+    }
+  }
+
+  const now = new Date();
+  const visitTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes);
+  return visitTime.getTime() < now.getTime();
+};
+
 export const ScheduleNewVisitForm = ({
   asModal = false,
   isOpen = true,
@@ -68,6 +108,11 @@ export const ScheduleNewVisitForm = ({
       return;
     }
 
+    if (isPastTimeForToday(date, time)) {
+      setErrorFeedback('Cannot schedule a visit for a past time on today\'s date. Please select a future time.');
+      return;
+    }
+
     const payload = { date, time, location, agenda, region, zone, woreda, kebele };
 
     setIsSaving(true);
@@ -95,7 +140,9 @@ export const ScheduleNewVisitForm = ({
     }
   };
 
-  const FormInner = () => (
+  const isPastTimeError = isPastTimeForToday(date, time);
+
+  const formContent = (
     <>
       <div className={`flex flex-row items-center w-full px-6 py-[19.5px] border-b border-[#E5E7EB] ${asModal ? 'justify-between' : ''}`}>
         <h2 className="font-roboto font-semibold text-lg leading-6 text-[#111827]">
@@ -130,6 +177,7 @@ export const ScheduleNewVisitForm = ({
                 label="Visit Time"
                 value={time}
                 onChange={setTime}
+                {...(isPastTimeError ? { error: 'Visit time cannot be in the past' } : {})}
                 required
               />
             </div>
@@ -207,7 +255,7 @@ export const ScheduleNewVisitForm = ({
           </button>
           <button
             onClick={handleSave}
-            disabled={isSaving}
+            disabled={isSaving || isPastTimeError}
             className="flex justify-center items-center px-4 py-3 bg-[#16A34A] rounded-md text-white font-inter font-semibold text-sm shadow-[0px_1px_2px_rgba(0,0,0,0.05)] hover:bg-[#15803d] transition-colors disabled:opacity-50"
           >
             {isSaving ? 'Saving...' : 'Save Schedule'}
@@ -236,7 +284,7 @@ export const ScheduleNewVisitForm = ({
           className="relative flex flex-col items-start p-0 w-[95%] sm:w-[640px] max-w-full h-auto bg-white rounded-[10px] shadow-xl overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
-          <FormInner />
+          {formContent}
         </div>
       </div>,
       document.body
@@ -246,7 +294,7 @@ export const ScheduleNewVisitForm = ({
   // Default inline view
   return (
     <div className="flex flex-col items-start w-full bg-white border border-[#F1F3F4] shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.05),0px_2px_4px_-1px_rgba(0,0,0,0.03)] hover:-translate-y-1 hover:shadow-lg transition-all duration-300 rounded-xl overflow-hidden">
-      <FormInner />
+      {formContent}
     </div>
   );
 };
