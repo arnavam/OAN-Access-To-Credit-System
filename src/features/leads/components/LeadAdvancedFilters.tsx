@@ -1,5 +1,6 @@
 import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
-import { selectLeadSourcesOptions, selectLoanTypesOptions } from '@/features/new-lead/store/newLeadSlice';
+import { selectLeadSourcesOptions } from '@/features/new-lead/store/newLeadSlice';
+import { selectCategories } from '@/features/seller/store/loanProductsSlice';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { Check, ChevronDown, SlidersHorizontal, X } from 'lucide-react';
@@ -29,7 +30,7 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
   const dispatch = useAppDispatch();
   const activeFilters = useAppSelector(selectAdvFilters);
   const leadSourcesOptions = useAppSelector(selectLeadSourcesOptions);
-  const loanTypesOptions = useAppSelector(selectLoanTypesOptions);
+  const loanTypesOptions = useAppSelector(selectCategories).map((c) => c.term_name);
 
   const [mounted, setMounted] = useState(false);
 
