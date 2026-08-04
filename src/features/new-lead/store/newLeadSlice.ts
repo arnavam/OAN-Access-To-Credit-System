@@ -12,6 +12,7 @@ import { clearForm, initializeLead } from './actions';
 import { fetchAssignmentInfoThunk } from './assignmentSlice';
 import { fetchLeadDetailsThunk } from './farmerSlice';
 import { formatTiming } from './helpers';
+import { scheduleVisitThunk } from './visitSlice';
 
 
 
@@ -409,6 +410,9 @@ const newLeadSlice = createSlice({
       })
       .addCase(updateLeadStatusThunk.fulfilled, (state, action) => {
         state.leadStatus = action.payload.payload.status;
+        state.verificationBlocked = false;
+      })
+      .addCase(scheduleVisitThunk.fulfilled, (state) => {
         state.verificationBlocked = false;
       });
   }

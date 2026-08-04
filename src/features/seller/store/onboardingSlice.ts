@@ -48,7 +48,9 @@ export const registerSeller = createAsyncThunk(
       const response = await onboardingService.registerSeller(payload);
       return response.data;
     } catch (error) {
-      logger.error('registerSeller thunk failed', { error });
+      // Pass the error itself (not `{ error }`) so the console shows its message
+      // and stack instead of serializing to an empty `{}`.
+      logger.error('registerSeller thunk failed', error);
       return rejectWithValue(error instanceof Error ? error.message : 'Failed to register seller account');
     }
   }

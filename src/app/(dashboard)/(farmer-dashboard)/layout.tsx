@@ -21,7 +21,6 @@ export default function FarmerLayout({ children }: { children: React.ReactNode }
       <FarmerSidebar isExpanded={isSidebarExpanded} setIsExpanded={setIsSidebarExpanded} />
       <div className="flex-1 flex flex-col min-w-0 transition-all duration-300">
         <DashboardHeader
-          role="farmer"
           title={getFarmerPageTitle(pathname)}
           subtitle="Farmer ID: ETH-2847"
           onMenuClick={() => setIsSidebarExpanded(prev => !prev)}

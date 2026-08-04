@@ -6,6 +6,7 @@ import {
     selectOnboardingRegistrationStatus
 } from '@/features/seller/store/onboardingSlice';
 import { registerSellerSchema } from '@/lib/api/api.schemas';
+import { toast } from '@/lib/toast';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { ArrowRight, ChevronDown, Eye, EyeOff, Info, Lock, Mail, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -48,6 +49,10 @@ export function CreateAccountForm() {
     const result = await dispatch(registerSeller(validationResult.data));
 
     if (registerSeller.fulfilled.match(result)) {
+      const successMsg =
+        (result.payload as { message?: string } | undefined)?.message ??
+        'Account registered successfully. You may now login.';
+      toast.success(successMsg);
       router.push('/login/bank-admin');
     }
   };

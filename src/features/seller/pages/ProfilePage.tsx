@@ -23,7 +23,7 @@ function ProfilePageInner() {
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] flex flex-col">
-      <DashboardTopNav role="bank-admin" title="My Profile" />
+      <DashboardTopNav title="My Profile" />
 
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-8 space-y-6">
         {/* Back Link */}

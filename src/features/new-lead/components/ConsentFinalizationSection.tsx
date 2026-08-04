@@ -1,4 +1,5 @@
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { toast } from '@/lib/toast';
 import { AlertCircle, Calendar, CheckSquare, Eye, FileText, Folder, Loader2, Sparkles, Square, Upload, X } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { ChangeEvent, useEffect, useRef, useState } from 'react';
@@ -6,6 +7,9 @@ import { AllowedDataField, ConsentReason, newLeadService } from '../api/newLead.
 import { selectConsentState, submitConsentThunk } from '../store/consentSlice';
 import { selectFarmerState, selectIsPollingLong } from '../store/farmerSlice';
 import { ProfileSyncLoadingModal } from './modals/ProfileSyncLoadingModal';
+
+const MAX_FILE_SIZE_MB = 10;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 export function ConsentFinalizationSection() {
   const dispatch = useAppDispatch();
@@ -104,7 +108,28 @@ export function ConsentFinalizationSection() {
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setConsentFile(e.target.files[0]);
+      const file = e.target.files[0];
+
+      // MIME type check (LC-032)
+      const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+      if (!isPdf) {
+        const errorMsg = 'Invalid file type. Please upload a PDF document (.pdf).';
+        setLocalError(errorMsg);
+        toast.error(errorMsg);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        return;
+      }
+
+      // Size limit check (LC-033)
+      if (file.size > MAX_FILE_SIZE_BYTES) {
+        const errorMsg = `File size exceeds the ${MAX_FILE_SIZE_MB}MB limit. Please upload a smaller PDF file.`;
+        setLocalError(errorMsg);
+        toast.error(errorMsg);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        return;
+      }
+
+      setConsentFile(file);
       if (localError) setLocalError(null);
     }
   };
@@ -359,7 +384,7 @@ export function ConsentFinalizationSection() {
                       type="file"
                       ref={fileInputRef}
                       onChange={handleFileChange}
-                      accept="application/pdf,image/*"
+                      accept=".pdf,application/pdf"
                       className="hidden"
                     />
                   </div>

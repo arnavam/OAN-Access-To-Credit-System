@@ -18,7 +18,7 @@ import LoanToolbar from '@/features/loans/components/LoanToolbar';
 import { Award, FileText, Users, XCircle } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
-const LoanApplicationModal = dynamic(() => import('@/features/loans/components/modals/LoanApplicationModal'), {
+const LoanApplicationModal = dynamic(() => import('@/features/loans/components/modals/LoanApplicationModalLegacy'), {
   ssr: false,
 });
 

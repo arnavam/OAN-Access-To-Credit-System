@@ -1,17 +1,16 @@
 'use client';
 
-import { selectLeadStatusesOptions, selectLoanTypesOptions } from '@/features/new-lead/store/newLeadSlice';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { Check, Eye, Filter, Phone } from 'lucide-react';
 import { memo, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
-    selectActivityPage, selectAdvancedFilters, selectLoanSortBy, selectLoanSortOrder, selectPagedRows, selectPageSize,
-    selectTableStatusFilters, selectTableTypeFilters,
-    setActivityPage,
-    setAdvancedFilters, setPageSize,
-    setTableStatusFilters,
-    setTableTypeFilters
+  selectActivityPage, selectAdvancedFilters, selectPagedRows, selectPageSize,
+  selectTableStatusFilters, selectTableTypeFilters,
+  setActivityPage,
+  setAdvancedFilters, setPageSize,
+  setTableStatusFilters,
+  setTableTypeFilters
 } from '../store/loanDashboardSlice';
 import LoanEmptyState from './LoanEmptyState';
 
@@ -51,8 +50,7 @@ const RANGE_STEPS = [
 const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
   const dispatch = useAppDispatch();
   const rows: LoanTableRow[] = useAppSelector(selectPagedRows);
-  const statusOptions = useAppSelector(selectLeadStatusesOptions);
-  const loanTypeOptions = useAppSelector(selectLoanTypesOptions);
+
 
   const selectedStatuses = useAppSelector(selectTableStatusFilters);
   const selectedLoanTypes = useAppSelector(selectTableTypeFilters);
@@ -60,8 +58,7 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
 
   const currentPage = useAppSelector(selectActivityPage);
   const pageSize = useAppSelector(selectPageSize);
-  const sortBy = useAppSelector(selectLoanSortBy);
-  const sortOrder = useAppSelector(selectLoanSortOrder);
+
 
   const [statusFilterOpen, setStatusFilterOpen] = useState(false);
   const [loanTypeFilterOpen, setLoanTypeFilterOpen] = useState(false);
@@ -153,7 +150,7 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
             <tr>
               <th className="px-6 py-4 font-semibold">Application ID</th>
               <th className="px-6 py-4 font-semibold">Phone Number</th>
-              
+
               {/* Status */}
               <th className="px-6 py-4 font-semibold">
                 <div className="relative inline-flex items-center gap-2">
@@ -477,7 +474,7 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
                   )}
                 </div>
               </th>
-              
+
               <th className="px-6 py-4 font-semibold text-center">Actions</th>
             </tr>
           </thead>

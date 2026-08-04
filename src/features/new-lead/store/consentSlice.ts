@@ -137,10 +137,12 @@ const consentSlice = createSlice({
       })
       .addCase(verifyOtpThunk.pending, (state) => {
         state.isVerifyingOtp = true;
+        state.consentError = null;
       })
       .addCase(verifyOtpThunk.fulfilled, (state) => {
         state.isVerifyingOtp = false;
         state.isOtpVerified = true;
+        state.consentError = null;
       })
       .addCase(verifyOtpThunk.rejected, (state, action) => {
         state.isVerifyingOtp = false;

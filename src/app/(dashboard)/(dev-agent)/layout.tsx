@@ -109,7 +109,6 @@ export default function DevAgentLayout({ children }: { children: React.ReactNode
       />
       <main id="dashboard-main" className="dashboard-main">
         <DashboardHeader
-          role="officer"
           onMenuClick={handleToggleSidebar}
           title={pageTitle}
         />

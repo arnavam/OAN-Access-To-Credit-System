@@ -1,12 +1,12 @@
 'use client';
 
-import { logger } from '@/lib/logger';
 import { toast } from '@/lib/toast';
 import { CheckCircle2, ChevronDown, Loader2, Package, X, XCircle } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { LoanApplicationFull, loanService } from '../../api/loan.service';
+import { LoanApplicationFull } from '../../api/loan.service';
 import { LoanTableRow } from '../LoanTable';
+import { PINNED_OR_META_KEYS, useLoanApplicationModal } from './useLoanApplicationModal';
 
 interface LoanApplicationModalProps {
   isOpen: boolean;
@@ -16,9 +16,8 @@ interface LoanApplicationModalProps {
 }
 
 export default function LoanApplicationModal({ isOpen, onClose, data, onStatusChange }: LoanApplicationModalProps) {
-  const [mounted, setMounted] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [fullProfile, setFullProfile] = useState<LoanApplicationFull | null>(null);
+  const { mounted, isLoading, fullProfile: rawProfile } = useLoanApplicationModal(isOpen, data);
+  const fullProfile = rawProfile as LoanApplicationFull | null;
 
   const [isRejecting, setIsRejecting] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
@@ -28,34 +27,13 @@ export default function LoanApplicationModal({ isOpen, onClose, data, onStatusCh
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    const fetchId = data?.application_id || data?.id;
-    if (isOpen && fetchId) {
-      setIsLoading(true);
-      loanService.getFullProfile(fetchId)
-        .then((profileRes) => {
-          setFullProfile(profileRes?.data || null);
-        })
-        .catch((err) => {
-          logger.error("Failed to fetch full profile:", err);
-        })
-        .finally(() => {
-          setIsLoading(false);
-        });
-    } else {
-      setFullProfile(null);
-    }
-
     if (isOpen) {
       setIsRejecting(false);
       setIsApproving(false);
       setDecisionReason('');
       setDecisionNote('');
     }
-  }, [isOpen, data?.application_id, data?.id]);
+  }, [isOpen]);
 
   if (!mounted || !isOpen || !data) return null;
 
@@ -190,18 +168,9 @@ export default function LoanApplicationModal({ isOpen, onClose, data, onStatusCh
                     </div>
 
                     {fullProfile && Object.entries(fullProfile)
-                      .filter(([key, value]) => {
-                        const excludedKeys = [
-                          'application_id', 'lead_id', 'farmer_profile', 'consent_id',
-                          'loan_type', 'loan_product', 'loan_product_name', 'loan_amount',
-                          'requested_amount', 'loan_reason', 'purpose_of_loan', 'status',
-                          'current_step', 'loan_officer', 'creation', 'submission_date',
-                          'internal_notes', 'first_name', 'last_name', 'farmer_name',
-                          'phone_number', 'applicant', 'amount', 'updated',
-                          'phone', 'productName',
-                        ];
-                        return !excludedKeys.includes(key) && value !== null && value !== '' && typeof value !== 'object';
-                      })
+                      .filter(([key, value]) =>
+                        !PINNED_OR_META_KEYS.has(key) && value !== null && value !== '' && typeof value !== 'object'
+                      )
                       .map(([key, value]) => {
                         // Some values like source_of_income might be long, so we handle them below or let them span 2 cols if needed.
                         // Here we just render them normally. If we want them to look good, we can just use normal div.

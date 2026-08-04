@@ -186,8 +186,15 @@ export function CreditInformationModal({ isOpen, onClose, onSubmit }: CreditInfo
                   type="number"
                   placeholder="Enter Loan Amount"
                   value={loanAmount}
+                  onKeyDown={(e) => {
+                    // Prevent exponent ('e', 'E') and special characters ('+', '-') (LC-063, LC-064)
+                    if (['e', 'E', '+', '-'].includes(e.key)) {
+                      e.preventDefault();
+                    }
+                  }}
                   onChange={(e) => {
-                    setLoanAmount(e.target.value);
+                    const sanitized = e.target.value.replace(/[eE\+\-]/g, '');
+                    setLoanAmount(sanitized);
                     clearFieldError('loan_amount', 'loanAmount');
                   }}
                   className={`box-border flex flex-row items-center p-[8px_16px] w-full h-[44px] bg-white border rounded-[8px] font-roboto font-normal text-[14px] leading-[16px] text-[#111827] placeholder:text-[#C6C6C6] outline-none focus:ring-1 ${

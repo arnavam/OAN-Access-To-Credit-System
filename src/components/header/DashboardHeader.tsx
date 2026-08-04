@@ -1,7 +1,8 @@
 'use client';
 import { LanguageSelector } from '@/app/(portal-account)/components/LanguageSelector';
 import { logoutUser, getUserProfile } from '@/features/auth/api/authApi';
-import { logout, selectBankName, selectOfficerName, selectUserImage, setUserImage } from '@/features/auth/store/authSlice';
+import { logout, selectBankName, selectOfficerName, selectUserImage, selectUserKind, setUserImage } from '@/features/auth/store/authSlice';
+import type { UserKind } from '@/features/auth/rbac';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { Bell, Building2, ChevronDown, LogOut, Menu, UserRound, UsersRound } from 'lucide-react';
 import Link from 'next/link';
@@ -13,8 +14,6 @@ import { NotificationDropdown } from './NotificationDropdown';
 import { ProfileModal } from './ProfileModal';
 import { toProxiedFileUrl } from '@/lib/utils';
 
-export type DashboardRole = 'bank-admin' | 'bank-agent' | 'farmer' | 'officer';
-
 interface RoleConfig {
   /** Fallback display name when the store has none. */
   fallbackName: string;
@@ -22,15 +21,19 @@ interface RoleConfig {
   loginPath: string;
 }
 
-const ROLE_CONFIG: Record<DashboardRole, RoleConfig> = {
-  'bank-admin': { fallbackName: 'Bank Admin', loginPath: '/login/bank-admin' },
-  'bank-agent': { fallbackName: 'Bank Agent', loginPath: '/login/bank-agent' },
+// Keyed by the authoritative UserKind (backend user_type) — the single source
+// of truth for roles. No presentational role vocabulary is kept in parallel.
+const ROLE_CONFIG: Record<UserKind, RoleConfig> = {
+  bank_admin: { fallbackName: 'Bank Admin', loginPath: '/login/bank-admin' },
+  bank_agent: { fallbackName: 'Bank Agent', loginPath: '/login/bank-agent' },
+  dev_agent: { fallbackName: 'Development Agent', loginPath: '/login/development-agent' },
+  marketplace: { fallbackName: 'Marketplace', loginPath: '/login' },
   farmer: { fallbackName: 'Farmer', loginPath: '/' },
-  officer: { fallbackName: 'Guest User', loginPath: '/login' },
 };
 
+const FALLBACK_CONFIG: RoleConfig = { fallbackName: 'User', loginPath: '/login' };
+
 interface DashboardHeaderProps {
-  role: DashboardRole;
   onMenuClick?: () => void;
   title?: string;
   /**
@@ -41,7 +44,7 @@ interface DashboardHeaderProps {
   subtitle?: string;
 }
 
-export function DashboardHeader({ role, onMenuClick, title = 'Dashboard', subtitle }: DashboardHeaderProps) {
+export function DashboardHeader({ onMenuClick, title = 'Dashboard', subtitle }: DashboardHeaderProps) {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -51,9 +54,13 @@ export function DashboardHeader({ role, onMenuClick, title = 'Dashboard', subtit
   const officerName = useAppSelector(selectOfficerName);
   const bankName = useAppSelector(selectBankName);
   const userImage = useAppSelector(selectUserImage);
+  const userKind = useAppSelector(selectUserKind);
   const unreadCount = useAppSelector((state) => state.notifications.unreadCount);
 
-  const config = ROLE_CONFIG[role];
+  // Organization Settings & Team Management are admin-only surfaces.
+  const canManageOrganization = userKind === 'bank_admin';
+
+  const config = (userKind && ROLE_CONFIG[userKind]) || FALLBACK_CONFIG;
 
   // Initial fetch of unread count on header mount
   useEffect(() => {
@@ -98,9 +105,13 @@ export function DashboardHeader({ role, onMenuClick, title = 'Dashboard', subtit
       <header className="bg-white border-b border-gray-100 shadow-md h-20 shrink-0 flex items-center justify-between px-6 md:px-10 sticky top-0 z-30">
 
       <div className="flex items-center gap-4">
-        <button onClick={onMenuClick} className="p-2 -ml-2 rounded-xl hover:bg-gray-100 text-gray-700 transition-all active:scale-95 group">
-          <Menu className="w-6 h-6 group-hover:scale-110 group-hover:-rotate-90 group-hover:text-green-600 transition-all duration-300 ease-in-out" />
-        </button>
+        {/* Only render the sidebar toggle when a handler is wired up (i.e. a
+            sidebar exists). Contexts without a sidebar, e.g. onboarding, hide it. */}
+        {onMenuClick && (
+          <button onClick={onMenuClick} className="p-2 -ml-2 rounded-xl hover:bg-gray-100 text-gray-700 transition-all active:scale-95 group">
+            <Menu className="w-6 h-6 group-hover:scale-110 group-hover:-rotate-90 group-hover:text-green-600 transition-all duration-300 ease-in-out" />
+          </button>
+        )}
         <h1 className="text-xl font-bold text-gray-900 tracking-tight hidden sm:block">{title}</h1>
       </div>
 
@@ -176,23 +187,27 @@ export function DashboardHeader({ role, onMenuClick, title = 'Dashboard', subtit
                 <span>My Profile</span>
               </button>
 
-              <Link
-                href="/profile?tab=organization"
-                onClick={() => setIsProfileOpen(false)}
-                className="w-full flex items-center gap-3.5 px-5 py-3 text-sm font-medium text-gray-900 hover:bg-gray-50 transition-colors border-b border-gray-100 text-left whitespace-nowrap"
-              >
-                <Building2 className="w-5 h-5 text-[#16A34A] shrink-0" />
-                <span>Organization Settings</span>
-              </Link>
+              {canManageOrganization && (
+                <>
+                  <Link
+                    href="/profile?tab=organization"
+                    onClick={() => setIsProfileOpen(false)}
+                    className="w-full flex items-center gap-3.5 px-5 py-3 text-sm font-medium text-gray-900 hover:bg-gray-50 transition-colors border-b border-gray-100 text-left whitespace-nowrap"
+                  >
+                    <Building2 className="w-5 h-5 text-[#16A34A] shrink-0" />
+                    <span>Organization Settings</span>
+                  </Link>
 
-              <Link
-                href="/profile?tab=team"
-                onClick={() => setIsProfileOpen(false)}
-                className="w-full flex items-center gap-3.5 px-5 py-3 text-sm font-medium text-gray-900 hover:bg-gray-50 transition-colors border-b border-gray-100 text-left whitespace-nowrap"
-              >
-                <UsersRound className="w-5 h-5 text-[#16A34A] shrink-0" />
-                <span>Team Management</span>
-              </Link>
+                  <Link
+                    href="/profile?tab=team"
+                    onClick={() => setIsProfileOpen(false)}
+                    className="w-full flex items-center gap-3.5 px-5 py-3 text-sm font-medium text-gray-900 hover:bg-gray-50 transition-colors border-b border-gray-100 text-left whitespace-nowrap"
+                  >
+                    <UsersRound className="w-5 h-5 text-[#16A34A] shrink-0" />
+                    <span>Team Management</span>
+                  </Link>
+                </>
+              )}
 
               <button
                 type="button"
