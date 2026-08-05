@@ -30,14 +30,21 @@ export default function RegisterPage() {
   const authResolved = authStatus === 'succeeded' || authStatus === 'failed';
   const alreadyProvisioned = user?.kind === 'bank_admin' && !!user.bankId;
 
-  useEffect(() => {
-    if (authResolved && alreadyProvisioned) {
-      router.replace('/dashboard');
-    }
-  }, [authResolved, alreadyProvisioned, router]);
-
   const [isAgreed, setIsAgreed] = useState(false);
   const [isSuccessPopupOpen, setIsSuccessPopupOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Once the admin has just registered, keep them on this page so the success
+  // popup is visible. Without this guard, a background `getMe` that reports the
+  // now-provisioned bank would flip `alreadyProvisioned` and redirect to the
+  // dashboard before the confirmation is ever seen.
+  const justRegistered = isSuccessPopupOpen || registrationStatus === 'succeeded';
+
+  useEffect(() => {
+    if (authResolved && alreadyProvisioned && !justRegistered) {
+      router.replace('/dashboard');
+    }
+  }, [authResolved, alreadyProvisioned, justRegistered, router]);
 
   const [orgFields, setOrgFields] = useState<OrganisationFields>({
     bank_name: '',
@@ -67,6 +74,8 @@ export default function RegisterPage() {
       ...contactFields,
     }));
     if (registerBank.fulfilled.match(result)) {
+      const message = (result.payload as { message?: string } | undefined)?.message ?? null;
+      setSuccessMessage(message);
       setIsSuccessPopupOpen(true);
     } else if (registerBank.rejected.match(result)) {
       const msg = (result.payload as string) ?? '';
@@ -78,7 +87,7 @@ export default function RegisterPage() {
 
   // Don't flash the registration form while we resolve auth or redirect an
   // already-provisioned admin away.
-  if (!authResolved || alreadyProvisioned) {
+  if (!authResolved || (alreadyProvisioned && !justRegistered)) {
     return null;
   }
 
@@ -121,6 +130,7 @@ export default function RegisterPage() {
 
         <OrganizationRegisteredPopup
           isOpen={isSuccessPopupOpen}
+          message={successMessage}
           onClose={() => setIsSuccessPopupOpen(false)}
         />
       </div>
