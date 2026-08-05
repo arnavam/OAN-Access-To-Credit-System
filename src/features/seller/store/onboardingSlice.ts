@@ -29,9 +29,14 @@ const initialState: OnboardingState = {
 
 export const registerBank = createAsyncThunk(
   'sellerOnboarding/registerBank',
-  async (payload: RegisterBankPayload, { rejectWithValue }) => {
+  async (payload: RegisterBankPayload, { dispatch, rejectWithValue }) => {
     try {
       const response = await onboardingService.registerBank(payload);
+      // The bank is now provisioned server-side, but our cached session still
+      // has `bankId: null`. Refresh it before resolving so the dashboard's
+      // onboarding gate (which redirects null-bankId admins back to /onboarding)
+      // lets the user through once they leave this page.
+      await dispatch(getMeThunk());
       return response.data;
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Failed to register bank organisation';

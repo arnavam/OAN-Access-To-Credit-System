@@ -35,6 +35,7 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
     full_name: '',
     phone_number: '',
     language: 'English',
+    gender: '',
   });
   
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -60,6 +61,7 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
         full_name: data.personal_information.full_name || '',
         phone_number: data.personal_information.phone_number || '',
         language: data.personal_information.language || 'English',
+        gender: data.personal_information.gender || '',
       });
       if (data.personal_information.user_image) {
         dispatch(setUserImage(data.personal_information.user_image));
@@ -78,6 +80,7 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
         full_name: formData.full_name,
         phone_number: formData.phone_number,
         language: formData.language,
+        ...(formData.gender ? { gender: formData.gender } : {}),
       });
       setProfile(updated);
       toast.success('Profile updated successfully');
@@ -262,14 +265,18 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-900 mb-1.5">
-                        Email Address <span className="text-red-500">*</span>
+                        Gender <span className="text-red-500">*</span>
                       </label>
-                      <input 
-                        type="email" 
-                        value={profile?.personal_information.email_address || ''}
-                        disabled
-                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-500 cursor-not-allowed"
-                      />
+                      <select
+                        value={formData.gender}
+                        onChange={(e) => setFormData({...formData, gender: e.target.value})}
+                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-colors appearance-none"
+                      >
+                        <option value="">Select Gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                      </select>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-900 mb-1.5">
@@ -324,7 +331,7 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-900 mb-1.5">Employee ID</label>
+                    <label className="block text-sm font-medium text-gray-900 mb-1.5">Employee Email Address</label>
                     <input 
                       type="text" 
                       value={profile?.account_information.employee_id || 'N/A'}

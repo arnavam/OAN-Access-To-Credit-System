@@ -304,10 +304,6 @@ export function LoginClient() {
                     )}
                   </button>
 
-                  <p className="mt-4 flex justify-center text-[13px]">
-                    <span className="text-[#6B7280]">New to OAN?</span> <span className='text-[#16A34A] font-bold'><a href="#" className="font-bold text-[#16A34A] hover:text-[#10883c] hover:underline ml-1">Register your organisation</a></span>
-                  </p>
-
                   <div className="mt-4 flex flex-col items-center">
                     <div className="w-full flex items-start gap-3 bg-[#f0fdf4] border border-[#bbf7d0] rounded-xl p-4">
                       <div className="mt-0.5 text-[#16A34A]">

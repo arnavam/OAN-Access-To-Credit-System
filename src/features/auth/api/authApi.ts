@@ -69,6 +69,7 @@ export interface UserProfileResponse {
     user_image: string | null;
     full_name: string;
     email_address: string;
+    gender: string;
     phone_number: string;
     language: string;
   };
@@ -101,6 +102,7 @@ export interface UpdateProfilePayload {
   full_name?: string;
   phone_number?: string;
   language?: string;
+  gender?: string;
   user_image?: string;
 }
 

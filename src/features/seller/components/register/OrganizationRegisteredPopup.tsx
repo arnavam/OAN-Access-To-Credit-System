@@ -7,10 +7,11 @@ import { useEffect } from 'react';
 
 interface OrganizationRegisteredPopupProps {
   isOpen: boolean;
+  message?: string | null;
   onClose: () => void;
 }
 
-export function OrganizationRegisteredPopup({ isOpen, onClose }: OrganizationRegisteredPopupProps) {
+export function OrganizationRegisteredPopup({ isOpen, message, onClose }: OrganizationRegisteredPopupProps) {
   const router = useRouter();
 
   useEffect(() => {
@@ -48,14 +49,14 @@ export function OrganizationRegisteredPopup({ isOpen, onClose }: OrganizationReg
           </div>
           <h3 className="text-[24px] font-bold text-[#1F2937] mb-3">Organization Registered</h3>
           <p className="text-[16px] text-[#6B7280] mb-10 leading-relaxed max-w-[400px]">
-            Your organization has been successfully registered on the OAN Access to Credit network.
+            {message ?? 'Your organization has been successfully registered on the OAN Access to Credit network.'}
           </p>
 
           <button
-            onClick={() => router.push('/login/bank-admin')}
+            onClick={() => router.push('/dashboard')}
             className="w-full bg-[#16A34A] hover:bg-[#15803d] text-white py-3.5 rounded-lg font-bold text-[16px] transition-all duration-300 shadow-sm"
           >
-            Continue to Login
+            Continue to Dashboard
           </button>
         </div>
       </div>
