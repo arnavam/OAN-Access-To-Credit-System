@@ -1,6 +1,6 @@
-import { memo } from 'react';
-import { Eye, XCircle, Calendar, CheckCircle } from 'lucide-react';
 import { Lead } from '@/features/leads/types/leads.types';
+import { Calendar, CheckCircle, Eye, XCircle } from 'lucide-react';
+import { memo } from 'react';
 
 interface LeadActionCellProps {
   lead: Lead;

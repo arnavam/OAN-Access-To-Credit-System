@@ -1,7 +1,7 @@
-import { logger } from '@/lib/logger';
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
 import { env } from '@/lib/env';
+import { logger } from '@/lib/logger';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
@@ -62,14 +62,23 @@ export async function POST(request: NextRequest) {
       path: '/',
     };
 
+    // Keep both cookies on the same (session) lifetime so auth_token never
+    // outlives the refresh token — "auth_token present" must reliably signal an
+    // intended-alive session for the routing layer. The 15-min access-token
+    // expiry is enforced inside the JWT / by the backend, not by this cookie.
+    // NOTE: refresh doesn't know the original `rememberMe`, so it can't
+    // distinguish a 1-day vs 30-day session here — see follow-up to thread that
+    // through (or have the backend return the expiry).
+    const sessionMaxAge = 30 * 24 * 60 * 60; // 30 days max container age
+
     nextResponse.cookies.set('auth_token', token, {
       ...cookieOptions,
-      maxAge: 7 * 24 * 60 * 60, // 7 days Max age for the cookie container
+      maxAge: sessionMaxAge,
     });
 
     nextResponse.cookies.set('refresh_token', newRefreshToken, {
       ...cookieOptions,
-      maxAge: 30 * 24 * 60 * 60, // 30 days max container age
+      maxAge: sessionMaxAge,
     });
 
     return nextResponse;

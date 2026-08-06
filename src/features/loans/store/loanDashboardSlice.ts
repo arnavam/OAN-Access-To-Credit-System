@@ -1,8 +1,7 @@
-import { createSlice, createAsyncThunk, createSelector, PayloadAction } from '@reduxjs/toolkit';
-import type { RootState } from '../../../store';
-import { loanService, GetLoansParams, LoanApplicationSummary, LoanSummaryMetrics } from '@/features/loans/api/loan.service';
-import { selectUserEmail } from '@/features/auth/store/authSlice';
+import { GetLoansParams, LoanApplicationSummary, loanService, LoanSummaryMetrics } from '@/features/loans/api/loan.service';
 import type { ApiResponse } from '@/types/api';
+import { createAsyncThunk, createSelector, createSlice, PayloadAction } from '@reduxjs/toolkit';
+import type { RootState } from '../../../store';
 
 // Sentinel sent to the API when the user has explicitly cleared all status
 // filters, signalling "match no statuses" (distinct from omitting the param,
@@ -55,6 +54,8 @@ const ALL_STATUS_VALUES = ['danger', 'info', 'neutral'];
 export interface MappedLoanRow extends Omit<LoanApplicationSummary, 'status'> {
   id: string;
   applicant: string;
+  initials?: string;
+  productName?: string;
   phone: string;
   loanAmount: string;
   type: string;
@@ -73,6 +74,8 @@ export interface AdvancedFilters {
   location: string;
   dateFrom: string;
   dateTo: string;
+  sortBy?: 'loan_amount' | 'creation';
+  sortOrder?: 'asc' | 'desc';
 }
 
 interface LoanDashboardState {
@@ -211,7 +214,20 @@ const loanDashboardSlice = createSlice({
         dateTo: '',
       };
       state.activityPage = 1;
-    }
+    },
+    setLoanSort: (state, action: PayloadAction<{ sortBy?: 'loan_amount' | 'creation'; sortOrder?: 'asc' | 'desc' }>) => {
+      if (action.payload.sortBy !== undefined) {
+        state.advancedFilters.sortBy = action.payload.sortBy;
+      } else {
+        delete state.advancedFilters.sortBy;
+      }
+      if (action.payload.sortOrder !== undefined) {
+        state.advancedFilters.sortOrder = action.payload.sortOrder;
+      } else {
+        delete state.advancedFilters.sortOrder;
+      }
+      state.activityPage = 1;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -258,7 +274,8 @@ export const {
   clearTableFilters,
   setPageSize,
   setAdvancedFilters,
-  clearAdvancedFilters
+  clearAdvancedFilters,
+  setLoanSort
 } = loanDashboardSlice.actions;
 
 // --- Basic Selectors ---
@@ -275,6 +292,8 @@ export const selectTableStatusFilters = (state: RootState) => state.loanDashboar
 export const selectTableTypeFilters = (state: RootState) => state.loanDashboard.tableTypeFilters;
 export const selectPageSize = (state: RootState) => state.loanDashboard.pageSize;
 export const selectAdvancedFilters = (state: RootState) => state.loanDashboard.advancedFilters;
+export const selectLoanSortBy = (state: RootState) => state.loanDashboard.advancedFilters.sortBy;
+export const selectLoanSortOrder = (state: RootState) => state.loanDashboard.advancedFilters.sortOrder;
 
 // --- Derived Memoized Selectors ---
 export const selectPagedRowsData = createSelector(
@@ -347,14 +366,15 @@ export const selectLiveMetrics = createSelector(
 export const selectTabCounts = createSelector(
   [selectRawSummaryData],
   (rawSummaryData) => {
-    return rawSummaryData?.data?.tab_counts || { all: 0, my: 0, unassigned: 0 };
+    const tc = rawSummaryData?.data?.tab_counts;
+    return tc ?? null;
   }
 );
 
 
 export const selectQueryParams = createSelector(
-  [selectActivityPage, selectPageSize, selectDateRange, selectSelectedStatuses, selectSearchQuery, selectActiveTab, selectTableStatusFilters, selectTableTypeFilters, selectAdvancedFilters, selectUserEmail],
-  (activityPage, pageSize, dateRange, selectedStatuses, searchQuery, activeTab, tableStatusFilters, tableTypeFilters, advancedFilters, userEmail) => {
+  [selectActivityPage, selectPageSize, selectDateRange, selectSelectedStatuses, selectSearchQuery, selectActiveTab, selectTableStatusFilters, selectTableTypeFilters, selectAdvancedFilters],
+  (activityPage, pageSize, dateRange, selectedStatuses, searchQuery, activeTab, tableStatusFilters, tableTypeFilters, advancedFilters) => {
     const params: GetLoansParams = {
       page: activityPage,
       page_size: pageSize,
@@ -363,7 +383,7 @@ export const selectQueryParams = createSelector(
     if (searchQuery) params.search_query = searchQuery;
     // Scope the queue server-side via loan_officer (get_all_loans): "My" → my
     // email, "Unassigned" → the literal 'unassigned', "All" → omit.
-    if (activeTab === 'my' && userEmail) params.loan_officer = userEmail;
+    if (activeTab === 'my') params.loan_officer = 'my';
     else if (activeTab === 'unassigned') params.loan_officer = 'unassigned';
 
     const getCutoffTimestamp = (range: string) => {
@@ -440,6 +460,13 @@ export const selectQueryParams = createSelector(
     }
     if (advancedFilters.maxLoan !== null && advancedFilters.maxLoan !== undefined) {
       params.max_loan_amount = String(advancedFilters.maxLoan);
+    }
+
+    if (advancedFilters.sortBy) {
+      params.sort_by = advancedFilters.sortBy;
+    }
+    if (advancedFilters.sortOrder) {
+      params.sort_order = advancedFilters.sortOrder;
     }
 
     return params;

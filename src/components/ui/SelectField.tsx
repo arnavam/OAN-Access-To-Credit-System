@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { ChevronDown, Check } from 'lucide-react';
+import { Check, ChevronDown } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 interface SelectFieldProps {
   id?: string;
@@ -39,9 +39,9 @@ export function SelectField({ id, label, placeholder, options, value, onChange, 
         </button>
         <ul className={`absolute z-50 mt-1 w-full rounded-xl border border-gray-200 bg-white py-1 shadow-xl transition-all ${isOpen ? 'pointer-events-auto scale-y-100 opacity-100' : 'pointer-events-none scale-y-95 opacity-0'}`}
           style={{ maxHeight: '200px', overflowY: 'auto', transformOrigin: 'top' }}>
-          {options.map(opt => {
+          {options.map((opt, idx) => {
             const sel = value === opt;
-            return <li key={opt} onMouseDown={() => { onChange(opt); setIsOpen(false); }}
+            return <li key={`${opt}-${idx}`} onMouseDown={() => { onChange(opt); setIsOpen(false); }}
               className={`flex cursor-pointer items-center justify-between px-3 py-2 text-sm ${sel ? 'bg-[#4a7c59]/8 font-medium text-[#4a7c59]' : 'text-gray-800 hover:bg-gray-50'}`}>
               {opt}{sel && <Check size={13} strokeWidth={2.5} className="text-[#4a7c59]" />}
             </li>;

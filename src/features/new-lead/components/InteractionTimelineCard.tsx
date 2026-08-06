@@ -1,5 +1,5 @@
-import { History, UserPlus, Phone, UserCheck, Calendar, FileText, CheckCircle } from 'lucide-react';
 import { useAppSelector } from '@/store/hooks';
+import { Calendar, CheckCircle, FileText, History, Phone, UserCheck, UserPlus } from 'lucide-react';
 import { selectActivities } from '../store/newLeadSlice';
 
 function getIconForEventType(eventType: string) {

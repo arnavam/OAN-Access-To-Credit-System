@@ -1,7 +1,7 @@
 'use client';
 
-import { History, Check, Clock, XCircle, MapPin } from 'lucide-react';
 import { useAppSelector } from '@/store/hooks';
+import { Check, Clock, History, MapPin, XCircle } from 'lucide-react';
 import { selectVisitState } from '../store/visitSlice';
 
 export function VisitHistoryCard() {

@@ -1,246 +1,327 @@
-import { logger } from '@/lib/logger';
-import { useEffect, useState } from 'react';
+'use client';
+
+import { toast } from '@/lib/toast';
+import { CheckCircle2, ChevronDown, Loader2, Package, X, XCircle } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, CheckCircle2, User, Lock, Building2, Loader2, Eye, EyeOff, FileText, Sprout, Coins } from 'lucide-react';
+import { LoanApplicationFull } from '../../api/loan.service';
 import { LoanTableRow } from '../LoanTable';
-import { loanService, LoanApplicationFull } from '../../api/loan.service';
-import { maskSensitiveId } from '@/lib/utils';
-import { FORM_SECTIONS, mapApiToFarmerDetails } from '@/features/loans/constants/form-sections';
+import { PINNED_OR_META_KEYS, useLoanApplicationModal } from './useLoanApplicationModal';
 
 interface LoanApplicationModalProps {
   isOpen: boolean;
   onClose: () => void;
   data: LoanTableRow | null;
+  onStatusChange?: (id: string, status: 'Approved' | 'Rejected', reason?: string, note?: string) => void;
 }
 
-const Field = ({ label, value, sensitive = false, isList = false }: { label: string; value: string | null | undefined; sensitive?: boolean, isList?: boolean }) => {
-  const [revealed, setRevealed] = useState(false);
-  const hasValue = !!value && value.trim() !== '';
+export default function LoanApplicationModal({ isOpen, onClose, data, onStatusChange }: LoanApplicationModalProps) {
+  const { mounted, isLoading, fullProfile: rawProfile } = useLoanApplicationModal(isOpen, data);
+  const fullProfile = rawProfile as LoanApplicationFull | null;
 
-  if (isList) {
-    const listItems = hasValue ? value!.split(',').map(s => s.trim()).filter(Boolean) : [];
-    return (
-      <div className="flex flex-col">
-        <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">{label}</span>
-        {listItems.length > 0 ? (
-          <div className="flex flex-wrap gap-2">
-            {listItems.map((item, idx) => (
-              <div key={idx} className="bg-gray-50 border border-gray-200 rounded-md px-2 py-1 text-[13px] font-bold text-gray-800">
-                {item}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <span className="text-[15px] font-bold text-gray-800">—</span>
-        )}
-      </div>
-    );
-  }
+  const [isRejecting, setIsRejecting] = useState(false);
+  const [isApproving, setIsApproving] = useState(false);
+  const [decisionReason, setDecisionReason] = useState('');
+  const [decisionNote, setDecisionNote] = useState('');
 
-  const display = sensitive && hasValue && !revealed ? maskSensitiveId(value!) : value;
-
-  return (
-    <div className="flex flex-col">
-      <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1">{label}</span>
-      <span className="text-[15px] font-bold text-gray-800 flex items-center gap-2">
-        <span>{hasValue ? display : '—'}</span>
-        {sensitive && hasValue && (
-          <button
-            type="button"
-            onClick={() => setRevealed((r) => !r)}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-            aria-label={revealed ? `Hide ${label}` : `Reveal ${label}`}
-          >
-            {revealed ? <EyeOff size={14} /> : <Eye size={14} />}
-          </button>
-        )}
-      </span>
-    </div>
-  );
-};
-
-const SECTION_ICONS: Record<string, any> = {
-  'Loan Details': Lock,
-  'Basic Information': User,
-  'Socio Economic Information': Coins,
-  'Land, Crop and Livestock Information': Sprout,
-  'Agronomic Data': FileText,
-};
-
-
-export default function LoanApplicationModal({ isOpen, onClose, data }: LoanApplicationModalProps) {
-  const [mounted, setMounted] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [fullProfile, setFullProfile] = useState<LoanApplicationFull | null>(null);
+  const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    const fetchId = data?.application_id || data?.id;
-    if (isOpen && fetchId) {
-      setIsLoading(true);
-      loanService.getFullProfile(fetchId)
-        .then((profileRes) => {
-          setFullProfile(profileRes?.data || null);
-          setIsLoading(false);
-        })
-        .catch((err) => {
-          logger.error("Failed to fetch full profile:", err);
-          setIsLoading(false);
-        });
-    } else {
-      setFullProfile(null);
+    if (isOpen) {
+      setIsRejecting(false);
+      setIsApproving(false);
+      setDecisionReason('');
+      setDecisionNote('');
     }
-  }, [isOpen, data?.application_id, data?.id]);
+  }, [isOpen]);
 
   if (!mounted || !isOpen || !data) return null;
 
-  const farmerDetails = fullProfile ? mapApiToFarmerDetails(fullProfile) : null;
+  const statusBadgeColor =
+    data.status === 'Approved'
+      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+      : data.status === 'Rejected'
+        ? 'bg-red-50 text-red-700 border-red-200'
+        : 'bg-amber-50 text-amber-700 border-amber-200';
+
+  const handleConfirmDecision = () => {
+    if (!decisionReason) {
+      toast.error('Please select a reason for your decision');
+      return;
+    }
+    const statusToSet = isRejecting ? 'Rejected' : 'Approved';
+    if (onStatusChange) {
+      onStatusChange(data.id, statusToSet, decisionReason, decisionNote);
+    }
+    toast.success(`Application #${data.id} has been ${statusToSet.toLowerCase()}`);
+    setIsRejecting(false);
+    setIsApproving(false);
+    onClose();
+  };
+
+  const handleActionClick = (action: 'approve' | 'reject') => {
+    if (action === 'reject') {
+      setIsApproving(false);
+      setIsRejecting(true);
+    } else {
+      setIsRejecting(false);
+      setIsApproving(true);
+    }
+    setTimeout(() => {
+      endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }, 100);
+  };
+
+  // Extract dynamic values safely from data & fullProfile
+  const farmerName = data.applicant || (fullProfile?.first_name || fullProfile?.last_name ? `${fullProfile.first_name || ''} ${fullProfile.last_name || ''}`.trim() : '—');
+  const phone = data.phone || fullProfile?.phone_number || '—';
+  const loanProduct = fullProfile?.loan_product_name || '—';
+  const amount = data.amount || data.loanAmount || (fullProfile?.loan_amount ? `ETB ${fullProfile.loan_amount.toLocaleString()}` : ('—'));
+  const appliedDate = data.updated || data.creation || '—';
+  const purpose = fullProfile?.loan_reason || null;
 
   const modalContent = (
-    <>
-      <style type="text/css" media="print">
-        {`
-          body > *:not(#loan-application-modal-print-area) {
-            display: none !important;
-          }
-          #loan-application-modal-print-area {
-            display: block !important;
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
-            width: 100% !important;
-            height: auto !important;
-            overflow: visible !important;
-            box-shadow: none !important;
-            background: white !important;
-            padding: 0 !important;
-          }
-          .no-print {
-            display: none !important;
-          }
-          /* Ensure backgrounds print correctly */
-          * {
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-        `}
-      </style>
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-[#0F172A]/40 backdrop-blur-sm overflow-y-auto no-print"></div>
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm overflow-y-auto">
       <div
-        id="loan-application-modal-print-area"
-        className="fixed inset-0 z-[10000] flex items-center justify-center p-4 overflow-y-auto pointer-events-none"
+        className="relative flex flex-col w-full max-w-[620px] bg-white rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 my-8"
+        onClick={(e) => e.stopPropagation()}
       >
-        <div
-          className="relative flex flex-col w-full max-w-[850px] bg-white rounded-[10px] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 pointer-events-auto"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Header */}
-          <div className="bg-[#387f50] px-8 py-5 flex justify-between items-start">
-            <div>
-              <h2 className="text-xl font-bold text-white mb-1">Application Summary</h2>
-              <p className="text-emerald-100 text-[13px] font-medium tracking-wide">
-                ID: {data.id} &bull; Submitted {data.updated}
-              </p>
+        {/* Header */}
+        <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-white">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0">
+              <Package className="w-5 h-5 text-emerald-600" />
             </div>
-            <button
-              onClick={onClose}
-              className="flex items-center justify-center h-8 w-8 rounded-lg bg-white/20 text-white hover:bg-white/30 transition-colors"
-            >
-              <X size={18} strokeWidth={2.5} />
-            </button>
-          </div>
-
-          {/* Sub-header / Status */}
-          <div className="bg-emerald-50/80 px-8 py-4 flex items-center gap-3 border-b border-emerald-100/50">
-            <CheckCircle2 size={24} className="text-emerald-500 fill-emerald-100 shrink-0" />
             <div>
-              <h3 className="text-sm font-bold text-emerald-800">Submitted & {data.status}</h3>
-              <p className="text-xs font-medium text-emerald-600">Transmitted to Cooperative Bank of Oromia via SFTP</p>
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-bold text-gray-900">Application Details</h2>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
+                <span className="font-semibold text-gray-700">#{data.id}</span>
+                <span>&bull;</span>
+                <span className={`px-2 py-0.5 rounded-full font-semibold border ${statusBadgeColor}`}>
+                  &bull; {data.status || 'Pending'}
+                </span>
+              </div>
             </div>
           </div>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
-          {/* Body content */}
-          <div className="px-8 py-8 overflow-y-auto max-h-[60vh] space-y-10 custom-scrollbar">
-
-            {/* Dynamic Sections from FORM_SECTIONS */}
-            {FORM_SECTIONS.map((section) => {
-              const Icon = SECTION_ICONS[section.title] || Building2;
-              return (
-                <section key={section.title}>
-                  <div className="flex items-center gap-2 mb-6">
-                    <Icon size={20} className="text-[#3b5998]" fill="#3b5998" />
-                    <h4 className="text-[17px] font-bold text-gray-900">{section.title}</h4>
-                  </div>
-                  {isLoading ? (
-                    <div className="flex items-center justify-center py-8">
-                      <Loader2 className="w-6 h-6 animate-spin text-[#387f50]" />
+        {/* Scrollable Body */}
+        <div className="px-6 py-6 overflow-y-auto max-h-[70vh] space-y-6">
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-12 space-y-3">
+              <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" />
+              <p className="text-xs font-medium text-gray-500">Loading application details...</p>
+            </div>
+          ) : (
+            <>
+              {/* Section 1: LOAN DETAILS */}
+              <div className="space-y-3">
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">LOAN DETAILS</h3>
+                <div className="bg-[#F9FAFB] rounded-2xl p-5 border border-gray-100 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">APPLICATION ID</p>
+                      <p className="text-sm font-bold text-gray-900 mt-0.5">#{data.id}</p>
                     </div>
-                  ) : (
-                    <div className={`grid gap-y-6 gap-x-8 ${section.gridCols || 'lg:grid-cols-3'}`}>
-                      {section.fields.map((field) => (
-                        <Field
-                          key={field.key}
-                          label={field.label}
-                          value={farmerDetails ? farmerDetails[field.key] : ''}
-                          sensitive={!!field.sensitive}
-                          isList={!!field.isList}
-                        />
-                      ))}
+                    <div>
+                      <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">LOAN PRODUCT</p>
+                      <p className="text-sm font-bold text-gray-900 mt-0.5">{loanProduct}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">REQUESTED AMOUNT</p>
+                      <p className="text-sm font-bold text-gray-900 mt-0.5">{amount}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">SUBMISSION DATE</p>
+                      <p className="text-sm font-bold text-gray-900 mt-0.5">{appliedDate}</p>
+                    </div>
+                  </div>
+                  {purpose && (
+                    <div className="pt-2 border-t border-gray-200/60">
+                      <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">PURPOSE OF LOAN</p>
+                      <p className="text-sm font-bold text-gray-900 mt-0.5">{purpose}</p>
                     </div>
                   )}
-                </section>
-              );
-            })}
-
-            {/* Section: Banking Information (Extra, since it's not in Step2FarmerDetails) */}
-            {/* <section>
-            <div className="flex items-center gap-2 mb-6">
-              <Building2 size={20} className="text-[#5f6e7a]" fill="#5f6e7a" />
-              <h4 className="text-[17px] font-bold text-gray-900">Banking Information</h4>
-            </div>
-            {isLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-[#387f50]" />
+                </div>
               </div>
-            ) : (
-              <div className="grid grid-cols-3 gap-y-6 gap-x-8">
-                <Field label="BANK ACCOUNT NO." value={fullProfile?.bank_account_no || null} />
-                <Field label="IFSC / FSC CODE" value={fullProfile?.ifsc_code || null} />
-                <Field label="BANK NAME" value={fullProfile?.bank_name || null} />
-                <Field label="ACCOUNT HOLDER" value={fullProfile?.account_holder || null} />
+
+              {/* Section 2: FARMER DETAILS */}
+              <div className="space-y-3">
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">FARMER DETAILS</h3>
+                <div className="bg-[#F9FAFB] rounded-2xl p-5 border border-gray-100 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">FULL NAME</p>
+                      <p className="text-sm font-bold text-gray-900 mt-0.5">{farmerName}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">PHONE NUMBER</p>
+                      <p className="text-sm font-bold text-gray-900 mt-0.5">{phone}</p>
+                    </div>
+
+                    {fullProfile && Object.entries(fullProfile)
+                      .filter(([key, value]) =>
+                        !PINNED_OR_META_KEYS.has(key) && value !== null && value !== '' && typeof value !== 'object'
+                      )
+                      .map(([key, value]) => {
+                        // Some values like source_of_income might be long, so we handle them below or let them span 2 cols if needed.
+                        // Here we just render them normally. If we want them to look good, we can just use normal div.
+                        return (
+                          <div key={key} className={String(value).length > 40 ? "col-span-2 pt-2 border-t border-gray-200/60" : ""}>
+                            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                              {key.replace(/_/g, ' ')}
+                            </p>
+                            <p className="text-sm font-bold text-gray-900 mt-0.5">
+                              {String(value)}
+                            </p>
+                          </div>
+                        );
+                      })
+                    }
+                  </div>
+                </div>
               </div>
-            )}
-          </section> */}
 
-          </div>
+              {/* Section 3: INTERNAL NOTES (Conditional) */}
+              {fullProfile?.internal_notes && fullProfile.internal_notes.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">INTERNAL NOTES</h3>
+                  <div className="space-y-2">
+                    {fullProfile.internal_notes.map((note: any, idx: number) => (
+                      <div key={idx} className="bg-[#F9FAFB] rounded-2xl p-4 border border-gray-100 flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-full bg-emerald-600 text-white font-bold text-xs flex items-center justify-center shrink-0">
+                          {note.author?.[0]?.toUpperCase() || 'N'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-bold text-gray-900">{note.author || 'Officer'}</p>
+                            <span className="text-xs text-gray-400">{note.timestamp || ''}</span>
+                          </div>
+                          <p className="text-sm text-gray-600 mt-1">{note.message}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-          {/* Footer */}
-          <div className="bg-white px-8 py-5 flex justify-between items-center border-t border-gray-100 no-print">
-            <span className="text-xs font-medium text-gray-400">
-              {mounted ? `Generated on ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} • ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}` : 'Loading...'}
-            </span>
+              {/* Decision Confirmation Form */}
+              {(isRejecting || isApproving) && (
+                <div className={`border-2 rounded-2xl p-5 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200 ${isRejecting ? 'border-red-200 bg-red-50/30' : 'border-emerald-200 bg-emerald-50/30'}`}>
+                  <h4 className="text-sm font-bold text-gray-900">
+                    {isRejecting ? 'Confirm Rejection' : 'Confirm Approval'}
+                  </h4>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                      Reason for Decision <span className={isRejecting ? 'text-red-500' : 'text-emerald-500'}>*</span>
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={decisionReason}
+                        onChange={(e) => setDecisionReason(e.target.value)}
+                        className={`w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 appearance-none ${isRejecting ? 'focus:ring-red-500/20 focus:border-red-500' : 'focus:ring-emerald-500/20 focus:border-emerald-500'}`}
+                      >
+                        <option value="">Select Reason for Decison</option>
+                        {isRejecting ? (
+                          <>
+                            <option value="Insufficient Income">Insufficient Income</option>
+                            <option value="Incomplete Documentation">Incomplete Documentation</option>
+                            <option value="Eligibility Criteria Not Met">Eligibility Criteria Not Met</option>
+                            <option value="High Risk Profile">High Risk Profile</option>
+                          </>
+                        ) : (
+                          <>
+                            <option value="Meets All Criteria">Meets All Criteria</option>
+                            <option value="Good Credit History">Good Credit History</option>
+                            <option value="Verified Income">Verified Income</option>
+                            <option value="Strong Collateral">Strong Collateral</option>
+                          </>
+                        )}
+                        <option value="Other">Other</option>
+                      </select>
+                      <ChevronDown className="w-4 h-4 text-gray-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                      Add Note (Optional)
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={decisionNote}
+                      onChange={(e) => setDecisionNote(e.target.value)}
+                      placeholder="Placeholder for notes"
+                      className={`w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 ${isRejecting ? 'focus:ring-red-500/20 focus:border-red-500' : 'focus:ring-emerald-500/20 focus:border-emerald-500'}`}
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => { setIsRejecting(false); setIsApproving(false); }}
+                      className="px-5 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold rounded-xl text-sm transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleConfirmDecision}
+                      className={`px-5 py-2 text-white font-bold rounded-xl text-sm transition-colors shadow-sm ${isRejecting ? 'bg-[#DC2626] hover:bg-[#B91C1C]' : 'bg-[#16A34A] hover:bg-[#15803d]'}`}
+                    >
+                      Confirm Decision
+                    </button>
+                  </div>
+                </div>
+              )}
+              <div ref={endRef} />
+            </>
+          )}
+        </div>
+
+        {/* Footer Actions */}
+        <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-6 py-2.5 border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold rounded-xl text-sm transition-colors"
+          >
+            Close
+          </button>
+
+          {(!isRejecting && !isApproving) && (
             <div className="flex items-center gap-3">
-              {/* <button
-              onClick={() => window.print()}
-              className="flex items-center gap-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-6 py-2.5 rounded-lg text-sm font-bold shadow-sm transition-colors active:scale-95"
-            >
-              Print PDF
-            </button> */}
               <button
-                onClick={onClose}
-                className="bg-[#387f50] hover:bg-[#2c633f] text-white px-6 py-2.5 rounded-lg text-sm font-bold shadow-sm transition-colors active:scale-95"
+                type="button"
+                onClick={() => handleActionClick('reject')}
+                className="px-6 py-2.5 bg-[#DC2626] hover:bg-[#B91C1C] text-white font-bold rounded-xl text-sm transition-colors flex items-center gap-2 shadow-sm"
               >
-                Close
+                <XCircle className="w-4 h-4" />
+                Reject
+              </button>
+              <button
+                type="button"
+                onClick={() => handleActionClick('approve')}
+                className="px-6 py-2.5 bg-[#16A34A] hover:bg-[#15803d] text-white font-bold rounded-xl text-sm transition-colors flex items-center gap-2 shadow-sm"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                Approve
               </button>
             </div>
-          </div>
-
+          )}
         </div>
+
       </div>
-    </>
+    </div>
   );
 
   return createPortal(modalContent, document.body);

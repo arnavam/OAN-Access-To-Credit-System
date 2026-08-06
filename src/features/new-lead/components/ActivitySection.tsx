@@ -1,9 +1,9 @@
 import { logger } from '@/lib/logger';
-import { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { selectActivities, fetchActivitiesThunk, addActivityNoteThunk } from '../store/newLeadSlice';
+import { Edit, Image as ImageIcon, Paperclip } from 'lucide-react';
 import { useParams } from 'next/navigation';
-import { Edit, Paperclip, Image as ImageIcon } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { addActivityNoteThunk, fetchActivitiesThunk, selectActivities } from '../store/newLeadSlice';
 
 export function ActivitySection() {
   const activities = useAppSelector(selectActivities);

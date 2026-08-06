@@ -1,19 +1,14 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
-import { createPortal } from 'react-dom';
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { SlidersHorizontal, X, Check, ChevronDown } from 'lucide-react';
-import { KPI_CARDS_LAYOUT, STATUS_STYLE_MAP } from '../constants/leads.constants';
-import { selectAdvFilters, setAdvFilters, resetFilters } from '../store/leadSlice';
-import { selectLeadSourcesOptions, selectLoanTypesOptions } from '@/features/new-lead/store/newLeadSlice';
-import { DatePickerField } from '@/components/ui/DatePickerField';
+import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
+import { selectLeadSourcesOptions } from '@/features/new-lead/store/newLeadSlice';
+import { selectCategories } from '@/features/seller/store/loanProductsSlice';
 import { useClickOutside } from '@/hooks/useClickOutside';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { Check, ChevronDown, SlidersHorizontal, X } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { KPI_CARDS_LAYOUT, STATUS_STYLE_MAP } from '../constants/leads.constants';
+import { resetFilters, selectAdvFilters, setAdvFilters } from '../store/leadSlice';
 
-const QUICK_DATE_OPTS = [
-  { label: 'Today', days: 0 },
-  { label: 'Yesterday', days: 1 },
-  { label: 'Last 7 Days', days: 7 },
-  { label: 'Last 30 Days', days: 30 },
-] as const;
 
 const RANGE_STEPS = [
   { label: '0-25,000', value: '0-25000', min: 0, max: 25000, display: 'ETB 0 - 25,000' },
@@ -35,7 +30,7 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
   const dispatch = useAppDispatch();
   const activeFilters = useAppSelector(selectAdvFilters);
   const leadSourcesOptions = useAppSelector(selectLeadSourcesOptions);
-  const loanTypesOptions = useAppSelector(selectLoanTypesOptions);
+  const loanTypesOptions = useAppSelector(selectCategories).map((c) => c.term_name);
 
   const [mounted, setMounted] = useState(false);
 
@@ -52,8 +47,6 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
   const [quickDate, setQuickDate] = useState(activeFilters.quickDate);
   const [dateFrom, setDateFrom] = useState(activeFilters.dateFrom);
   const [dateTo, setDateTo] = useState(activeFilters.dateTo);
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-
   // Removed automatic "Today" date setting so filters are empty by default
 
   // Location states
@@ -424,50 +417,14 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
           </section>
 
           {/* Date Range */}
-          <section className={isDatePickerOpen ? "pb-[280px]" : ""}>
-            <p className="mb-3 text-base font-semibold text-[#232F34]">Date Range</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {[
-                { label: 'From', val: dateFrom, set: (v: string) => { setDateFrom(v); setQuickDate(''); } },
-                { label: 'To', val: dateTo, set: (v: string) => { setDateTo(v); setQuickDate(''); } },
-              ].map(({ label, val, set }) => (
-                <div key={label} className="relative">
-                  <p className="mb-1 text-sm text-gray-500">{label}</p>
-                  <DatePickerField
-                    value={val}
-                    onChange={(v) => set(v)}
-                    usePortal={false}
-                    align={label === 'To' ? 'right' : 'left'}
-                    onOpenChange={(isOpen) => setIsDatePickerOpen(isOpen)}
-                  />
-                </div>
-              ))}
-            </div>
-            <div className="mt-3 flex flex-wrap gap-2 font-semibold">
-              {QUICK_DATE_OPTS.map(o => (
-                <button
-                  key={o.label}
-                  type="button"
-                  onClick={() => {
-                    setQuickDate(o.label);
-                    const to = new Date();
-                    const from = new Date();
-                    if (o.days === 1) {
-                      from.setDate(from.getDate() - 1);
-                      to.setDate(to.getDate() - 1);
-                    } else {
-                      from.setDate(from.getDate() - o.days);
-                    }
-                    setDateFrom(from.toISOString().split('T')[0] ?? '');
-                    setDateTo(to.toISOString().split('T')[0] ?? '');
-                  }}
-                  className={`rounded-md border px-3 py-1.5 text-sm font-medium transition ${quickDate === o.label ? 'border-green-600 bg-green-50 text-green-700 font-semibold' : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:text-gray-700 font-semibold'}`}
-                >
-                  {o.label}
-                </button>
-              ))}
-            </div>
-          </section>
+          <DateRangeFilter
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+            quickDate={quickDate}
+            onDateFromChange={(v) => { setDateFrom(v); setQuickDate(''); }}
+            onDateToChange={(v) => { setDateTo(v); setQuickDate(''); }}
+            onQuickDateChange={(label, from, to) => { setQuickDate(label); setDateFrom(from); setDateTo(to); }}
+          />
         </div>
 
         {/* footer */}

@@ -1,10 +1,10 @@
-import * as React from 'react';
-import { useState, useRef, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { useParams } from 'next/navigation';
-import { X, ShieldCheck, Check } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { verifyOtpThunk, selectConsentState } from '../..';
+import { Check, ShieldCheck, X } from 'lucide-react';
+import { useParams } from 'next/navigation';
+import * as React from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { selectConsentState, verifyOtpThunk } from '../..';
 
 // Seconds the farmer must wait before a code can be resent.
 const RESEND_COOLDOWN_SECONDS = 60;

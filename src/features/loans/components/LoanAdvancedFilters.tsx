@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
-import { createPortal } from 'react-dom';
-import { X, SlidersHorizontal, ChevronDown, Check } from 'lucide-react';
+import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { Check, ChevronDown, SlidersHorizontal, X } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { selectAdvancedFilters, setAdvancedFilters } from '../store/loanDashboardSlice';
-import { DatePickerField } from '@/components/ui/DatePickerField';
 
 interface LoanAdvancedFiltersProps {
   isOpen: boolean;
@@ -16,12 +16,6 @@ const STATUS_OPTIONS = [
   { label: 'Rejected', value: 'Rejected', dot: 'bg-red-500' },
 ];
 
-const QUICK_DATE_OPTS = [
-  { label: 'Today', days: 0 },
-  { label: 'Yesterday', days: 1 },
-  { label: 'Last 7 Days', days: 7 },
-  { label: 'Last 30 Days', days: 30 },
-];
 
 const RANGE_STEPS = [
   { label: '0-25,000', value: '0-25000', min: 0, max: 25000, display: 'ETB 0 - 25,000' },
@@ -55,8 +49,6 @@ export default function LoanAdvancedFilters({ isOpen, onClose }: LoanAdvancedFil
   const [dateFrom, setDateFrom] = useState(currentFilters.dateFrom || '');
   const [dateTo, setDateTo] = useState(currentFilters.dateTo || '');
   const [quickDate, setQuickDate] = useState('');
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-
   // Dropdown states
   const [isAmountOpen, setIsAmountOpen] = useState(false);
   const amountRef = useRef<HTMLDivElement>(null);
@@ -336,50 +328,14 @@ export default function LoanAdvancedFilters({ isOpen, onClose }: LoanAdvancedFil
           </section>
 
           {/* Date Range */}
-          <section className={isDatePickerOpen ? "pb-[280px]" : ""}>
-            <p className="mb-3 text-base font-semibold text-[#232F34]">Date Range</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {[
-                { label: 'From', val: dateFrom, set: (v: string) => { setDateFrom(v); setQuickDate(''); } },
-                { label: 'To', val: dateTo, set: (v: string) => { setDateTo(v); setQuickDate(''); } },
-              ].map(({ label, val, set }) => (
-                <div key={label} className="relative">
-                  <p className="mb-1 text-sm text-gray-500">{label}</p>
-                  <DatePickerField
-                    value={val}
-                    onChange={(v) => set(v)}
-                    usePortal={false}
-                    align={label === 'To' ? 'right' : 'left'}
-                    onOpenChange={(isOpen) => setIsDatePickerOpen(isOpen)}
-                  />
-                </div>
-              ))}
-            </div>
-            <div className="mt-3 flex flex-wrap gap-2 font-semibold">
-              {QUICK_DATE_OPTS.map(o => (
-                <button
-                  key={o.label}
-                  type="button"
-                  onClick={() => {
-                    setQuickDate(o.label);
-                    const to = new Date();
-                    const from = new Date();
-                    if (o.days === 1) {
-                      from.setDate(from.getDate() - 1);
-                      to.setDate(to.getDate() - 1);
-                    } else {
-                      from.setDate(from.getDate() - o.days);
-                    }
-                    setDateFrom(from.toISOString().split('T')[0] ?? '');
-                    setDateTo(to.toISOString().split('T')[0] ?? '');
-                  }}
-                  className={`rounded-md border px-3 py-1.5 text-sm font-medium transition ${quickDate === o.label ? 'border-green-600 bg-green-50 text-green-700 font-semibold' : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:text-gray-700  font-semibold'}`}
-                >
-                  {o.label}
-                </button>
-              ))}
-            </div>
-          </section>
+          <DateRangeFilter
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+            quickDate={quickDate}
+            onDateFromChange={(v) => { setDateFrom(v); setQuickDate(''); }}
+            onDateToChange={(v) => { setDateTo(v); setQuickDate(''); }}
+            onQuickDateChange={(label, from, to) => { setQuickDate(label); setDateFrom(from); setDateTo(to); }}
+          />
 
         </div>
 

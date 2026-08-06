@@ -1,13 +1,12 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import type { RootState } from '../../../store';
 import { leadService } from '@/features/leads/api/lead.service';
-import type { GetLeadsParams, Lead, LeadSummaryResponse, LeadStatus } from '@/features/leads/types/leads.types';
+import type { GetLeadsParams, Lead, LeadStatus, LeadSummaryResponse } from '@/features/leads/types/leads.types';
 import {
-  updateLeadStatusThunk,
-  updateVisitScheduleStatusThunk,
-  fetchLeadDetailsThunk,
-  scheduleVisitThunk,
+    fetchLeadDetailsThunk,
+    scheduleVisitThunk, updateLeadStatusThunk,
+    updateVisitScheduleStatusThunk
 } from '@/features/new-lead';
+import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
+import type { RootState } from '../../../store';
 
 import { normalizeLeadId } from '@/lib/utils';
 
@@ -54,6 +53,8 @@ export interface AdvFilters {
   maxAmount: number | null;
   loanType: string[];
   leadSources: string[];
+  sortBy?: 'loan_amount' | 'creation' | undefined;
+  sortOrder?: 'asc' | 'desc' | undefined;
 }
 
 interface LeadState {
@@ -132,6 +133,10 @@ const leadSlice = createSlice({
     },
     setAdvFilters(state, action: PayloadAction<AdvFilters>) {
       state.advFilters = action.payload;
+    },
+    setSort(state, action: PayloadAction<{ sortBy?: 'loan_amount' | 'creation' | undefined; sortOrder?: 'asc' | 'desc' | undefined }>) {
+      state.advFilters.sortBy = action.payload.sortBy;
+      state.advFilters.sortOrder = action.payload.sortOrder;
     },
     resetFilters(state) {
       state.search = '';
@@ -236,6 +241,7 @@ export const {
   setColStatusFilter,
   setColCallTimeFilter,
   setAdvFilters,
+  setSort,
   resetFilters,
 } = leadSlice.actions;
 
@@ -253,6 +259,8 @@ export const selectDateFilter = (state: RootState) => state.leads.dateFilter;
 export const selectColStatusFilter = (state: RootState) => state.leads.advFilters.statuses;
 export const selectColCallTimeFilter = (state: RootState) => state.leads.advFilters.loanType;
 export const selectAdvFilters = (state: RootState) => state.leads.advFilters;
+export const selectSortBy = (state: RootState) => state.leads.advFilters.sortBy;
+export const selectSortOrder = (state: RootState) => state.leads.advFilters.sortOrder;
 
 // ── Backend Filter Pass-Through ──
 

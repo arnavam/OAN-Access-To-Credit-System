@@ -1,18 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
-import { useAppDispatch } from '@/store/hooks';
-import LeadStatusModal, { LeadStatusOutcome } from '@/features/new-lead/components/modals/LeadStatusModal';
-import { updateLeadStatusThunk, setVerificationBlocked } from '@/features/new-lead/store/newLeadSlice';
-import { createAndVerifyLoanApplicationThunk, setApplicationId } from '@/features/new-loan/store/newLoanFormSlice';
-import { loanService } from '@/features/loans/api/loan.service';
+import { Button } from '@/components/ui/Button';
 import { FeedbackModal } from '@/components/ui/FeedbackModal';
-import { Button } from './Button';
-import { normalizeLeadId } from '@/lib/utils';
-import { logger } from '@/lib/logger';
+import { loanService } from '@/features/loans/api/loan.service';
+import LeadStatusModal, { LeadStatusOutcome } from '@/features/new-lead/components/modals/LeadStatusModal';
+import { setVerificationBlocked, updateLeadStatusThunk } from '@/features/new-lead/store/newLeadSlice';
+import { createAndVerifyLoanApplicationThunk, setApplicationId } from '@/features/new-loan/store/newLoanFormSlice';
 import { ApiError } from '@/lib/api/fetchApi';
+import { logger } from '@/lib/logger';
+import { normalizeLeadId } from '@/lib/utils';
+import { useAppDispatch } from '@/store/hooks';
+import { Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 interface LeadDashboardActionsProps {
     leadId: string;
@@ -76,7 +76,7 @@ export function LeadDashboardActions({ leadId, status }: LeadDashboardActionsPro
             await dispatch(updateLeadStatusThunk({
                 leadId,
                 status: outcome as string,
-                reason: notes || 'No reason provided.'
+                reason: notes.trim()
             })).unwrap();
             if (outcome === 'Rejected') {
                 router.push('/leads');
@@ -120,7 +120,7 @@ export function LeadDashboardActions({ leadId, status }: LeadDashboardActionsPro
             size: 'default' as const,
             disabled: isFinalized || status?.toLowerCase() === 'verified',
             onClick: () => setModalAction('verify'),
-            visible: true,
+            visible: !(isFinalized || status?.toLowerCase() === 'verified'),
         },
         {
             key: 'application',

@@ -1,8 +1,8 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { newLeadService, VisitScheduleAPI, ScheduleVisitResponse, UpdateVisitScheduleStatusResponse } from '../api/newLead.service';
-import { initializeLead, clearForm } from './actions';
-import type { RootState } from '@/store';
 import { normalizeLeadId } from '@/lib/utils';
+import type { RootState } from '@/store';
+import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { newLeadService, ScheduleVisitResponse, UpdateVisitScheduleStatusResponse, VisitScheduleAPI } from '../api/newLead.service';
+import { clearForm, initializeLead } from './actions';
 
 interface VisitSchedule {
   id?: string;
