@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         AWS_REGION   = 'ap-south-1'
-        ECR_REPO     = 'oan-a2c-frontend'
+        ECR_REPO     = 'oan/access-to-credit-system'
         BACKEND_IP   = '10.0.2.100'
         API_BASE_URL = 'https://a2c-backend.oanstaging.com'
     }
