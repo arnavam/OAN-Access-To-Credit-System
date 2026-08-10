@@ -1,8 +1,8 @@
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { newLeadService, FarmerDetails } from '../api/newLead.service';
-import type { RootState } from '@/store';
-import { initializeLead, clearForm } from './actions';
 import { logger } from '@/lib/logger';
+import type { RootState } from '@/store';
+import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { FarmerDetails, newLeadService } from '../api/newLead.service';
+import { clearForm, initializeLead } from './actions';
 export type { FarmerDetails };
 
 interface FarmerState {

@@ -1,11 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { logger } from '@/lib/logger';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import {
-  validateResponse,
-  loanApplicationSummarySchema,
-  loanApplicationFullSchema,
+    loanApplicationFullSchema, loanApplicationSummarySchema, validateResponse
 } from './api.schemas';
-import { logger } from '@/lib/logger';
 
 describe('api.schemas validation', () => {
   beforeEach(() => {

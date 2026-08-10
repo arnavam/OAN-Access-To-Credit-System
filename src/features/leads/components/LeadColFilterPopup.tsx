@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect } from 'react';
-import { Check, Filter } from 'lucide-react';
+import { selectLeadStatusesOptions } from '@/features/new-lead/store/newLeadSlice';
+import { selectCategories } from '@/features/seller/store/loanProductsSlice';
 import { useAppSelector } from '@/store/hooks';
-import { selectLoanTypesOptions, selectLeadStatusesOptions } from '@/features/new-lead/store/newLeadSlice';
+import { Check, Filter } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 
 /* ─── LeadColFilterPopup ────────────────────────────────────────────── */
@@ -33,7 +34,7 @@ export function LeadColFilterPopup({ col, anchorRef, initialSelected = [], onApp
   }, [anchorRef, onClose]);
 
 
-  const loanTypesOptions = useAppSelector(selectLoanTypesOptions);
+  const loanTypesOptions = useAppSelector(selectCategories).map((c) => c.term_name);
   const leadStatusesOptions = useAppSelector(selectLeadStatusesOptions);
 
   const opts = col === 'STATUS'

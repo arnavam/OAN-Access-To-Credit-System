@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
-import { User, FileText, Calendar, Download, LayoutDashboard, Check } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useSelector, useDispatch } from 'react-redux';
+import { LoanTableRow } from '@/features/loans/components/LoanTable';
+import LoanApplicationModal from '@/features/loans/components/modals/LoanApplicationModalLegacy';
 import { resetForm } from '@/features/new-loan/store/newLoanFormSlice';
 import type { RootState } from '@/store';
-import LoanApplicationModal from '@/features/loans/components/modals/LoanApplicationModal';
-import { LoanTableRow } from '@/features/loans/components/LoanTable';
+import { Calendar, Check, Download, FileText, LayoutDashboard, User } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 
 export function Step4Success() {
   const router = useRouter();

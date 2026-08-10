@@ -1,30 +1,26 @@
 'use client';
 
-import { useEffect, useCallback, useState } from 'react';
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import {
-  fetchLoans,
-  fetchLoanSummary,
-  selectQueryParams,
-  selectLoansError,
-  selectIsLoansLoading,
-  selectTotalCount,
-} from '@/features/loans/store/loanDashboardSlice';
 import { AccessDenied } from '@/components/AccessDenied';
 import { ConnectionError } from '@/components/ConnectionError';
+import {
+    fetchLoans,
+    fetchLoanSummary, selectIsLoansLoading, selectLoansError, selectQueryParams, selectTotalCount
+} from '@/features/loans/store/loanDashboardSlice';
 import { ApiErrorCode, classifyError } from '@/lib/api/apiErrors';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { useCallback, useEffect, useState } from 'react';
 
-import LoanKpiCard, { MetricConfig } from '@/features/loans/components/LoanKpiCard';
 import LoanDashboardHeader from '@/features/loans/components/LoanDashboardHeader';
-import LoanToolbar from '@/features/loans/components/LoanToolbar';
-import LoanTable, { LoanTableRow } from '@/features/loans/components/LoanTable';
+import LoanKpiCard, { MetricConfig } from '@/features/loans/components/LoanKpiCard';
 import LoanPagination from '@/features/loans/components/LoanPagination';
+import LoanTable, { LoanTableRow } from '@/features/loans/components/LoanTable';
+import LoanToolbar from '@/features/loans/components/LoanToolbar';
+import { Award, FileText, Users, XCircle } from 'lucide-react';
 import dynamic from 'next/dynamic';
 
-const LoanApplicationModal = dynamic(() => import('@/features/loans/components/modals/LoanApplicationModal'), {
+const LoanApplicationModal = dynamic(() => import('@/features/loans/components/modals/LoanApplicationModalLegacy'), {
   ssr: false,
 });
-import { Users, FileText, Award, XCircle } from 'lucide-react';
 
 const METRIC_CONFIG: MetricConfig[] = [
   { key: 'total', label: <span className="font-medium text-gray-500"><strong className="font-bold text-gray-700">Overall</strong> Applications</span>, icon: Users, tone: 'blue' },

@@ -1,6 +1,6 @@
 import { useAppSelector } from '@/store/hooks';
-import { selectLeadSource, selectLeadPhoneNumber } from '../store/newLeadSlice';
 import { FileText } from 'lucide-react';
+import { selectLeadPhoneNumber, selectLeadSource } from '../store/newLeadSlice';
 
 interface LeadInfoSectionProps {
   isEditable?: boolean;
@@ -13,7 +13,7 @@ export function LeadInfoSection({ isEditable = false, phoneNumber: propPhoneNumb
   const leadSource = useAppSelector(selectLeadSource);
   const leadPhoneNumber = useAppSelector(selectLeadPhoneNumber);
   const displayPhone = isEditable ? (propPhoneNumber || '') : (leadPhoneNumber || '');
-  const displaySource = isEditable ? '' : (leadSource || '');
+  const displaySource = isEditable ? 'Agent Entry' : (leadSource || '');
 
   return (
     <section className="flex flex-col items-center pb-6 gap-4 w-full bg-white border border-[#F1F3F4] shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.05),0px_2px_4px_-1px_rgba(0,0,0,0.03)] hover:-translate-y-1 hover:shadow-lg transition-all duration-300 rounded-xl">

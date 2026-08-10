@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Loader2, ArrowLeft, Check } from 'lucide-react';
-import { useSelector } from 'react-redux';
+import { fetchLoanApplicationAPI, selectLoanCurrentStep, selectLoanFormState, setLeadId, setStepAPI } from '@/features/new-loan/store/newLoanFormSlice';
 import { useAppDispatch } from '@/store/hooks';
-import { selectLoanCurrentStep, selectLoanFormState, setStepAPI, setLeadId, fetchLoanApplicationAPI } from '@/features/new-loan/store/newLoanFormSlice';
+import { ArrowLeft, Check, Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useSelector } from 'react-redux';
 import { NewLoanProgressBar } from './NewLoanProgressBar';
 import { Step1ConsentDocs } from './Step1ConsentDocs';
 import { Step2FarmerDetails } from './Step2FarmerDetails';

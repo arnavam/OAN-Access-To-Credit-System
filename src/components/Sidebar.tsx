@@ -1,7 +1,7 @@
-import { useMemo } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
 import { LucideIcon } from 'lucide-react';
 import Image from 'next/image';
+import { usePathname, useRouter } from 'next/navigation';
+import { useMemo } from 'react';
 
 export interface NavItem {
   path: string;

@@ -1,15 +1,15 @@
-import { z } from 'zod';
+import {
+    loanApplicationFullSchema,
+    loanApplicationSummarySchema,
+    validateResponse,
+    type LoanApplicationFull,
+    type LoanApplicationSummary
+} from '@/lib/api/api.schemas';
 import { fetchApi } from '@/lib/api/fetchApi';
 import { normalizeLeadId } from '@/lib/utils';
 import type { ApiResponse } from '@/types/api';
+import { z } from 'zod';
 import type { LoanFormData } from '../types/loans.types';
-import {
-  loanApplicationFullSchema,
-  loanApplicationSummarySchema,
-  validateResponse,
-  type LoanApplicationFull,
-  type LoanApplicationSummary,
-} from '@/lib/api/api.schemas';
 
 // `LoanApplicationFull` / `LoanApplicationSummary` are the validated shapes for
 // `get_full_profile` / `get_all_loans`; their single source of truth is the Zod
@@ -83,9 +83,46 @@ export interface GetLoansParams {
   to_date?: string;
   location?: string;
   lead_id?: string;
+  sort_by?: 'loan_amount' | 'creation';
+  sort_order?: 'asc' | 'desc';
+}
+
+export interface BrowseProductsParams {
+  search?: string;
+  bank?: string;
+  loan_product?: string;
+  min_amount?: number;
+  max_amount?: number;
+  limit?: number;
+  start?: number;
+}
+
+export interface BrowseProductItem {
+  name: string;
+  product_name: string;
+  slug?: string | null;
+  bank?: string | null;
+  min_interest_rate: number;
+  max_interest_rate?: number | null;
+  min_amount?: number | null;
+  max_amount: number;
+  tenure_months: number;
 }
 
 export const loanService = {
+  async browseProducts(params?: BrowseProductsParams, options?: RequestInit): Promise<ApiResponse<{ products: BrowseProductItem[] }>> {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          searchParams.append(key, value.toString());
+        }
+      });
+    }
+    const path = `oan_a2c.api.v1.loan_applications.browse_products?${searchParams.toString()}`;
+    return fetchApi(path, options) as Promise<ApiResponse<{ products: BrowseProductItem[] }>>;
+  },
+
   async getLoans(params?: GetLoansParams, options?: RequestInit): Promise<ApiResponse<LoanApplicationSummary[]>> {
     const searchParams = new URLSearchParams();
     if (params) {
