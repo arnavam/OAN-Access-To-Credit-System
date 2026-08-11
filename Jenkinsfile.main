@@ -120,7 +120,71 @@ SSHEOF
     }
 
     post {
-        success { echo "Main frontend deployed successfully! Build: main-${BUILD_NUMBER}" }
-        failure { echo "Main frontend pipeline failed!" }
+        success {
+        script {
+            def committerEmail = sh(
+                script: "git log -1 --pretty=format:'%ae'",
+                returnStdout: true
+            ).trim()
+            def committerName = sh(
+                script: "git log -1 --pretty=format:'%an'",
+                returnStdout: true
+            ).trim()
+            if (committerEmail.contains('noreply')) {
+                committerEmail = 'yourname@gmail.com'
+            }
+            mail(
+                to: committerEmail,
+                subject: "✅ Build SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: """
+Hi ${committerName},
+
+Your build was successful!
+
+Job:    ${env.JOB_NAME}
+Branch: ${env.GIT_BRANCH}
+Build:  #${env.BUILD_NUMBER}
+URL:    ${env.BUILD_URL}
+
+Regards,
+Jenkins
+                """
+            )
+        }
+        echo "Main frontend deployed successfully! Build: main-${BUILD_NUMBER}"
+    }
+    failure {
+        script {
+            def committerEmail = sh(
+                script: "git log -1 --pretty=format:'%ae'",
+                returnStdout: true
+            ).trim()
+            def committerName = sh(
+                script: "git log -1 --pretty=format:'%an'",
+                returnStdout: true
+            ).trim()
+            if (committerEmail.contains('noreply')) {
+                committerEmail = 'yourname@gmail.com'
+            }
+            mail(
+                to: committerEmail,
+                subject: "❌ Build FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: """
+Hi ${committerName},
+
+Your build failed. Please check the console output for details.
+
+Job:    ${env.JOB_NAME}
+Branch: ${env.GIT_BRANCH}
+Build:  #${env.BUILD_NUMBER}
+URL:    ${env.BUILD_URL}
+
+Regards,
+Jenkins
+                """
+            )
+        }
+        echo "Main frontend pipeline failed!"
+    }
     }
 }
