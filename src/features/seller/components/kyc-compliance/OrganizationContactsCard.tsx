@@ -128,7 +128,7 @@ export function OrganizationContactsCard() {
               className="flex items-center gap-2 rounded-lg bg-[#16A34A] px-5 py-2.5 text-[14px] font-bold text-white shadow-sm transition-colors hover:bg-[#15803d] disabled:cursor-not-allowed disabled:opacity-80"
             >
               {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Check size={18} strokeWidth={2.5} />}
-              <span>{isSaving ? 'Saving...' : 'Save Contacts'}</span>
+              <span>{isSaving ? 'Saving...' : 'Save Contact and KYC'}</span>
             </button>
             {isSaved ? (
               <div className="flex items-center gap-2 text-[14px] font-bold text-[#16A34A]">
