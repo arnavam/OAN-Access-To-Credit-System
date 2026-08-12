@@ -72,10 +72,15 @@ function buildCsp(nonce: string): string {
     ? `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`
     : "script-src 'self' 'unsafe-eval' 'unsafe-inline'";
 
+  const styleSrc = isProd
+    ? `style-src 'self' 'nonce-${nonce}'`
+    : "style-src 'self' 'unsafe-inline'";
+
   return [
     "default-src 'self'",
     scriptSrc,
-    "style-src 'self' 'unsafe-inline'",
+    styleSrc,
+    "object-src 'none'",
     "img-src 'self' data: blob:",
     `connect-src 'self' ${apiBaseUrl}`.trim(),
     "font-src 'self'",
