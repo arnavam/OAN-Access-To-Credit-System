@@ -3,7 +3,7 @@
 import { onboardingService, type BankProfile } from '@/features/seller/api/onboarding.service';
 import { toast } from '@/lib/toast';
 import { toProxiedFileUrl } from '@/lib/utils';
-import { ArrowRight, Camera, Eye, FileText, Folder, Loader2 } from 'lucide-react';
+import { ArrowRight, Camera } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 const inputClass = (disabled: boolean) =>
@@ -16,11 +16,7 @@ export default function OrganizationManagementTab({ readOnly = false }: { readOn
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const [kycFile, setKycFile] = useState<File | null>(null);
-  const [kycUploading, setKycUploading] = useState(false);
-  const [kycProgress, setKycProgress] = useState(0);
   const logoInputRef = useRef<HTMLInputElement>(null);
-  const kycInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     onboardingService.getBankProfile()
@@ -58,40 +54,6 @@ export default function OrganizationManagementTab({ readOnly = false }: { readOn
       toast.error(err.message || 'Failed to update profile');
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleKycUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setKycFile(file);
-    setKycUploading(true);
-    setKycProgress(0);
-    try {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64Content = (reader.result as string).split(',')[1] ?? '';
-        try {
-          await onboardingService.uploadKycDocument({ filename: file.name, filedata: base64Content });
-          setKycProgress(100);
-          if (profile) setProfile({ ...profile, kyc_document_uploaded: true });
-          toast.success('KYC document uploaded successfully');
-        } catch (err: any) {
-          toast.error(err.message || 'Failed to upload KYC document');
-          setKycFile(null);
-        } finally {
-          setKycUploading(false);
-        }
-      };
-      reader.onprogress = (event) => {
-        if (event.lengthComputable) {
-          setKycProgress(Math.round((event.loaded / event.total) * 80));
-        }
-      };
-      reader.readAsDataURL(file);
-    } catch {
-      toast.error('Failed to read file');
-      setKycUploading(false);
     }
   };
 
@@ -234,87 +196,7 @@ export default function OrganizationManagementTab({ readOnly = false }: { readOn
         </div>
       </div>
 
-      {/* SECTION 3: KYC / Compliance — admin only */}
-      {!readOnly && (
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-6">
-          <h2 className="text-lg font-bold text-gray-900">KYC / Compliance</h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <div>
-                <p className="text-xs font-bold text-gray-900">KYC &amp; Compliance Documents</p>
-                <p className="text-xs text-gray-400">KYC &amp; Compliance Documents</p>
-              </div>
-              <input type="file" ref={kycInputRef} accept=".pdf" className="hidden" onChange={handleKycUpload} />
-              <div
-                onClick={() => kycInputRef.current?.click()}
-                className="border-2 border-dashed border-gray-200 bg-gray-50/50 rounded-2xl p-6 text-center flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors h-32"
-              >
-                <div className="w-10 h-10 rounded-full bg-gray-200/60 flex items-center justify-center mb-2">
-                  <Folder className="w-5 h-5 text-gray-500" />
-                </div>
-                <p className="text-xs font-bold text-gray-700">Drag and drop files here</p>
-                <p className="text-[11px] text-gray-400 mt-0.5">Or click to browse PDF files</p>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="text-xs font-bold text-gray-900">KYC &amp; Compliance Documents</p>
-                  <p className="text-xs text-gray-400">
-                    {profile?.kyc_document_uploaded ? 'Document on file' : 'No document uploaded yet'}
-                  </p>
-                </div>
-                {profile?.kyc_document && (
-                  <a
-                    href={profile.kyc_document}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 border border-[#16A34A] text-[#16A34A] hover:bg-green-50 px-3 py-1 rounded-lg text-xs font-bold transition-colors"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                    View
-                  </a>
-                )}
-              </div>
-
-              <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 flex flex-col justify-between h-32">
-                {kycFile || profile?.kyc_document_uploaded ? (
-                  <>
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-red-100 text-red-600 flex items-center justify-center shrink-0">
-                        {kycUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-gray-900 truncate">
-                          {kycFile?.name ?? (profile?.kyc_document ? profile.kyc_document.split('/').pop() : 'KYC_Document.pdf')}
-                        </p>
-                        {kycFile && (
-                          <p className="text-[11px] text-gray-400 mt-0.5">
-                            {(kycFile.size / 1024 / 1024).toFixed(1)} MB
-                          </p>
-                        )}
-                      </div>
-                      <span className="text-xs font-bold text-gray-500">{kycFile ? kycProgress : 100}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
-                      <div
-                        className="bg-[#16A34A] h-full rounded-full transition-all duration-300"
-                        style={{ width: `${kycFile ? kycProgress : 100}%` }}
-                      />
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex-1 flex items-center justify-center text-gray-400 text-xs">
-                    No document uploaded
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* SECTION 3: KYC / Compliance — hidden per requirements */}
 
       {/* SECTION 4: Bottom save banner — admin only */}
       {!readOnly && (
