@@ -15,6 +15,7 @@ import {
 } from '@/features/seller/store/loanProductsSlice';
 import { onboardingService } from '@/features/seller/api/onboarding.service';
 import { toast } from '@/lib/toast';
+import { NumericInput } from '@/components/ui/NumericInput';
 import type { CreateLoanProductCompoundInput, CreateLoanProductPayload } from '@/features/seller/types/loan-products.types';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { CheckCircle2, Image as ImageIcon, Loader2, Package, Plus, X } from 'lucide-react';
@@ -362,12 +363,16 @@ export function AddLoanProductModal({ isOpen, onClose }: AddLoanProductModalProp
                     <label className="block text-xs font-bold text-gray-900 mb-1.5">
                       Tenure (months) <span className="text-red-500">*</span>
                     </label>
-                    <input
-                      type="number"
+                    <NumericInput
+                      
                       min="1"
                       step="1"
                       value={form.tenureMonths}
-                      onChange={(e) => { clearFieldError('tenure_months'); setForm((curr) => ({ ...curr, tenureMonths: e.target.value })); }}
+                                            onChange={(e) => {
+                        
+                        clearFieldError('tenure_months');
+                        setForm((curr) => ({ ...curr, tenureMonths: e.target.value }));
+                      }}
                       placeholder="Enter Tenure (months)"
                       className={`w-full rounded-xl border px-3.5 py-2 text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20 ${fieldErrors.tenure_months ? 'border-red-400 focus:border-red-400' : 'border-gray-300 focus:border-[#16A34A]'}`}
                     />
@@ -378,13 +383,17 @@ export function AddLoanProductModal({ isOpen, onClose }: AddLoanProductModalProp
                     <label className="block text-xs font-bold text-gray-900 mb-1.5">
                       Minimum Interest Rate (%) <span className="text-red-500">*</span>
                     </label>
-                    <input
-                      type="number"
+                    <NumericInput
+                      
                       min="0"
                       max="100"
                       step="0.1"
                       value={form.minInterestRate}
-                      onChange={(e) => { clearFieldError('min_interest_rate'); setForm((curr) => ({ ...curr, minInterestRate: e.target.value })); }}
+                                            onChange={(e) => {
+                        
+                        clearFieldError('min_interest_rate');
+                        setForm((curr) => ({ ...curr, minInterestRate: e.target.value }));
+                      }}
                       placeholder="e.g. 5"
                       className={`w-full rounded-xl border px-3.5 py-2 text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20 ${fieldErrors.min_interest_rate ? 'border-red-400 focus:border-red-400' : 'border-gray-300 focus:border-[#16A34A]'}`}
                     />
@@ -395,13 +404,17 @@ export function AddLoanProductModal({ isOpen, onClose }: AddLoanProductModalProp
                     <label className="block text-xs font-bold text-gray-900 mb-1.5">
                       Maximum Interest Rate (%)
                     </label>
-                    <input
-                      type="number"
+                    <NumericInput
+                      
                       min="0"
                       max="100"
                       step="0.1"
                       value={form.maxInterestRate}
-                      onChange={(e) => { clearFieldError('max_interest_rate'); setForm((curr) => ({ ...curr, maxInterestRate: e.target.value })); }}
+                                            onChange={(e) => {
+                        
+                        clearFieldError('max_interest_rate');
+                        setForm((curr) => ({ ...curr, maxInterestRate: e.target.value }));
+                      }}
                       placeholder="e.g. 20"
                       className={`w-full rounded-xl border px-3.5 py-2 text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20 ${fieldErrors.max_interest_rate ? 'border-red-400 focus:border-red-400' : 'border-gray-300 focus:border-[#16A34A]'}`}
                     />
@@ -412,12 +425,15 @@ export function AddLoanProductModal({ isOpen, onClose }: AddLoanProductModalProp
                     <label className="block text-xs font-bold text-gray-900 mb-1.5">
                       Min amount (ETB)
                     </label>
-                    <input
-                      type="number"
+                    <NumericInput
+                      
                       min="0"
                       value={form.minAmount}
-                      onKeyDown={(e) => { if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault(); }}
-                      onChange={(e) => { clearFieldError('min_amount'); setForm((curr) => ({ ...curr, minAmount: e.target.value.replace(/[eE\+\-]/g, '') })); }}
+                                            onChange={(e) => {
+                        
+                        clearFieldError('min_amount');
+                        setForm((curr) => ({ ...curr, minAmount: e.target.value }));
+                      }}
                       placeholder="Enter Min amount (ETB)"
                       className={`w-full rounded-xl border px-3.5 py-2 text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20 ${fieldErrors.min_amount ? 'border-red-400 focus:border-red-400' : 'border-gray-300 focus:border-[#16A34A]'}`}
                     />
@@ -428,12 +444,15 @@ export function AddLoanProductModal({ isOpen, onClose }: AddLoanProductModalProp
                     <label className="block text-xs font-bold text-gray-900 mb-1.5">
                       Max amount (ETB) <span className="text-red-500">*</span>
                     </label>
-                    <input
-                      type="number"
+                    <NumericInput
+                      
                       min="0"
                       value={form.maxAmount}
-                      onKeyDown={(e) => { if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault(); }}
-                      onChange={(e) => { clearFieldError('max_amount'); setForm((curr) => ({ ...curr, maxAmount: e.target.value.replace(/[eE\+\-]/g, '') })); }}
+                                            onChange={(e) => {
+                        
+                        clearFieldError('max_amount');
+                        setForm((curr) => ({ ...curr, maxAmount: e.target.value }));
+                      }}
                       placeholder="Enter Max amount (ETB)"
                       className={`w-full rounded-xl border px-3.5 py-2 text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20 ${fieldErrors.max_amount ? 'border-red-400 focus:border-red-400' : 'border-gray-300 focus:border-[#16A34A]'}`}
                     />
