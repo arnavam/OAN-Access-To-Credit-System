@@ -73,7 +73,7 @@ function ProfilePageInner() {
             </h1>
             <p className="text-sm text-gray-500 mt-1">
               {activeTab === 'organization'
-                ? 'Org data is collected during registration (Organisation Section, KYC docs) but cannot be viewed or updated afterward.'
+                ? 'Org data is collected during registration (Organisation Section) but cannot be viewed or updated afterward.'
                 : 'Manage your organization team members, roles, and account statuses.'}
             </p>
           </div>

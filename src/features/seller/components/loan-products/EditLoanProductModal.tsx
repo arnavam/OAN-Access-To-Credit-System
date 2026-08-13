@@ -18,6 +18,7 @@ import {
 } from '@/features/seller/store/loanProductsSlice';
 import { onboardingService } from '@/features/seller/api/onboarding.service';
 import { toast } from '@/lib/toast';
+import { NumericInput } from '@/components/ui/NumericInput';
 import type { UpdateLoanProductCompoundInput, UpdateLoanProductPayload } from '@/features/seller/types/loan-products.types';
 import type { LoanProductSummary } from '@/lib/api/api.schemas';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -375,24 +376,30 @@ export function EditLoanProductModal({ isOpen, onClose, product }: EditLoanProdu
                       <label className="text-[14px] font-bold text-[#1F2937]">
                         Interest rate (% p.a.) <span className="text-red-500">*</span>
                       </label>
-                      <input
-                        type="number"
+                      <NumericInput
+                        
                         min="0"
                         step="0.01"
                         value={form.minInterestRate}
-                        onChange={(event) => setForm((current) => ({ ...current, minInterestRate: event.target.value }))}
+                                                onChange={(event) => {
+                          
+                          setForm((current) => ({ ...current, minInterestRate: event.target.value }));
+                        }}
                         placeholder="Enter minimum interest rate"
                         className="w-full rounded-lg border border-[#D1D5DB] px-4 py-2.5 text-[14px] focus:border-[#00C48C] focus:outline-none focus:ring-2 focus:ring-[#00C48C]"
                       />
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-[14px] font-bold text-[#1F2937]">Max interest rate (% p.a.)</label>
-                      <input
-                        type="number"
+                      <NumericInput
+                        
                         min="0"
                         step="0.01"
                         value={form.maxInterestRate}
-                        onChange={(event) => setForm((current) => ({ ...current, maxInterestRate: event.target.value }))}
+                                                onChange={(event) => {
+                          
+                          setForm((current) => ({ ...current, maxInterestRate: event.target.value }));
+                        }}
                         placeholder="Optional"
                         className="w-full rounded-lg border border-[#D1D5DB] px-4 py-2.5 text-[14px] focus:border-[#00C48C] focus:outline-none focus:ring-2 focus:ring-[#00C48C]"
                       />
@@ -402,13 +409,15 @@ export function EditLoanProductModal({ isOpen, onClose, product }: EditLoanProdu
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div className="space-y-1.5">
                       <label className="text-[14px] font-bold text-[#1F2937]">Min amount (ETB)</label>
-                      <input
-                        type="number"
+                      <NumericInput
+                        
                         min="0"
                         step="1"
                         value={form.minAmount}
-                        onKeyDown={(event) => { if (['e', 'E', '+', '-'].includes(event.key)) event.preventDefault(); }}
-                        onChange={(event) => setForm((current) => ({ ...current, minAmount: event.target.value.replace(/[eE\+\-]/g, '') }))}
+                                                onChange={(event) => {
+                          
+                          setForm((current) => ({ ...current, minAmount: event.target.value }));
+                        }}
                         placeholder="Optional"
                         className="w-full rounded-lg border border-[#D1D5DB] px-4 py-2.5 text-[14px] focus:border-[#00C48C] focus:outline-none focus:ring-2 focus:ring-[#00C48C]"
                       />
@@ -417,13 +426,15 @@ export function EditLoanProductModal({ isOpen, onClose, product }: EditLoanProdu
                       <label className="text-[14px] font-bold text-[#1F2937]">
                         Max amount (ETB) <span className="text-red-500">*</span>
                       </label>
-                      <input
-                        type="number"
+                      <NumericInput
+                        
                         min="0"
                         step="1"
                         value={form.maxAmount}
-                        onKeyDown={(event) => { if (['e', 'E', '+', '-'].includes(event.key)) event.preventDefault(); }}
-                        onChange={(event) => setForm((current) => ({ ...current, maxAmount: event.target.value.replace(/[eE\+\-]/g, '') }))}
+                                                onChange={(event) => {
+                          
+                          setForm((current) => ({ ...current, maxAmount: event.target.value }));
+                        }}
                         placeholder="Enter maximum amount"
                         className="w-full rounded-lg border border-[#D1D5DB] px-4 py-2.5 text-[14px] focus:border-[#00C48C] focus:outline-none focus:ring-2 focus:ring-[#00C48C]"
                       />
@@ -434,12 +445,15 @@ export function EditLoanProductModal({ isOpen, onClose, product }: EditLoanProdu
                     <label className="text-[14px] font-bold text-[#1F2937]">
                       Tenure (months) <span className="text-red-500">*</span>
                     </label>
-                    <input
-                      type="number"
+                    <NumericInput
+                      
                       min="1"
                       step="1"
                       value={form.tenureMonths}
-                      onChange={(event) => setForm((current) => ({ ...current, tenureMonths: event.target.value }))}
+                                            onChange={(event) => {
+                        
+                        setForm((current) => ({ ...current, tenureMonths: event.target.value }));
+                      }}
                       placeholder="Enter tenure in months"
                       className="w-full rounded-lg border border-[#D1D5DB] px-4 py-2.5 text-[14px] focus:border-[#00C48C] focus:outline-none focus:ring-2 focus:ring-[#00C48C]"
                     />

@@ -22,7 +22,7 @@ export interface GetNotificationsParams {
 export interface GetNotificationsResponse {
   notifications?: NotificationItem[];
   items?: NotificationItem[];
-  data?: NotificationItem[];
+  data?: NotificationItem[] | { notifications?: NotificationItem[]; unread_count?: number };
   unread_count?: number;
   total_count?: number;
   status?: string;

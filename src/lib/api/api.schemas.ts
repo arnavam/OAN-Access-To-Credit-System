@@ -38,7 +38,7 @@ export type SendOtpAndCreateConsentResponse = z.infer<typeof sendOtpAndCreateCon
 export const loanApplicationFullSchema = z.object({
   application_id: z.string(),
   lead_id: z.string().nullable().optional(),
-  status: z.enum(['Draft', 'Processing', 'Approved', 'Rejected']),
+  status: z.string(),
   current_step: z.number().nullable().optional(),
   creation: z.string().nullable().optional(),
   farmer_profile: z.string().nullish().transform(val => val ?? undefined),
@@ -105,9 +105,9 @@ export type LoanApplicationFull = z.infer<typeof loanApplicationFullSchema>;
 // 5. loan_applications.get_all_loans
 export const loanApplicationSummarySchema = z.object({
   application_id: z.string(),
-  status: z.enum(['Draft', 'Processing', 'Approved', 'Rejected']),
+  status: z.string(),
   step: z.number(),
-  lead_id: z.string(),
+  lead_id: z.string().nullable().optional(),
   loan_amount: z.number(),
   loan_type: z.string(),
   loan_product: z.string().nullish().transform((val) => val ?? undefined),

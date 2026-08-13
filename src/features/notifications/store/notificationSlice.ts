@@ -77,16 +77,25 @@ export const notificationSlice = createSlice({
       .addCase(fetchNotifications.fulfilled, (state, action: PayloadAction<GetNotificationsResponse>) => {
         state.loading = false;
         const payload = action.payload;
-        const rawList = payload?.notifications ?? payload?.items ?? payload?.data;
+        
+        const dataObj = payload?.data && typeof payload.data === 'object' && !Array.isArray(payload.data) 
+          ? payload.data as { notifications?: NotificationItem[]; unread_count?: number } 
+          : null;
+
+        const rawList = payload?.notifications ?? dataObj?.notifications ?? payload?.items ?? (Array.isArray(payload?.data) ? payload.data : undefined);
+        
         const list: NotificationItem[] = Array.isArray(rawList)
           ? rawList
           : Array.isArray(payload)
             ? payload
             : [];
+            
         state.items = list;
         state.unreadCount =
           typeof payload?.unread_count === 'number'
             ? payload.unread_count
+            : typeof dataObj?.unread_count === 'number'
+            ? dataObj.unread_count
             : list.filter((i) => i.read === 0).length;
       })
       .addCase(fetchNotifications.rejected, (state, action) => {

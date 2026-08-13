@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import type { KeyboardEvent } from 'react';
 
 export function cn(...inputs: ClassValue[]): string {
   return twMerge(clsx(inputs));
@@ -48,3 +49,19 @@ export function maskSensitiveId(value: string | null | undefined, visibleCount =
   return `${'•'.repeat(trimmed.length - visibleCount)}${visible}`;
 }
 
+/**
+ * A2C-316: Prevents exponent ('e', 'E') and special characters ('+', '-')
+ * from being entered in number inputs.
+ */
+export function preventInvalidNumberChars(e: KeyboardEvent<HTMLInputElement>) {
+  if (['e', 'E', '+', '-'].includes(e.key)) {
+    e.preventDefault();
+  }
+}
+
+/**
+ * Sanitizes a string from a number input by removing exponent and special characters.
+ */
+export function sanitizeNumberInput(value: string): string {
+  return value.replace(/[eE\+\-]/g, '');
+}
