@@ -476,7 +476,7 @@ pnpm dedupe                      # Deduplicate lockfile
 
 Entry point for AI agents working in this repo (a Next.js App Router + Redux Toolkit lending frontend). This file is an index — the detail lives in the linked files below. Read the ones relevant to your task before editing code.
 
-* [ ]  Conventions & structure
+ Conventions & structure
 
 - **[.agents/project-structure.md](.agents/project-structure.md)** — the actual `src/` layout, feature-slice anatomy, naming, import/barrel rules, state/service conventions, and a "where do I put a new…" table. **Follow this when creating or moving files.**
 

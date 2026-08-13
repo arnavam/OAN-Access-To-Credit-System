@@ -68,3 +68,5 @@ export const notificationService = {
         clear_all: params.clear_all ?? false,
       }),
     });
+  },
+};
