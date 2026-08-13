@@ -26,10 +26,11 @@ export function LeadInfoSection({ isEditable = false, phoneNumber: propPhoneNumb
 
       <div className="flex flex-col md:flex-row px-6 gap-4 md:gap-6 w-full">
         <div className="flex flex-col gap-2 w-full md:w-1/2">
-          <label className="text-[15px] font-semibold text-[#232F34]">
+          <label htmlFor="lead-source" className="text-[15px] font-semibold text-[#232F34]">
             Lead Source
           </label>
           <input
+            id="lead-source"
             type="text"
             value={displaySource}
             readOnly
@@ -38,10 +39,11 @@ export function LeadInfoSection({ isEditable = false, phoneNumber: propPhoneNumb
         </div>
 
         <div className="flex flex-col gap-2 w-full md:w-1/2">
-          <label className="text-[15px] font-semibold text-[#232F34]">
+          <label htmlFor="lead-phone-number" className="text-[15px] font-semibold text-[#232F34]">
             Phone Number {isEditable && <span className="text-red-500">*</span>}
           </label>
           <input
+            id="lead-phone-number"
             type="text"
             value={displayPhone}
             onChange={(e) => isEditable && onPhoneNumberChange && onPhoneNumberChange(e.target.value)}
@@ -50,7 +52,7 @@ export function LeadInfoSection({ isEditable = false, phoneNumber: propPhoneNumb
             className={`w-full h-[42px] rounded-md border px-4 text-[15px] text-[#232F34] focus:outline-none transition-colors ${!isEditable ? 'bg-gray-50 border-gray-200' : phoneError ? 'bg-white border-red-500 focus:ring-2 focus:ring-red-500/20' : 'bg-white border-gray-200 focus:ring-2 focus:ring-[#16335A]/20'}`}
           />
           {phoneError && (
-            <span className="text-sm text-red-500 mt-1">{phoneError}</span>
+            <span role="alert" aria-live="assertive" className="text-sm text-red-500 mt-1">{phoneError}</span>
           )}
         </div>
       </div>

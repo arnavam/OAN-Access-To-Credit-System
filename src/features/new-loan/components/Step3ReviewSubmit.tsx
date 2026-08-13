@@ -72,7 +72,7 @@ export function Step3ReviewSubmit() {
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-gray-900">Consent & Supporting Documents</h3>
-                  <p className="text-sm text-gray-500">Obtain farmer's consent and upload required documents</p>
+                  <p className="text-sm text-gray-500">Obtain farmer&apos;s consent and upload required documents</p>
                 </div>
               </div>
               <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto">

@@ -25,7 +25,7 @@ export default function FarmerLayout({ children }: { children: React.ReactNode }
           subtitle="Farmer ID: ETH-2847"
           onMenuClick={() => setIsSidebarExpanded(prev => !prev)}
         />
-        <main className="flex-1 p-6 md:p-10 overflow-x-hidden">
+        <main id="main-content" className="flex-1 p-6 md:p-10 overflow-x-hidden">
           {children}
         </main>
       </div>

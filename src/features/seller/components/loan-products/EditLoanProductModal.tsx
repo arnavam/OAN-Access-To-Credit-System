@@ -2,6 +2,7 @@
 import { Portal } from '@/components/Portal';
 import { LoanProductCreatedSuccess } from '@/features/seller/components/dashboard/LoanProductCreatedSuccess';
 import { LoanTypeDropdown } from '@/features/seller/components/dashboard/LoanTypeDropdown';
+import { ProductAttributesGrid, ProductImageDropzone, ProductTextField } from '@/features/seller/components/loan-products/ProductFormFields';
 import {
     clearMutationError,
     fetchProductDetail,
@@ -16,13 +17,26 @@ import {
     selectTags,
     updateProductCompound
 } from '@/features/seller/store/loanProductsSlice';
-import { onboardingService } from '@/features/seller/api/onboarding.service';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import { toast } from '@/lib/toast';
 import type { UpdateLoanProductCompoundInput, UpdateLoanProductPayload } from '@/features/seller/types/loan-products.types';
 import type { LoanProductSummary } from '@/lib/api/api.schemas';
+import {
+    buildAttributesPayload,
+    filterEligibilityAttributes,
+    initialProductFormState,
+    mapTermOptions,
+    MAX_PRODUCT_IMAGE_BYTES,
+    readImageFileAsDataUrl,
+    resolveProductImageUrl,
+    toggleSelectedId,
+    toNumber,
+    validateProductForm,
+    type ProductFormState
+} from '@/features/seller/utils/loan-product-form.utils';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { Image as ImageIcon, Loader2, Package, Save, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { Loader2, Package, Save, X } from 'lucide-react';
+import { useEffect, useId, useRef, useState } from 'react';
 
 type EditableProduct = LoanProductSummary | { id?: string; name?: string; title?: string; product_name?: string };
 
@@ -30,21 +44,6 @@ interface EditLoanProductModalProps {
   isOpen: boolean;
   onClose: () => void;
   product: EditableProduct | null;
-}
-
-interface ProductFormState {
-  productName: string;
-  minInterestRate: string;
-  maxInterestRate: string;
-  minAmount: string;
-  maxAmount: string;
-  tenureMonths: string;
-  description: string;
-}
-
-function toNumber(value: string): number | null {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
 }
 
 function getProductId(product: EditableProduct): string {
@@ -68,28 +67,28 @@ export function EditLoanProductModal({ isOpen, onClose, product }: EditLoanProdu
   const fetchedTags = useAppSelector(selectTags);
   const fetchedAttributes = useAppSelector(selectAttributes);
 
-  const [form, setForm] = useState<ProductFormState>({
-    productName: '',
-    minInterestRate: '',
-    maxInterestRate: '',
-    minAmount: '',
-    maxAmount: '',
-    tenureMonths: '',
-    description: '',
-  });
+  const [form, setForm] = useState<ProductFormState>(initialProductFormState);
   const [selectedCategoryTermIds, setSelectedCategoryTermIds] = useState<string[]>([]);
   const [selectedTagTermIds, setSelectedTagTermIds] = useState<string[]>([]);
   const [selectedAttributeTermIds, setSelectedAttributeTermIds] = useState<string[]>([]);
   const [isSuccess, setIsSuccess] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useModalA11y<HTMLDivElement>(isOpen, onClose);
+  const titleId = useId();
 
   useEffect(() => {
+    // This modal stays mounted while closed (isOpen just gates the render via
+    // the early return below), so its form state must be reset here on
+    // reopen rather than relying on unmount/remount to clear stale values.
     if (isOpen && product) {
       void dispatch(fetchTaxonomy());
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsSuccess(false);
       setLocalError(null);
+      setFieldErrors({});
       setImagePreview(null);
       dispatch(clearMutationError());
       const pId = getProductId(product);
@@ -100,7 +99,10 @@ export function EditLoanProductModal({ isOpen, onClose, product }: EditLoanProdu
   }, [dispatch, isOpen, product]);
 
   useEffect(() => {
+    // Populates the form once the fetched product detail arrives — can't be
+    // computed during render since detail is loaded asynchronously.
     if (detail && detailStatus === 'succeeded') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setForm({
         productName: detail.product_name ?? '',
         minInterestRate: detail.min_interest_rate?.toString() ?? '',
@@ -129,19 +131,16 @@ export function EditLoanProductModal({ isOpen, onClose, product }: EditLoanProdu
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { setLocalError('Image size must be less than 5MB.'); return; }
-    const reader = new FileReader();
-    reader.onloadend = () => setImagePreview(reader.result as string);
-    reader.readAsDataURL(file);
+    if (file.size > MAX_PRODUCT_IMAGE_BYTES) { setLocalError('Image size must be less than 5MB.'); return; }
+    readImageFileAsDataUrl(file, setImagePreview);
   };
 
   const toggleAttribute = (termId: string) => {
-    if (selectedAttributeTermIds.includes(termId)) {
-      setSelectedAttributeTermIds((prev) => prev.filter((id) => id !== termId));
-    } else {
-      setSelectedAttributeTermIds((prev) => [...prev, termId]);
-    }
+    setSelectedAttributeTermIds((prev) => toggleSelectedId(prev, termId));
   };
+
+  const clearFieldError = (key: string) =>
+    setFieldErrors((prev) => { const next = { ...prev }; delete next[key]; return next; });
 
   const handleSaveData = async () => {
     if (!product) {
@@ -154,46 +153,31 @@ export function EditLoanProductModal({ isOpen, onClose, product }: EditLoanProdu
       return;
     }
 
+    const errors = validateProductForm(form);
+    if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
+
     const productName = form.productName.trim();
-    const minInterestRate = toNumber(form.minInterestRate);
+    const minInterestRate = toNumber(form.minInterestRate)!;
     const maxInterestRate = form.maxInterestRate.trim() ? toNumber(form.maxInterestRate) : null;
     const minAmount = form.minAmount.trim() ? toNumber(form.minAmount) : null;
-    const maxAmount = toNumber(form.maxAmount);
-    const tenureMonths = toNumber(form.tenureMonths);
+    const maxAmount = toNumber(form.maxAmount)!;
+    const tenureMonths = toNumber(form.tenureMonths)!;
 
-    if (!productName || minInterestRate === null || maxAmount === null || tenureMonths === null) {
-      setLocalError('Fill in product name, minimum interest rate, maximum amount, and tenure.');
-      return;
-    }
-
+    setFieldErrors({});
     setLocalError(null);
     setIsSuccess(false);
 
     // Upload image if user selected a new one (base64 = new selection; URL = existing)
-    let imageUrl: string | undefined = imagePreview?.startsWith('http') ? imagePreview : undefined;
-    if (imagePreview && imagePreview.startsWith('data:')) {
-      try {
-        const base64Content = imagePreview.split(',')[1] ?? '';
-        const uploadRes = await onboardingService.uploadImage({ filename: 'product-image.jpg', filedata: base64Content });
-        imageUrl = uploadRes.data?.file_url;
-      } catch {
-        setLocalError('Failed to upload product image. Please try again.');
-        return;
-      }
+    let imageUrl: string | undefined;
+    try {
+      imageUrl = await resolveProductImageUrl(imagePreview);
+    } catch {
+      setLocalError('Failed to upload product image. Please try again.');
+      return;
     }
 
     // Group selected attributes by their backend slug/taxonomy key
-    const attributesPayload: Record<string, string[]> = {};
-    selectedAttributeTermIds.forEach((termId) => {
-      const matched = fetchedAttributes.find((attr) => attr.term_id === termId);
-      if (matched) {
-        const taxonomyKey = matched.slug || matched.term_id;
-        if (!attributesPayload[taxonomyKey]) {
-          attributesPayload[taxonomyKey] = [];
-        }
-        attributesPayload[taxonomyKey].push(matched.term_id);
-      }
-    });
+    const attributesPayload = buildAttributesPayload(selectedAttributeTermIds, fetchedAttributes);
 
     const updatePayload: UpdateLoanProductPayload = {
       product_id: productId,
@@ -238,24 +222,21 @@ export function EditLoanProductModal({ isOpen, onClose, product }: EditLoanProdu
   const isSubmitting = mutationStatus === 'loading';
   const isLoadingDetail = detailStatus === 'loading' || detailStatus === 'idle';
 
-  const categoryOptions =
-    fetchedCategories && fetchedCategories.length > 0
-      ? fetchedCategories.map((c) => ({ term_id: c.term_id, term_name: c.term_name }))
-      : undefined;
+  const categoryOptions = mapTermOptions(fetchedCategories);
 
-  const tagOptions =
-    fetchedTags && fetchedTags.length > 0
-      ? fetchedTags.map((t) => ({ term_id: t.term_id, term_name: t.term_name }))
-      : undefined;
+  const tagOptions = mapTermOptions(fetchedTags);
 
-  const realAttributes = fetchedAttributes?.filter(
-    (attr) => !attr.term_name.startsWith('Tag_') && !attr.term_name.startsWith('Category_')
-  );
+  const realAttributes = filterEligibilityAttributes(fetchedAttributes);
 
   return (
     <Portal>
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm animate-in fade-in duration-200">
         <div
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          tabIndex={-1}
           className={`flex max-h-[90vh] w-full flex-col overflow-hidden rounded-xl bg-white shadow-xl animate-in zoom-in-95 duration-200 ${
             isSuccess ? 'max-w-[520px]' : 'max-w-[700px]'
           }`}
@@ -276,7 +257,7 @@ export function EditLoanProductModal({ isOpen, onClose, product }: EditLoanProdu
                     <Package className="h-6 w-6 text-[#00C48C]" />
                   </div>
                   <div>
-                    <h2 className="text-[18px] font-bold text-[#1F2937]">Edit Loan Product</h2>
+                    <h2 id={titleId} className="text-[18px] font-bold text-[#1F2937]">Edit Loan Product</h2>
                     <p className="text-[14px] text-[#6B7280]">Changes are saved to the bank product catalog.</p>
                   </div>
                 </div>
@@ -302,49 +283,26 @@ export function EditLoanProductModal({ isOpen, onClose, product }: EditLoanProdu
                 </div>
               ) : (
                 <div className="flex-1 space-y-6 overflow-y-auto p-6">
-                  {/* Product Image */}
-                  <div className="space-y-1.5">
-                    <label className="text-[14px] font-bold text-[#1F2937]">Product Image</label>
-                    <input type="file" ref={fileInputRef} accept="image/png,image/jpeg,image/jpg" className="hidden" onChange={handleImageSelect} />
-                    <div
-                      onClick={() => fileInputRef.current?.click()}
-                      className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50/50 p-6 text-center transition-colors hover:bg-gray-50 cursor-pointer"
-                    >
-                      {imagePreview ? (
-                        <div className="relative w-full h-32 rounded-xl overflow-hidden">
-                          <img src={imagePreview} alt="Product" className="w-full h-full object-cover" />
-                          <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); setImagePreview(null); }}
-                            className="absolute top-2 right-2 p-1 bg-black/60 text-white rounded-full hover:bg-black/80"
-                          >
-                            <X size={14} />
-                          </button>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm border border-gray-100 text-gray-400">
-                            <ImageIcon className="h-5 w-5" />
-                          </div>
-                          <p className="text-xs font-semibold text-gray-700">Click to upload product image</p>
-                          <p className="text-[11px] text-gray-400 mt-1">PNG, JPG up to 5MB</p>
-                        </>
-                      )}
-                    </div>
-                  </div>
+                  <ProductImageDropzone
+                    variant="edit"
+                    imagePreview={imagePreview}
+                    onPick={() => fileInputRef.current?.click()}
+                    onRemove={() => setImagePreview(null)}
+                    fileInputRef={fileInputRef}
+                    onFileSelect={handleImageSelect}
+                    altText="Product"
+                    placeholderText="Click to upload product image"
+                  />
 
-                  <div className="space-y-1.5">
-                    <label className="text-[14px] font-bold text-[#1F2937]">
-                      Product Name <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={form.productName}
-                      onChange={(event) => setForm((current) => ({ ...current, productName: event.target.value }))}
-                      placeholder="Enter Product Name"
-                      className="w-full rounded-lg border border-[#D1D5DB] px-4 py-2.5 text-[14px] focus:border-[#00C48C] focus:outline-none focus:ring-2 focus:ring-[#00C48C]"
-                    />
-                  </div>
+                  <ProductTextField
+                    variant="edit"
+                    label="Product Name"
+                    required
+                    value={form.productName}
+                    onChange={(v) => { clearFieldError('product_name'); setForm((current) => ({ ...current, productName: v })); }}
+                    placeholder="Enter Product Name"
+                    error={fieldErrors.product_name}
+                  />
 
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div className="space-y-1.5">
@@ -371,115 +329,78 @@ export function EditLoanProductModal({ isOpen, onClose, product }: EditLoanProdu
                   </div>
 
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div className="space-y-1.5">
-                      <label className="text-[14px] font-bold text-[#1F2937]">
-                        Interest rate (% p.a.) <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={form.minInterestRate}
-                        onChange={(event) => setForm((current) => ({ ...current, minInterestRate: event.target.value }))}
-                        placeholder="Enter minimum interest rate"
-                        className="w-full rounded-lg border border-[#D1D5DB] px-4 py-2.5 text-[14px] focus:border-[#00C48C] focus:outline-none focus:ring-2 focus:ring-[#00C48C]"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[14px] font-bold text-[#1F2937]">Max interest rate (% p.a.)</label>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={form.maxInterestRate}
-                        onChange={(event) => setForm((current) => ({ ...current, maxInterestRate: event.target.value }))}
-                        placeholder="Optional"
-                        className="w-full rounded-lg border border-[#D1D5DB] px-4 py-2.5 text-[14px] focus:border-[#00C48C] focus:outline-none focus:ring-2 focus:ring-[#00C48C]"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div className="space-y-1.5">
-                      <label className="text-[14px] font-bold text-[#1F2937]">Min amount (ETB)</label>
-                      <input
-                        type="number"
-                        min="0"
-                        step="1"
-                        value={form.minAmount}
-                        onKeyDown={(event) => { if (['e', 'E', '+', '-'].includes(event.key)) event.preventDefault(); }}
-                        onChange={(event) => setForm((current) => ({ ...current, minAmount: event.target.value.replace(/[eE\+\-]/g, '') }))}
-                        placeholder="Optional"
-                        className="w-full rounded-lg border border-[#D1D5DB] px-4 py-2.5 text-[14px] focus:border-[#00C48C] focus:outline-none focus:ring-2 focus:ring-[#00C48C]"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[14px] font-bold text-[#1F2937]">
-                        Max amount (ETB) <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        step="1"
-                        value={form.maxAmount}
-                        onKeyDown={(event) => { if (['e', 'E', '+', '-'].includes(event.key)) event.preventDefault(); }}
-                        onChange={(event) => setForm((current) => ({ ...current, maxAmount: event.target.value.replace(/[eE\+\-]/g, '') }))}
-                        placeholder="Enter maximum amount"
-                        className="w-full rounded-lg border border-[#D1D5DB] px-4 py-2.5 text-[14px] focus:border-[#00C48C] focus:outline-none focus:ring-2 focus:ring-[#00C48C]"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-[14px] font-bold text-[#1F2937]">
-                      Tenure (months) <span className="text-red-500">*</span>
-                    </label>
-                    <input
+                    <ProductTextField
+                      variant="edit"
+                      label="Interest rate (% p.a.)"
+                      required
                       type="number"
-                      min="1"
-                      step="1"
-                      value={form.tenureMonths}
-                      onChange={(event) => setForm((current) => ({ ...current, tenureMonths: event.target.value }))}
-                      placeholder="Enter tenure in months"
-                      className="w-full rounded-lg border border-[#D1D5DB] px-4 py-2.5 text-[14px] focus:border-[#00C48C] focus:outline-none focus:ring-2 focus:ring-[#00C48C]"
+                      min="0"
+                      step="0.01"
+                      value={form.minInterestRate}
+                      onChange={(v) => { clearFieldError('min_interest_rate'); setForm((current) => ({ ...current, minInterestRate: v })); }}
+                      placeholder="Enter minimum interest rate"
+                      error={fieldErrors.min_interest_rate}
+                    />
+                    <ProductTextField
+                      variant="edit"
+                      label="Max interest rate (% p.a.)"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={form.maxInterestRate}
+                      onChange={(v) => { clearFieldError('max_interest_rate'); setForm((current) => ({ ...current, maxInterestRate: v })); }}
+                      placeholder="Optional"
+                      error={fieldErrors.max_interest_rate}
                     />
                   </div>
 
-                  {/* Attributes Selection */}
-                  <div className="space-y-3 pt-2">
-                    <h3 className="text-[15px] font-bold text-[#1F2937]">
-                      Eligibility Attributes
-                    </h3>
-                    {realAttributes && realAttributes.length > 0 ? (
-                      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                        {realAttributes.map((attr) => {
-                          const isSelected = selectedAttributeTermIds.includes(attr.term_id);
-                          return (
-                            <div
-                              key={attr.term_id}
-                              className={`cursor-pointer rounded-xl border-2 p-4 transition-all duration-200 ${
-                                isSelected
-                                  ? 'scale-[1.02] border-[#00C48C] bg-[#E6F9F3] shadow-sm'
-                                  : 'border-gray-200 bg-white opacity-70 hover:border-gray-300 hover:opacity-100'
-                              }`}
-                              onClick={() => toggleAttribute(attr.term_id)}
-                            >
-                              <div className={`text-[14px] font-bold ${isSelected ? 'text-[#00C48C]' : 'text-gray-700'}`}>
-                                {attr.term_name}
-                              </div>
-                              {attr.slug ? (
-                                <div className="mt-1 font-mono text-[12px] text-gray-500 opacity-80">
-                                  {attr.slug}
-                                </div>
-                              ) : null}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <p className="text-[13px] text-gray-500 italic">No eligibility attributes configured.</p>
-                    )}
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <ProductTextField
+                      variant="edit"
+                      label="Min amount (ETB)"
+                      type="number"
+                      min="0"
+                      blockExponentChars
+                      value={form.minAmount}
+                      onChange={(v) => { clearFieldError('min_amount'); setForm((current) => ({ ...current, minAmount: v })); }}
+                      placeholder="Optional"
+                      error={fieldErrors.min_amount}
+                    />
+                    <ProductTextField
+                      variant="edit"
+                      label="Max amount (ETB)"
+                      required
+                      type="number"
+                      min="0"
+                      blockExponentChars
+                      value={form.maxAmount}
+                      onChange={(v) => { clearFieldError('max_amount'); setForm((current) => ({ ...current, maxAmount: v })); }}
+                      placeholder="Enter maximum amount"
+                      error={fieldErrors.max_amount}
+                    />
                   </div>
+
+                  <ProductTextField
+                    variant="edit"
+                    label="Tenure (months)"
+                    required
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={form.tenureMonths}
+                    onChange={(v) => { clearFieldError('tenure_months'); setForm((current) => ({ ...current, tenureMonths: v })); }}
+                    placeholder="Enter tenure in months"
+                    error={fieldErrors.tenure_months}
+                  />
+
+                  <ProductAttributesGrid
+                    variant="edit"
+                    heading="Eligibility Attributes"
+                    attributes={realAttributes}
+                    selectedAttributeTermIds={selectedAttributeTermIds}
+                    onToggle={toggleAttribute}
+                    emptyMessage="No eligibility attributes configured."
+                  />
 
                   <div className="space-y-1.5">
                     <label className="text-[14px] font-bold text-[#1F2937]">Description</label>

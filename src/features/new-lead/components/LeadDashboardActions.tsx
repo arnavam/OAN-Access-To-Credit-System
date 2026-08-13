@@ -40,8 +40,8 @@ export function LeadDashboardActions({ leadId, status }: LeadDashboardActionsPro
                 if (!controller.signal.aborted) {
                     setExistingAppId(appId);
                 }
-            } catch (err: any) {
-                if (err.name !== 'AbortError') {
+            } catch (err) {
+                if (!(err instanceof Error) || err.name !== 'AbortError') {
                     logger.error('Failed to check existing application:', err);
                 }
             } finally {
@@ -62,9 +62,9 @@ export function LeadDashboardActions({ leadId, status }: LeadDashboardActionsPro
         try {
             await dispatch(createAndVerifyLoanApplicationThunk(leadId)).unwrap();
             router.push(`/leads/${normalizeLeadId(leadId)}/new-loan-application`);
-        } catch (e: any) {
+        } catch (e) {
             logger.warn('Failed to create loan application:', e);
-            const errorMessage = typeof e === 'string' ? e : e.message || 'Failed to create loan application';
+            const errorMessage = typeof e === 'string' ? e : (e instanceof Error && e.message) || 'Failed to create loan application';
             setCreateAppError(errorMessage);
         } finally {
             setIsCreatingApp(false);
@@ -82,8 +82,8 @@ export function LeadDashboardActions({ leadId, status }: LeadDashboardActionsPro
                 router.push('/leads');
             }
             setModalAction(null);
-        } catch (e: any) {
-            const errorMessage = typeof e === 'string' ? e : e?.message || 'Failed to update lead status. Please try again.';
+        } catch (e) {
+            const errorMessage = typeof e === 'string' ? e : (e instanceof Error && e.message) || 'Failed to update lead status. Please try again.';
             // Business-rule rejections (e.g. missing credit info/consent) come back as a 4xx and are
             // already shown to the user via the modal + section highlights, so they don't warrant a
             // log. Only genuinely unexpected failures (5xx, network, non-ApiError throws) are logged.

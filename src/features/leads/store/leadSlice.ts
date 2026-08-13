@@ -191,6 +191,7 @@ const leadSlice = createSlice({
       .addMatcher(
         updateVisitScheduleStatusThunk.fulfilled.match,
         (state, action) => {
+          // Cache invalidation lives at the mutation site in visitSlice.ts.
           const { leadId, status } = action.payload.payload;
           const lead = findLeadById(state.leads, leadId);
           if (lead) {
@@ -205,6 +206,7 @@ const leadSlice = createSlice({
       .addMatcher(
         scheduleVisitThunk.fulfilled.match,
         (state, action) => {
+          // Cache invalidation lives at the mutation site in visitSlice.ts.
           const { leadId, date } = action.payload.payload;
           const lead = findLeadById(state.leads, leadId);
           if (lead) {

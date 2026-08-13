@@ -1,10 +1,11 @@
 'use client';
 import { Portal } from '@/components/Portal';
 import { clearMutationError, selectProductsMutationError, selectProductsMutationStatus, setProductStatus } from '@/features/seller/store/loanProductsSlice';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import type { LoanProductSummary } from '@/lib/api/api.schemas';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { Loader2, XCircle } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useId } from 'react';
 
 interface RejectProductModalProps {
   isOpen: boolean;
@@ -16,6 +17,8 @@ export function RejectProductModal({ isOpen, onClose, product }: RejectProductMo
   const dispatch = useAppDispatch();
   const mutationStatus = useAppSelector(selectProductsMutationStatus);
   const mutationError = useAppSelector(selectProductsMutationError);
+  const dialogRef = useModalA11y<HTMLDivElement>(isOpen, onClose);
+  const titleId = useId();
 
   useEffect(() => {
     if (isOpen) {
@@ -48,7 +51,14 @@ export function RejectProductModal({ isOpen, onClose, product }: RejectProductMo
   return (
     <Portal>
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-        <div className="flex w-full max-w-[570px] flex-col rounded-[24px] bg-white p-8 text-center shadow-xl animate-in zoom-in-95 duration-200">
+        <div
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          tabIndex={-1}
+          className="flex w-full max-w-[570px] flex-col rounded-[24px] bg-white p-8 text-center shadow-xl animate-in zoom-in-95 duration-200"
+        >
           <div className="relative mx-auto mb-6 h-20 w-20">
             <div className="absolute inset-0 animate-ping rounded-full bg-[#FEE2E2] opacity-50" />
             <div className="relative flex h-full w-full items-center justify-center rounded-full border-[6px] border-[#FEE2E2] bg-[#FEF2F2] shadow-sm transition-transform duration-300 hover:scale-110">
@@ -56,11 +66,11 @@ export function RejectProductModal({ isOpen, onClose, product }: RejectProductMo
             </div>
           </div>
 
-          <h2 className="mb-3 text-[22px] font-bold text-[#111827]">
+          <h2 id={titleId} className="mb-3 text-[22px] font-bold text-[#111827]">
             Reject Loan Product?
           </h2>
           <p className="mb-8 px-2 text-[15px] leading-relaxed text-[#6B7280]">
-            Are you sure you want to reject <span className="font-bold text-[#374151]">"{product?.product_name}"</span>?<br />
+            Are you sure you want to reject <span className="font-bold text-[#374151]">&quot;{product?.product_name}&quot;</span>?<br />
             This archives the submission and removes it from the approval queue.
           </p>
 

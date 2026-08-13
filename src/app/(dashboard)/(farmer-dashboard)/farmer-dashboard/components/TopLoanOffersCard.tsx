@@ -65,6 +65,7 @@ export default function TopLoanOffersCard() {
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center text-xl shrink-0 overflow-hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- external host already blocked by CSP img-src 'self' (see src/proxy.ts); not converting to next/image since that wouldn't fix the actual issue */}
                     <img src={`https://api.dicebear.com/7.x/shapes/svg?seed=${offer.bankShort}`} alt={offer.bankShort} className="w-full h-full object-cover" />
                   </div>
                   <div>

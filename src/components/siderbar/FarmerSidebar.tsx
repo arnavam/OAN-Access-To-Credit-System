@@ -1,4 +1,5 @@
 import { FileText, LayoutDashboard, Search } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -16,7 +17,7 @@ export default function FarmerSidebar({ isExpanded, setIsExpanded: _setIsExpande
       {/* Logo Area */}
       <div className={`h-20 border-b border-white/10 flex items-center overflow-hidden transition-all duration-300 ${isExpanded ? 'px-6' : 'px-0 justify-center'}`}>
         <div className={`flex items-center ${isExpanded ? 'gap-1' : 'gap-0'} min-w-max`}>
-          <img src="/logo.png" alt="OARI Logo" className={`w-auto shrink-0 transition-all duration-300 ${isExpanded ? 'h-[38px]' : 'h-[28px]'}`} />
+          <Image src="/logo.png" alt="OARI Logo" width={1536} height={1024} className={`w-auto shrink-0 transition-all duration-300 ${isExpanded ? 'h-[38px]' : 'h-[28px]'}`} />
           <div className={`flex flex-col transition-all duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0 hidden'}`}>
             <span className="text-[15px] font-bold leading-tight tracking-wide text-white/90">Ethiopia OpenAgriNet</span>
             <span className="text-[11px] text-white/70 font-medium leading-tight tracking-wider mt-0.5">Access to Credit</span>

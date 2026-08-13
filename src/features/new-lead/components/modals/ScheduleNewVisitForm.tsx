@@ -1,24 +1,36 @@
 "use client";
 import { logger } from '@/lib/logger';
 
+import { Portal } from '@/components/Portal';
 import { SelectField } from '@/components/ui/SelectField';
 import { X } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useId, useState } from 'react';
 
 import { DatePickerField } from '@/components/ui/DatePickerField';
 import { FeedbackModal } from '@/components/ui/FeedbackModal';
 import { TimePickerField } from '@/components/ui/TimePickerField';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import { normalizeLeadId } from '@/lib/utils';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { useParams, useRouter } from 'next/navigation';
 import { scheduleVisitThunk, selectVisitState } from '../..';
 
+export interface VisitScheduleDetails {
+  date: string;
+  time: string;
+  location: string;
+  agenda: string;
+  region: string;
+  zone: string;
+  woreda: string;
+  kebele: string;
+}
+
 interface ScheduleNewVisitFormProps {
   asModal?: boolean;
   isOpen?: boolean;
   onClose?: () => void;
-  onSave?: (scheduleDetails: any) => void | Promise<void>;
+  onSave?: (scheduleDetails: VisitScheduleDetails) => void | Promise<void>;
 }
 
 const isTodayDate = (dateStr: string): boolean => {
@@ -80,25 +92,14 @@ export const ScheduleNewVisitForm = ({
   const [isSaving, setIsSaving] = useState(false);
   const [errorFeedback, setErrorFeedback] = useState<string | null>(null);
 
-  const [mounted, setMounted] = useState(false);
   const dispatch = useAppDispatch();
   const params = useParams();
   const router = useRouter();
+  const dialogRef = useModalA11y<HTMLDivElement>(asModal && isOpen, () => onClose?.());
+  const dialogTitleId = useId();
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (asModal && isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [asModal, isOpen]);
+  // Body scroll lock is handled by useModalA11y (ref-counted so a stacked
+  // modal underneath this one isn't unlocked prematurely).
 
   if (asModal && !isOpen) return null;
 
@@ -132,9 +133,9 @@ export const ScheduleNewVisitForm = ({
         // Redirect back to lead details page
         router.push(`/leads/${normalizeLeadId(activeLeadId)}`);
       }
-    } catch (err: any) {
+    } catch (err) {
       logger.error("Failed to save schedule:", err);
-      setErrorFeedback(typeof err === 'string' ? err : err.message || 'Failed to save schedule');
+      setErrorFeedback(typeof err === 'string' ? err : (err instanceof Error && err.message) || 'Failed to save schedule');
     } finally {
       setIsSaving(false);
     }
@@ -145,7 +146,7 @@ export const ScheduleNewVisitForm = ({
   const formContent = (
     <>
       <div className={`flex flex-row items-center w-full px-6 py-[19.5px] border-b border-[#E5E7EB] ${asModal ? 'justify-between' : ''}`}>
-        <h2 className="font-roboto font-semibold text-lg leading-6 text-[#111827]">
+        <h2 id={asModal ? dialogTitleId : undefined} className="font-roboto font-semibold text-lg leading-6 text-[#111827]">
           {asModal ? 'Schedule Visit' : 'Schedule New Visit'}
         </h2>
         {asModal && onClose && (
@@ -274,20 +275,26 @@ export const ScheduleNewVisitForm = ({
   );
 
   if (asModal) {
-    if (!mounted || !isOpen) return null;
-    return createPortal(
-      <div
-        className="fixed inset-0 z-[9999] bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-4"
-        onClick={onClose}
-      >
+    if (!isOpen) return null;
+    return (
+      <Portal>
         <div
-          className="relative flex flex-col items-start p-0 w-[95%] sm:w-[640px] max-w-full h-auto bg-white rounded-[10px] shadow-xl overflow-hidden"
-          onClick={(e) => e.stopPropagation()}
+          className="fixed inset-0 z-[9999] bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-4"
+          onClick={onClose}
         >
-          {formContent}
+          <div
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={dialogTitleId}
+            tabIndex={-1}
+            className="relative flex flex-col items-start p-0 w-[95%] sm:w-[640px] max-w-full h-auto bg-white rounded-[10px] shadow-xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {formContent}
+          </div>
         </div>
-      </div>,
-      document.body
+      </Portal>
     );
   }
 

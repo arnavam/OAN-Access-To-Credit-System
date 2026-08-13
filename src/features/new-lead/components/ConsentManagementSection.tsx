@@ -87,7 +87,7 @@ export function ConsentManagementSection() {
       </div>
 
       <div className="flex flex-col items-start px-4 sm:px-6 w-full max-w-2xl gap-1">
-        <label className="text-[14px] font-medium text-[#374151] mb-1">
+        <label htmlFor="consent-farmer-id" className="text-[14px] font-medium text-[#374151] mb-1">
           Farmer ID / Fayda ID <span className="text-red-500">*</span>
         </label>
         {isVerified ? (
@@ -115,6 +115,7 @@ export function ConsentManagementSection() {
           <div className="flex flex-col gap-3 w-full">
             <div className="flex flex-col sm:flex-row gap-3 w-full">
               <input
+                id="consent-farmer-id"
                 type="text"
                 value={farmerId}
                 onChange={(e) => dispatch(setFarmerId(e.target.value))}
@@ -148,7 +149,7 @@ export function ConsentManagementSection() {
               {isLoadingConsent ? 'Sending...' : 'Send OTP'}
             </button>
             {(consentError || searchError) && (
-              <div className="flex items-start gap-2 w-full mt-1 bg-[#FEF2F2] text-[#DC2626] p-3 rounded-md border border-[#FECACA]">
+              <div role="alert" aria-live="assertive" className="flex items-start gap-2 w-full mt-1 bg-[#FEF2F2] text-[#DC2626] p-3 rounded-md border border-[#FECACA]">
                 <AlertCircle size={16} className="mt-0.5 shrink-0" />
                 <p className="text-[14px] font-medium leading-[20px]">{consentError || searchError}</p>
               </div>

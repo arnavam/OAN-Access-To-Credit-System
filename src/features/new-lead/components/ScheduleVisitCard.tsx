@@ -7,6 +7,7 @@ import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { fetchVisitSchedulesThunk, scheduleVisitThunk, selectIsLeadFinalized, selectVerificationBlocked, selectVisitState, setVisitSchedule, updateVisitScheduleStatusThunk } from '..';
+import type { VisitScheduleDetails } from './modals/ScheduleNewVisitForm';
 
 const ScheduleNewVisitForm = dynamic(() => import('./modals/ScheduleNewVisitForm').then(mod => mod.ScheduleNewVisitForm), {
   ssr: false,
@@ -42,7 +43,7 @@ export function ScheduleVisitCard({
 
 
 
-  const handleSave = async (scheduleDetails: any) => {
+  const handleSave = async (scheduleDetails: VisitScheduleDetails) => {
     const activeLeadId = params?.id as string;
     if (!activeLeadId) {
       throw new Error("Missing Lead ID");
@@ -77,9 +78,9 @@ export function ScheduleVisitCard({
 
       // Refresh schedules list to clear the scheduled state live
       await dispatch(fetchVisitSchedulesThunk(activeLeadId)).unwrap();
-    } catch (err: any) {
+    } catch (err) {
       logger.error("Failed to complete visit:", err);
-      setErrorFeedback(typeof err === 'string' ? err : err.message || 'Failed to complete visit');
+      setErrorFeedback(typeof err === 'string' ? err : (err instanceof Error && err.message) || 'Failed to complete visit');
     } finally {
       setIsCompleting(false);
     }
@@ -102,9 +103,9 @@ export function ScheduleVisitCard({
 
       // Refresh schedules list to clear the scheduled state live
       await dispatch(fetchVisitSchedulesThunk(activeLeadId)).unwrap();
-    } catch (err: any) {
+    } catch (err) {
       logger.error("Failed to mark visit as missed:", err);
-      setErrorFeedback(typeof err === 'string' ? err : err.message || 'Failed to mark visit as missed');
+      setErrorFeedback(typeof err === 'string' ? err : (err instanceof Error && err.message) || 'Failed to mark visit as missed');
     } finally {
       setIsMarkingMissed(false);
     }

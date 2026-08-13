@@ -19,7 +19,7 @@ const LeadAdvancedFilters = dynamic(() => import('@/features/leads/components/Le
 
 import { AccessDenied } from '@/components/AccessDenied';
 import { ConnectionError } from '@/components/ConnectionError';
-import { selectOfficerName, selectUserEmail } from '@/features/auth/store/authSlice';
+import { selectOfficerName } from '@/features/auth/store/authSlice';
 import {
     fetchLeads,
     fetchLeadSummary, resetFilters, selectActiveTab, selectAdvFilters, selectColCallTimeFilter, selectColStatusFilter, selectDateFilter, selectIsLeadsLoading, selectLeads, selectLeadsError, selectLeadSummary,
@@ -34,7 +34,6 @@ export function LeadsDashboardClient() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const officerName = useAppSelector(selectOfficerName);
-  const userEmail = useAppSelector(selectUserEmail);
   const allLeads = useAppSelector(selectLeads) || [];
   const isLoading = useAppSelector(selectIsLeadsLoading);
   const leadSummary = useAppSelector(selectLeadSummary);
@@ -57,6 +56,9 @@ export function LeadsDashboardClient() {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    // officerName comes from client-only auth state, so rendering it during
+    // SSR would mismatch on hydration — this gates it until after mount.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsMounted(true);
   }, []);
 
@@ -123,7 +125,7 @@ export function LeadsDashboardClient() {
       sort_by: advFilters.sortBy,
       sort_order: advFilters.sortOrder,
     }));
-  }, [dispatch, colStatusFilter, colCallTimeFilter, search, advFilters, dateFilter, activeTab, userEmail, pageSize]);
+  }, [dispatch, search, advFilters, dateFilter, activeTab, pageSize]);
 
   // fetched only once during mount or when dependencies change
   useEffect(() => {

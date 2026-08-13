@@ -21,7 +21,7 @@ export default function config(phase) {
     reactStrictMode: true,
 
     typescript: {
-      ignoreBuildErrors: true,
+      ignoreBuildErrors: false,
     },
 
     allowedDevOrigins: ['192.168.3.1'],

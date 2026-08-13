@@ -1,8 +1,8 @@
+import { Portal } from '@/components/Portal';
 import { SelectField } from '@/components/ui/SelectField';
 import { loanService, type BrowseProductItem } from '@/features/loans/api/loan.service';
 import { X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { creditInfoSchema, type CreditInfoFormData } from '../../schemas/credit.schema';
 
 interface CreditInformationModalProps {
@@ -21,12 +21,6 @@ export function CreditInformationModal({ isOpen, onClose, onSubmit }: CreditInfo
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   useEffect(() => {
     if (isOpen) {
       loanService
@@ -38,6 +32,10 @@ export function CreditInformationModal({ isOpen, onClose, onSubmit }: CreditInfo
           setProducts([]);
         });
 
+      // This modal stays mounted while closed (isOpen just gates the render
+      // via the early return below), so its form state must be reset here on
+      // reopen rather than relying on unmount/remount to clear stale values.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoanType('');
       setLoanAmount('');
       setPurposeMessage('');
@@ -47,7 +45,7 @@ export function CreditInformationModal({ isOpen, onClose, onSubmit }: CreditInfo
     }
   }, [isOpen]);
 
-  if (!isOpen || !mounted) return null;
+  if (!isOpen) return null;
 
   const handleSubmit = async () => {
     // 1. Run local Zod schema validation
@@ -76,13 +74,14 @@ export function CreditInformationModal({ isOpen, onClose, onSubmit }: CreditInfo
         payload.productId = selectedProduct.name;
       }
       await onSubmit(payload);
-    } catch (err: any) {
+    } catch (err) {
       setIsSubmitting(false);
-      const serverMessage = err?.message?.message || (typeof err === 'string' ? err : 'Failed to add credit information');
+      const structuredMessage = (err as { message?: { message?: string; details?: Record<string, string> } })?.message;
+      const serverMessage = structuredMessage?.message || (typeof err === 'string' ? err : 'Failed to add credit information');
       setError(serverMessage);
-      
-      if (err?.message?.details) {
-        setFieldErrors(err.message.details);
+
+      if (structuredMessage?.details) {
+        setFieldErrors(structuredMessage.details);
       }
     }
   };
@@ -279,5 +278,5 @@ export function CreditInformationModal({ isOpen, onClose, onSubmit }: CreditInfo
     </>
   );
 
-  return createPortal(modalContent, document.body);
+  return <Portal>{modalContent}</Portal>;
 }

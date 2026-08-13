@@ -128,7 +128,7 @@ export default function HarvestRecordsTable() {
                     </div>
                     <p className="text-gray-900 font-bold text-base mb-1">No harvest records found</p>
                     <p className="text-gray-500 text-sm max-w-[250px] mx-auto">
-                      We couldn't find any data matching your current filters.
+                      We couldn&apos;t find any data matching your current filters.
                     </p>
                   </div>
                 </td>

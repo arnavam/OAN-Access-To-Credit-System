@@ -1,5 +1,6 @@
 "use client";
 import { ArrowRight, Bookmark, Landmark, Star } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
 import type { Loan } from '../data/mockLoans';
@@ -34,10 +35,12 @@ export default function LoanCard({ loan }: LoanCardProps) {
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center border border-gray-100 overflow-hidden shrink-0 relative">
             {loan.bankLogo ? (
-              <img
+              <Image
                 src={loan.bankLogo}
                 alt={`${loan.bankName} logo`}
-                className="w-full h-full object-cover z-10 bg-white"
+                fill
+                sizes="40px"
+                className="object-cover z-10 bg-white"
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';
                 }}

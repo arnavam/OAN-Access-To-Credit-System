@@ -12,7 +12,7 @@ export default function ProductApprovalsPage() {
       <BankAdminSidebar isExpanded={isSidebarExpanded} setIsExpanded={setIsSidebarExpanded} />
       <div className="flex-1 flex flex-col min-w-0">
         <DashboardHeader onMenuClick={() => setIsSidebarExpanded(!isSidebarExpanded)} title="Product Approvals" />
-        <main className="flex-1 p-8 overflow-y-auto">
+        <main id="main-content" className="flex-1 p-8 overflow-y-auto">
           <ProductApprovalsList />
         </main>
       </div>

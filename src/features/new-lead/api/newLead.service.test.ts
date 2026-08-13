@@ -302,6 +302,35 @@ describe('newLeadService', () => {
       await expect(newLeadService.getLeadDetails('LD-ERR'))
         .rejects.toThrow('Database offline');
     });
+
+    it('should forward the abort signal to fetchApi when provided', async () => {
+      vi.mocked(fetchApi).mockResolvedValue({
+        status: 'success',
+        data: null,
+      });
+      const controller = new AbortController();
+
+      await newLeadService.getLeadDetails('LD-SIGNAL', controller.signal);
+
+      expect(fetchApi).toHaveBeenCalledWith(
+        expect.stringContaining('LD-SIGNAL'),
+        { signal: controller.signal }
+      );
+    });
+
+    it('should not pass a signal option to fetchApi when none is provided', async () => {
+      vi.mocked(fetchApi).mockResolvedValue({
+        status: 'success',
+        data: null,
+      });
+
+      await newLeadService.getLeadDetails('LD-NOSIGNAL');
+
+      expect(fetchApi).toHaveBeenCalledWith(
+        expect.stringContaining('LD-NOSIGNAL'),
+        {}
+      );
+    });
   });
 
   describe('createLead', () => {

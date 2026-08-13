@@ -1,8 +1,9 @@
 "use client";
 
+import { Portal } from '@/components/Portal';
 import { AlertTriangle, Ban, Circle, CircleDot, Lock, ThumbsUp, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useModalA11y } from '@/hooks/useModalA11y';
 
 export type LeadStatusOutcome = 'Verified' | 'Rejected' | null;
 
@@ -28,21 +29,21 @@ export default function LeadStatusModal({
   const [outcome, setOutcome] = useState<LeadStatusOutcome>(initialOutcome);
   const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [mounted, setMounted] = useState(false);
+  const dialogRef = useModalA11y<HTMLDivElement>(isOpen, onClose);
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
+    // This modal stays mounted while closed (isOpen just gates the render via
+    // the early return below), so its form state must be reset here on
+    // reopen rather than relying on unmount/remount to clear stale values.
     if (isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setOutcome(initialOutcome);
       setNotes('');
       setError(null);
     }
   }, [isOpen, initialOutcome]);
 
-  if (!isOpen || !mounted) return null;
+  if (!isOpen) return null;
 
   const isFinalize = variant === 'finalize';
   const normalizedStatus = currentStatus?.toLowerCase() || '';
@@ -77,13 +78,18 @@ export default function LeadStatusModal({
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#0F172A]/40 backdrop-blur-sm p-4">
       {/* Modal Container */}
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="lead-status-modal-title"
+        tabIndex={-1}
         className="relative flex flex-col bg-white border border-[#EDEFF1] shadow-[0px_20px_25px_-5px_rgba(0,0,0,0.1),_0px_10px_10px_-5px_rgba(0,0,0,0.04)] rounded-xl w-full max-w-[600px] overflow-hidden"
         style={{ maxHeight: '90vh' }}
       >
         {/* Modal Header */}
         <div className="flex flex-row justify-between items-center px-6 py-5 border-b border-[#F1F3F4] h-[93px]">
           <div className="flex flex-col gap-1">
-            <h2 className="font-inter font-bold text-2xl leading-8 text-[#232F34] m-0">
+            <h2 id="lead-status-modal-title" className="font-inter font-bold text-2xl leading-8 text-[#232F34] m-0">
               {isFinalize ? 'Finalize Lead Processing' : 'Update Lead Status'}
             </h2>
             <p className="font-inter font-normal text-base leading-6 text-[#414141] m-0">
@@ -237,7 +243,7 @@ export default function LeadStatusModal({
               <div className="flex flex-col gap-1">
                 <h5 className="font-inter font-semibold text-base leading-6 text-[#232F34] m-0">Confirm Action</h5>
                 <p className="font-inter font-normal text-sm leading-5 text-[#9CA3AF] m-0">
-                  Once marked as Verified or Rejected, this lead's status cannot be changed again. All further actions will be locked.
+                  Once marked as Verified or Rejected, this lead&apos;s status cannot be changed again. All further actions will be locked.
                 </p>
               </div>
             </div>
@@ -268,5 +274,5 @@ export default function LeadStatusModal({
     </div>
   );
 
-  return createPortal(modalContent, document.body);
+  return <Portal>{modalContent}</Portal>;
 }

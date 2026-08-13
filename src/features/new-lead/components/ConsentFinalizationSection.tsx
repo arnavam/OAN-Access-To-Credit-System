@@ -38,6 +38,15 @@ export function ConsentFinalizationSection() {
   const [consentFile, setConsentFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
+  // Handle to the in-flight consent submission (which chains a demographic-sync
+  // poll lasting up to 2 minutes) so it can be cancelled if the user navigates away.
+  const submitRequestRef = useRef<{ abort: () => void } | null>(null);
+  useEffect(() => {
+    return () => {
+      submitRequestRef.current?.abort();
+    };
+  }, []);
+
   // Fetch metadata options on mount if OTP is verified
   useEffect(() => {
     let active = true;
@@ -53,7 +62,7 @@ export function ConsentFinalizationSection() {
           setConsentReasons(reasons);
           setAllowedFieldsList(fields);
         }
-      } catch (err) {
+      } catch {
         if (active) {
           setMetadataError('Failed to fetch consent configuration options.');
         }
@@ -75,7 +84,10 @@ export function ConsentFinalizationSection() {
 
   useEffect(() => {
     if (consentFile) {
+      // URL.createObjectURL/revokeObjectURL is an imperative browser API with
+      // required cleanup — can't be computed during render, has to live in an effect.
       const url = URL.createObjectURL(consentFile);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPreviewUrl(url);
       return () => URL.revokeObjectURL(url);
     } else {
@@ -191,7 +203,7 @@ export function ConsentFinalizationSection() {
 
     try {
       const base64Data = await convertToBase64(consentFile);
-      await dispatch(submitConsentThunk({
+      const request = dispatch(submitConsentThunk({
         leadId,
         consent_type: consentType,
         consent_reason_id: selectedReasonId,
@@ -200,7 +212,9 @@ export function ConsentFinalizationSection() {
         consentFormFilename: consentFile.name,
         consentFormBase64: base64Data
       }));
-    } catch (err) {
+      submitRequestRef.current = request;
+      await request;
+    } catch {
       setLocalError('Failed to process consent form file.');
     }
   };
@@ -227,9 +241,14 @@ export function ConsentFinalizationSection() {
             <div className="flex flex-row gap-4 items-center">
               {(farmerDetails?.profileImageUrl || searchedFarmer?.profileImageUrl) && (
                 <div className="flex-shrink-0">
-                  <img 
-                    src={farmerDetails?.profileImageUrl || searchedFarmer?.profileImageUrl} 
-                    alt="Farmer Profile" 
+                  {/* TODO: profileImageUrl isn't run through toProxiedFileUrl (see @/lib/utils) — if it's
+                      an absolute external host, the CSP's img-src 'self' already blocks it in production,
+                      same underlying issue as the dicebear avatars elsewhere. Not converting to next/image
+                      here since that wouldn't fix the actual problem. */}
+                  {/* eslint-disable-next-line @next/next/no-img-element -- see TODO above */}
+                  <img
+                    src={farmerDetails?.profileImageUrl || searchedFarmer?.profileImageUrl}
+                    alt="Farmer Profile"
                     className="w-16 h-16 rounded-full object-cover border-2 border-[#16A34A] shadow-sm bg-white"
                   />
                 </div>
@@ -261,12 +280,13 @@ export function ConsentFinalizationSection() {
             <div className="flex flex-col gap-4">
               {/* Consent Reason / Purpose */}
               <div className="flex flex-col gap-2">
-                <label className="text-[14px] font-semibold text-[#374151] flex items-center gap-1.5">
+                <label htmlFor="consent-reason-select" className="text-[14px] font-semibold text-[#374151] flex items-center gap-1.5">
                   <Sparkles size={14} className="text-[#16A34A]" />
                   Consent Reason / Purpose <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <select
+                    id="consent-reason-select"
                     value={selectedReasonId || ''}
                     onChange={(e) => {
                       const val = e.target.value;
@@ -327,7 +347,7 @@ export function ConsentFinalizationSection() {
 
             {/* Right Column: Upload signed consent form */}
             <div className="flex flex-col gap-2">
-              <label className="text-[14px] font-semibold text-[#374151] flex items-center gap-1.5">
+              <label htmlFor="consent-form-upload" className="text-[14px] font-semibold text-[#374151] flex items-center gap-1.5">
                 <Upload size={14} className="text-[#6B7280]" />
                 Signed Consent Form PDF <span className="text-red-500">*</span>
               </label>
@@ -371,8 +391,16 @@ export function ConsentFinalizationSection() {
                   </div>
                 ) : (
                   <div
+                    role="button"
+                    tabIndex={0}
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex flex-col items-center justify-center p-4 border border-dashed border-[#D1D5DB] hover:border-[#16A34A] rounded-lg bg-white hover:bg-gray-50 transition-all cursor-pointer min-h-[110px]"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        fileInputRef.current?.click();
+                      }
+                    }}
+                    className="flex flex-col items-center justify-center p-4 border border-dashed border-[#D1D5DB] hover:border-[#16A34A] rounded-lg bg-white hover:bg-gray-50 transition-all cursor-pointer min-h-[110px] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A] focus-visible:ring-offset-2"
                   >
                     <div className="flex justify-center items-center w-10 h-10 bg-gray-50 rounded-full shadow-[0px_1px_2px_rgba(0,0,0,0.05)] mb-2">
                       <Folder size={18} className="text-[#9CA3AF] fill-current" />
@@ -381,6 +409,7 @@ export function ConsentFinalizationSection() {
                       Click or drag & drop to upload signed consent PDF
                     </span>
                     <input
+                      id="consent-form-upload"
                       type="file"
                       ref={fileInputRef}
                       onChange={handleFileChange}
@@ -438,7 +467,7 @@ export function ConsentFinalizationSection() {
             </div>
 
             {(localError || consentError) && (
-              <p className="text-red-500 text-[14px] font-medium m-0 mt-1">
+              <p role="alert" aria-live="assertive" className="text-red-500 text-[14px] font-medium m-0 mt-1">
                 {localError || consentError}
               </p>
             )}

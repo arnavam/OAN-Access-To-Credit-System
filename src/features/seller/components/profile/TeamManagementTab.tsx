@@ -4,7 +4,7 @@ import type { TeamUser } from '@/lib/api/api.schemas';
 import type { InviteUserPayload } from '@/features/seller/types/team.types';
 import { toast } from '@/lib/toast';
 import { CheckCircle2, Search, Trash2, UserPlus, XCircle } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 // Backend returns a space-separated timestamp (e.g. "2026-07-31 16:07:09.337795").
 // Normalise to ISO so Date parses it reliably across browsers, then show a
@@ -30,21 +30,22 @@ export default function TeamManagementTab() {
   const [inviteErrors, setInviteErrors] = useState<Record<string, string>>({});
   const [inviting, setInviting] = useState(false);
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
       const res = await teamService.listUsers();
       setUsers(res.data);
-    } catch (err) {
+    } catch {
       toast.error('Failed to load team members');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchUsers();
+  }, [fetchUsers]);
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,11 +56,12 @@ export default function TeamManagementTab() {
       toast.success('User invited successfully');
       setIsInviteModalOpen(false);
       setInviteForm({ email: '', full_name: '', role: 'A2C Bank Agent', password: '' });
-    } catch (err: any) {
-      if (err.responseData?.message?.details) {
-        setInviteErrors(err.responseData.message.details);
+    } catch (err) {
+      const details = (err as { responseData?: { message?: { details?: Record<string, string> } } }).responseData?.message?.details;
+      if (details) {
+        setInviteErrors(details);
       }
-      toast.error(err.message || 'Failed to invite user');
+      toast.error((err instanceof Error && err.message) || 'Failed to invite user');
     } finally {
       setInviting(false);
     }
@@ -70,8 +72,8 @@ export default function TeamManagementTab() {
       await teamService.updateUser({ email, enabled: !currentEnabled });
       toast.success(`User ${!currentEnabled ? 'activated' : 'deactivated'} successfully`);
       fetchUsers();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to update user status');
+    } catch (err) {
+      toast.error((err instanceof Error && err.message) || 'Failed to update user status');
     }
   };
 
@@ -93,7 +95,7 @@ export default function TeamManagementTab() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h3 className="text-lg font-bold text-gray-900">Team Members</h3>
-          <p className="text-sm text-gray-500">Manage your team's access and roles within the platform.</p>
+          <p className="text-sm text-gray-500">Manage your team&apos;s access and roles within the platform.</p>
         </div>
         <div className="flex items-center gap-3 w-full sm:w-auto">
           <div className="relative flex-1 sm:w-64">

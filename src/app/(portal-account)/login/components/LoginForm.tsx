@@ -1,6 +1,7 @@
 'use client';
 
 import { ArrowRight, CheckCircle } from 'lucide-react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -30,9 +31,9 @@ export function LoginForm() {
 
       {/* Role Selectors */}
       <div className="space-y-4 mb-8">
-        <label className={`flex items-center p-4 border rounded-xl cursor-pointer transition-all group ${role === 'farmer' ? 'border-[#16A34A] bg-white ring-1 ring-[#16A34A]' : 'border-gray-200 hover:border-gray-300 bg-white'}`}>
+        <label className={`flex items-center p-4 border rounded-xl cursor-pointer transition-all group focus-within:ring-2 focus-within:ring-[#16A34A] focus-within:ring-offset-2 ${role === 'farmer' ? 'border-[#16A34A] bg-white ring-1 ring-[#16A34A]' : 'border-gray-200 hover:border-gray-300 bg-white'}`}>
           <div className="w-12 h-12 rounded-full bg-[#E8F8EE] flex items-center justify-center mr-4 shrink-0 overflow-hidden">
-            <img src="/images/icons/farmer-applicant.png" alt="Farmer Applicant" className="w-12 h-12 object-contain" />
+            <Image src="/images/icons/farmer-applicant.png" alt="Farmer Applicant" width={48} height={48} className="w-12 h-12 object-contain" />
           </div>
           <div className="flex-grow">
             <div className="font-bold text-gray-900 text-[15px]">Farmer Applicant</div>
@@ -46,9 +47,9 @@ export function LoginForm() {
           )}
         </label>
 
-        <label className={`flex items-center p-4 border rounded-xl cursor-pointer transition-all group ${role === 'bank' ? 'border-[#16A34A] bg-white ring-1 ring-[#16A34A]' : 'border-gray-200 hover:border-gray-300 bg-white'}`}>
+        <label className={`flex items-center p-4 border rounded-xl cursor-pointer transition-all group focus-within:ring-2 focus-within:ring-[#16A34A] focus-within:ring-offset-2 ${role === 'bank' ? 'border-[#16A34A] bg-white ring-1 ring-[#16A34A]' : 'border-gray-200 hover:border-gray-300 bg-white'}`}>
           <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mr-4 shrink-0 overflow-hidden">
-            <img src="/images/icons/bank-admin.png" alt="Bank Admin" className="w-12 h-12 object-contain" />
+            <Image src="/images/icons/bank-admin.png" alt="Bank Admin" width={48} height={51} className="w-12 h-12 object-contain" />
           </div>
           <div className="flex-grow">
             <div className="font-bold text-gray-900 text-[15px]">Bank Admin</div>
@@ -62,9 +63,9 @@ export function LoginForm() {
           )}
         </label>
 
-        <label className={`flex items-center p-4 border rounded-xl cursor-pointer transition-all group ${role === 'agent' ? 'border-[#16A34A] bg-white ring-1 ring-[#16A34A]' : 'border-gray-200 hover:border-gray-300 bg-white'}`}>
+        <label className={`flex items-center p-4 border rounded-xl cursor-pointer transition-all group focus-within:ring-2 focus-within:ring-[#16A34A] focus-within:ring-offset-2 ${role === 'agent' ? 'border-[#16A34A] bg-white ring-1 ring-[#16A34A]' : 'border-gray-200 hover:border-gray-300 bg-white'}`}>
           <div className="w-12 h-12 rounded-full bg-[#E8F8EE] flex items-center justify-center mr-4 shrink-0 overflow-hidden">
-            <img src="/images/icons/bank-agent.png" alt="Bank Agent" className="w-12 h-12 object-contain" />
+            <Image src="/images/icons/bank-agent.png" alt="Bank Agent" width={48} height={51} className="w-12 h-12 object-contain" />
           </div>
           <div className="flex-grow">
             <div className="font-bold text-gray-900 text-[15px]">Bank Agent</div>
@@ -78,7 +79,7 @@ export function LoginForm() {
           )}
         </label>
 
-        <label className={`flex items-center p-4 border rounded-xl cursor-pointer transition-all group ${role === 'dev-agent' ? 'border-[#16A34A] bg-white ring-1 ring-[#16A34A]' : 'border-gray-200 hover:border-gray-300 bg-white'}`}>
+        <label className={`flex items-center p-4 border rounded-xl cursor-pointer transition-all group focus-within:ring-2 focus-within:ring-[#16A34A] focus-within:ring-offset-2 ${role === 'dev-agent' ? 'border-[#16A34A] bg-white ring-1 ring-[#16A34A]' : 'border-gray-200 hover:border-gray-300 bg-white'}`}>
           <div className="w-12 h-12 rounded-full bg-[#FFF4E5] flex items-center justify-center mr-4 shrink-0 overflow-hidden">
             <div className="text-2xl">🚜</div>
           </div>
@@ -94,7 +95,7 @@ export function LoginForm() {
           )}
         </label>
 
-        <label className={`flex items-center p-4 border rounded-xl cursor-pointer transition-all group ${role === 'admin' ? 'border-[#16A34A] bg-white ring-1 ring-[#16A34A]' : 'border-gray-200 hover:border-gray-300 bg-white'}`}>
+        <label className={`flex items-center p-4 border rounded-xl cursor-pointer transition-all group focus-within:ring-2 focus-within:ring-[#16A34A] focus-within:ring-offset-2 ${role === 'admin' ? 'border-[#16A34A] bg-white ring-1 ring-[#16A34A]' : 'border-gray-200 hover:border-gray-300 bg-white'}`}>
           <div className="w-12 h-12 rounded-full bg-[#F5F3FF] flex items-center justify-center mr-4 shrink-0 overflow-hidden">
             <div className="text-2xl">⚙️</div>
           </div>

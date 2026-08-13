@@ -1,9 +1,10 @@
 'use client';
 
+import { Portal } from '@/components/Portal';
 import { toast } from '@/lib/toast';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import { CheckCircle2, ChevronDown, Loader2, Package, X, XCircle } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { LoanApplicationFull } from '../../api/loan.service';
 import { LoanTableRow } from '../LoanTable';
 import { PINNED_OR_META_KEYS, useLoanApplicationModal } from './useLoanApplicationModal';
@@ -16,7 +17,7 @@ interface LoanApplicationModalProps {
 }
 
 export default function LoanApplicationModal({ isOpen, onClose, data, onStatusChange }: LoanApplicationModalProps) {
-  const { mounted, isLoading, fullProfile: rawProfile } = useLoanApplicationModal(isOpen, data);
+  const { isLoading, fullProfile: rawProfile } = useLoanApplicationModal(isOpen, data);
   const fullProfile = rawProfile as LoanApplicationFull | null;
 
   const [isRejecting, setIsRejecting] = useState(false);
@@ -25,9 +26,15 @@ export default function LoanApplicationModal({ isOpen, onClose, data, onStatusCh
   const [decisionNote, setDecisionNote] = useState('');
 
   const endRef = useRef<HTMLDivElement>(null);
+  const reasonSelectRef = useRef<HTMLSelectElement>(null);
+  const dialogRef = useModalA11y<HTMLDivElement>(isOpen, onClose);
 
   useEffect(() => {
+    // This modal stays mounted while closed (isOpen just gates the render via
+    // the early return below), so its form state must be reset here on
+    // reopen rather than relying on unmount/remount to clear stale values.
     if (isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsRejecting(false);
       setIsApproving(false);
       setDecisionReason('');
@@ -35,7 +42,7 @@ export default function LoanApplicationModal({ isOpen, onClose, data, onStatusCh
     }
   }, [isOpen]);
 
-  if (!mounted || !isOpen || !data) return null;
+  if (!isOpen || !data) return null;
 
   const statusBadgeColor =
     data.status === 'Approved'
@@ -69,6 +76,7 @@ export default function LoanApplicationModal({ isOpen, onClose, data, onStatusCh
     }
     setTimeout(() => {
       endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      reasonSelectRef.current?.focus();
     }, 100);
   };
 
@@ -83,6 +91,11 @@ export default function LoanApplicationModal({ isOpen, onClose, data, onStatusCh
   const modalContent = (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm overflow-y-auto">
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="loan-application-modal-title"
+        tabIndex={-1}
         className="relative flex flex-col w-full max-w-[620px] bg-white rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 my-8"
         onClick={(e) => e.stopPropagation()}
       >
@@ -94,7 +107,7 @@ export default function LoanApplicationModal({ isOpen, onClose, data, onStatusCh
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold text-gray-900">Application Details</h2>
+                <h2 id="loan-application-modal-title" className="text-lg font-bold text-gray-900">Application Details</h2>
               </div>
               <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
                 <span className="font-semibold text-gray-700">#{data.id}</span>
@@ -195,7 +208,7 @@ export default function LoanApplicationModal({ isOpen, onClose, data, onStatusCh
                 <div className="space-y-3">
                   <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">INTERNAL NOTES</h3>
                   <div className="space-y-2">
-                    {fullProfile.internal_notes.map((note: any, idx: number) => (
+                    {fullProfile.internal_notes.map((note, idx: number) => (
                       <div key={idx} className="bg-[#F9FAFB] rounded-2xl p-4 border border-gray-100 flex items-start gap-3">
                         <div className="w-8 h-8 rounded-full bg-emerald-600 text-white font-bold text-xs flex items-center justify-center shrink-0">
                           {note.author?.[0]?.toUpperCase() || 'N'}
@@ -226,6 +239,7 @@ export default function LoanApplicationModal({ isOpen, onClose, data, onStatusCh
                     </label>
                     <div className="relative">
                       <select
+                        ref={reasonSelectRef}
                         value={decisionReason}
                         onChange={(e) => setDecisionReason(e.target.value)}
                         className={`w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 appearance-none ${isRejecting ? 'focus:ring-red-500/20 focus:border-red-500' : 'focus:ring-emerald-500/20 focus:border-emerald-500'}`}
@@ -324,5 +338,5 @@ export default function LoanApplicationModal({ isOpen, onClose, data, onStatusCh
     </div>
   );
 
-  return createPortal(modalContent, document.body);
+  return <Portal>{modalContent}</Portal>;
 }

@@ -1,8 +1,8 @@
 'use client';
 
+import { Portal } from '@/components/Portal';
 import { Check, Filter } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 
 interface GradeFilterProps {
   selectedGrades: string[];
@@ -16,10 +16,7 @@ export default function GradeFilter({ selectedGrades, onChange }: GradeFilterPro
   const dropdownRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const [mounted, setMounted] = useState(false);
-
   useEffect(() => {
-    setMounted(true);
     function handleClickOutside(event: MouseEvent) {
       if (
         dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
@@ -64,38 +61,39 @@ export default function GradeFilter({ selectedGrades, onChange }: GradeFilterPro
         Grade <Filter className={`w-3.5 h-3.5 transition-colors ${isOpen ? 'text-[#16A34A]' : ''}`} />
       </div>
 
-      {mounted && isOpen && createPortal(
-        <div 
-          ref={menuRef}
-          style={{ top: dropdownPos.top, left: dropdownPos.left }}
-          className="absolute bg-white border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.08)] rounded-xl overflow-hidden z-[100] w-36 text-sm font-medium animate-in fade-in zoom-in-95 duration-200"
-        >
-          {options.map(option => {
-            const isSelected = selectedGrades.includes(option);
-            return (
-              <div 
-                key={option} 
-                onClick={() => toggleOption(option)}
-                className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-0 text-gray-700 select-none group transition-colors"
-              >
-                <div 
-                  className={`w-4 h-4 rounded border flex items-center justify-center transition-all duration-200 ${
-                    isSelected ? 'bg-[#16A34A] border-[#16A34A]' : 'border-gray-300 group-hover:border-[#16A34A]/50'
-                  }`}
+      {isOpen && (
+        <Portal>
+          <div
+            ref={menuRef}
+            style={{ top: dropdownPos.top, left: dropdownPos.left }}
+            className="absolute bg-white border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.08)] rounded-xl overflow-hidden z-[100] w-36 text-sm font-medium animate-in fade-in zoom-in-95 duration-200"
+          >
+            {options.map(option => {
+              const isSelected = selectedGrades.includes(option);
+              return (
+                <div
+                  key={option}
+                  onClick={() => toggleOption(option)}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-0 text-gray-700 select-none group transition-colors"
                 >
-                  <Check 
-                    className={`w-3 h-3 text-white transition-all duration-200 ${
-                      isSelected ? 'scale-100 opacity-100' : 'scale-50 opacity-0'
-                    }`} 
-                    strokeWidth={3} 
-                  />
+                  <div
+                    className={`w-4 h-4 rounded border flex items-center justify-center transition-all duration-200 ${
+                      isSelected ? 'bg-[#16A34A] border-[#16A34A]' : 'border-gray-300 group-hover:border-[#16A34A]/50'
+                    }`}
+                  >
+                    <Check
+                      className={`w-3 h-3 text-white transition-all duration-200 ${
+                        isSelected ? 'scale-100 opacity-100' : 'scale-50 opacity-0'
+                      }`}
+                      strokeWidth={3}
+                    />
+                  </div>
+                  {option}
                 </div>
-                {option}
-              </div>
-            );
-          })}
-        </div>,
-        document.body
+              );
+            })}
+          </div>
+        </Portal>
       )}
     </div>
   );
