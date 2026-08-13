@@ -11,6 +11,7 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "public/mockServiceWorker.js",
   ]),
 
   // A leading underscore is this codebase's established convention for an

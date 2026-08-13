@@ -128,7 +128,7 @@ export function DashboardHeader({ onMenuClick, title = 'Dashboard', subtitle }: 
           >
             <Bell className="w-6 h-6 group-hover:scale-110 group-hover:rotate-12 group-hover:text-orange-500 transition-all duration-300" />
             {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white bg-red-500 rounded-full border-2 border-white animate-pulse">
+              <span className="absolute top-1 right-1 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white bg-red-500 rounded-full border-2 border-white">
                 {unreadCount > 99 ? '99+' : unreadCount}
               </span>
             )}

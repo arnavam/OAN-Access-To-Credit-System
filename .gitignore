@@ -159,9 +159,7 @@ next-env.d.ts
 # End of https://www.toptal.com/developers/gitignore/api/nextjs,macos
 
 .env
-.agents
 .claude
-AGENTS.md
 CLAUDE.md
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 

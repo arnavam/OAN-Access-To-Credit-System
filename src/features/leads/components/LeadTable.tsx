@@ -183,8 +183,9 @@ function LeadTable({
   };
 
   return (
-    <div className="overflow-x-auto w-full min-h-[400px]">
-      <table className="w-full min-w-[1118px] table-fixed border-collapse">
+    <div className="flex flex-col min-h-[400px]">
+      <div className="overflow-x-auto w-full flex-1">
+        <table className="w-full min-w-[1118px] table-fixed border-collapse">
         <thead>
           <tr className="border-b border-[#EDEFF1] bg-[rgba(248,250,252,0.5)] h-[57px] select-none">
             <th className="w-[56px] min-w-[56px] max-w-[56px] p-0 text-center align-middle">
@@ -342,6 +343,7 @@ function LeadTable({
           )}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

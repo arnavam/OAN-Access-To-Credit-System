@@ -1,9 +1,9 @@
 'use client';
 
 import {
-    clearNotifications,
-    fetchNotifications,
-    markNotificationsRead
+  clearNotifications,
+  fetchNotifications,
+  markNotificationsRead
 } from '@/features/notifications/store/notificationSlice';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { CheckCircle2, FileText, Loader2, X, XCircle } from 'lucide-react';
@@ -127,9 +127,8 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOp
               <div
                 key={item.name}
                 onClick={() => isUnread && handleMarkSingleRead(item.name)}
-                className={`p-4 flex items-start gap-3.5 transition-colors cursor-pointer ${
-                  isUnread ? 'bg-[#F0FDF4] hover:bg-[#DCFCE7]' : 'bg-white hover:bg-gray-50'
-                }`}
+                className={`p-4 flex items-start gap-3.5 transition-colors cursor-pointer ${isUnread ? 'bg-[#F0FDF4] hover:bg-[#DCFCE7]' : 'bg-white hover:bg-gray-50'
+                  }`}
               >
                 {getItemIcon(item.subject, item.email_content)}
                 <div className="flex-1 min-w-0">
@@ -173,7 +172,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOp
           onClick={() => dispatch(clearNotifications({ clear_all: true }))}
           className="text-emerald-600 hover:text-emerald-700 transition-colors"
         >
-          View all notifications
+          Clear all notifications
         </button>
       </div>
     </div>

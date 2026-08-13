@@ -159,9 +159,11 @@ export function LeadsDashboardClient() {
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
   const safePage = Math.min(currentPage, totalPages);
 
-  // The backend already filters by tab (assigned_to) and paginates, so `allLeads`
-  // is exactly the current page for the active tab — render it as-is.
-  const visible = allLeads;
+  // The backend already filters by tab (assigned_to) and paginates, but if it 
+  // fails to paginate and returns all leads, we fallback to client-side slicing.
+  const visible = allLeads.length > pageSize 
+    ? allLeads.slice((currentPage - 1) * pageSize, currentPage * pageSize) 
+    : allLeads;
 
   const pageNums = useMemo(() => {
     if (totalPages <= 5) return Array.from({ length: totalPages }, (_, i) => i + 1);

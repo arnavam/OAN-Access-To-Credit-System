@@ -3,6 +3,7 @@ import { SelectField } from '@/components/ui/SelectField';
 import { loanService, type BrowseProductItem } from '@/features/loans/api/loan.service';
 import { X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { NumericInput } from '@/components/ui/NumericInput';
 import { creditInfoSchema, type CreditInfoFormData } from '../../schemas/credit.schema';
 
 interface CreditInformationModalProps {
@@ -181,19 +182,11 @@ export function CreditInformationModal({ isOpen, onClose, onSubmit }: CreditInfo
                 <label className="font-roboto font-medium text-[14px] leading-[20px] text-[#111827]">
                   Loan Amount <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="number"
+                <NumericInput
                   placeholder="Enter Loan Amount"
                   value={loanAmount}
-                  onKeyDown={(e) => {
-                    // Prevent exponent ('e', 'E') and special characters ('+', '-') (LC-063, LC-064)
-                    if (['e', 'E', '+', '-'].includes(e.key)) {
-                      e.preventDefault();
-                    }
-                  }}
                   onChange={(e) => {
-                    const sanitized = e.target.value.replace(/[eE\+\-]/g, '');
-                    setLoanAmount(sanitized);
+                    setLoanAmount(e.target.value);
                     clearFieldError('loan_amount', 'loanAmount');
                   }}
                   className={`box-border flex flex-row items-center p-[8px_16px] w-full h-[44px] bg-white border rounded-[8px] font-roboto font-normal text-[14px] leading-[16px] text-[#111827] placeholder:text-[#C6C6C6] outline-none focus:ring-1 ${
