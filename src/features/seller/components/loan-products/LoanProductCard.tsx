@@ -63,6 +63,11 @@ export interface LoanProductCardProps {
   product: LoanProductSummary;
 }
 
+export function canEditLoanProduct(status: string | null | undefined): boolean {
+  if (!status) return false;
+  return status.toLowerCase() !== 'active';
+}
+
 export function LoanProductCard({ product }: LoanProductCardProps) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -76,7 +81,7 @@ export function LoanProductCard({ product }: LoanProductCardProps) {
   const CategoryIcon = theme.icon;
 
   const isDraft = product.status === 'Draft';
-  const isActive = product.status === 'Active';
+  const canEdit = canEditLoanProduct(product.status);
   const statusLabel = isDraft ? 'Pending Approved' : product.status;
   const statusBadgeBg = isDraft ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-emerald-50 border-emerald-200 text-emerald-700';
   const statusDotBg = isDraft ? 'bg-amber-500' : 'bg-emerald-500';
@@ -130,7 +135,7 @@ export function LoanProductCard({ product }: LoanProductCardProps) {
 
         {/* Right Actions */}
         <div className="flex items-center gap-2 shrink-0">
-          {!isActive && (
+          {canEdit && (
             <button
               type="button"
               onClick={() => setIsEditModalOpen(true)}

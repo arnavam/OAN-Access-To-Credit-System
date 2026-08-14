@@ -9,6 +9,41 @@ export interface NumericInputProps extends InputHTMLAttributes<HTMLInputElement>
   maxDigits?: number;
 }
 
+export interface SanitizeNumericOptions {
+  maxIntegerDigits?: number | undefined;
+  maxDecimalDigits?: number | undefined;
+  maxDigits?: number | undefined;
+}
+
+export function sanitizeNumericValue(raw: string, options: SanitizeNumericOptions = {}): string {
+  let sanitized = sanitizeNumberInput(raw);
+
+  if (options.maxDigits !== undefined && sanitized) {
+    const digitsOnly = sanitized.replace(/\D/g, '');
+    sanitized = digitsOnly.slice(0, options.maxDigits);
+  }
+
+  if ((options.maxIntegerDigits !== undefined || options.maxDecimalDigits !== undefined) && sanitized) {
+    const parts = sanitized.split('.');
+    let intPart = parts[0] ?? '';
+    if (options.maxIntegerDigits !== undefined && intPart.length > options.maxIntegerDigits) {
+      intPart = intPart.slice(0, options.maxIntegerDigits);
+    }
+
+    if (parts.length > 1) {
+      let decPart = parts.slice(1).join('');
+      if (options.maxDecimalDigits !== undefined && decPart.length > options.maxDecimalDigits) {
+        decPart = decPart.slice(0, options.maxDecimalDigits);
+      }
+      sanitized = `${intPart}.${decPart}`;
+    } else {
+      sanitized = intPart;
+    }
+  }
+
+  return sanitized;
+}
+
 /**
  * A standard numeric input that automatically prevents 'e', 'E', '+', and '-' 
  * characters from being typed or pasted, and optionally caps integer/decimal digits.
@@ -36,30 +71,11 @@ export const NumericInput = forwardRef<HTMLInputElement, NumericInputProps>(
     };
 
     const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-      let sanitized = sanitizeNumberInput(e.target.value);
-
-      if (maxDigits !== undefined && sanitized) {
-        const digitsOnly = sanitized.replace(/\D/g, '');
-        sanitized = digitsOnly.slice(0, maxDigits);
-      }
-
-      if ((maxIntegerDigits !== undefined || maxDecimalDigits !== undefined) && sanitized) {
-        const parts = sanitized.split('.');
-        let intPart = parts[0] ?? '';
-        if (maxIntegerDigits !== undefined && intPart.length > maxIntegerDigits) {
-          intPart = intPart.slice(0, maxIntegerDigits);
-        }
-
-        if (parts.length > 1) {
-          let decPart = parts.slice(1).join('');
-          if (maxDecimalDigits !== undefined && decPart.length > maxDecimalDigits) {
-            decPart = decPart.slice(0, maxDecimalDigits);
-          }
-          sanitized = `${intPart}.${decPart}`;
-        } else {
-          sanitized = intPart;
-        }
-      }
+      const sanitized = sanitizeNumericValue(e.target.value, {
+        maxIntegerDigits,
+        maxDecimalDigits,
+        maxDigits,
+      });
 
       if (e.target.value !== sanitized) {
         e.target.value = sanitized;
