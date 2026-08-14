@@ -144,6 +144,10 @@ export function EditLoanProductModal({ isOpen, onClose, product }: EditLoanProdu
     }
   };
 
+  const isProductActive =
+    detail?.status === 'Active' ||
+    (Boolean(product) && 'status' in (product as Record<string, unknown>) && (product as Record<string, unknown>).status === 'Active');
+
   const handleSaveData = async () => {
     if (!product) {
       setLocalError('No loan product selected.');
@@ -152,6 +156,11 @@ export function EditLoanProductModal({ isOpen, onClose, product }: EditLoanProdu
     const productId = getProductId(product);
     if (!productId) {
       setLocalError('Invalid loan product ID.');
+      return;
+    }
+
+    if (isProductActive) {
+      setLocalError('Active loan products cannot be edited.');
       return;
     }
 
@@ -377,12 +386,13 @@ export function EditLoanProductModal({ isOpen, onClose, product }: EditLoanProdu
                         Interest rate (% p.a.) <span className="text-red-500">*</span>
                       </label>
                       <NumericInput
-                        
                         min="0"
+                        max="99.99"
                         step="0.01"
+                        maxIntegerDigits={2}
+                        maxDecimalDigits={2}
                         value={form.minInterestRate}
-                                                onChange={(event) => {
-                          
+                        onChange={(event) => {
                           setForm((current) => ({ ...current, minInterestRate: event.target.value }));
                         }}
                         placeholder="Enter minimum interest rate"
@@ -392,12 +402,13 @@ export function EditLoanProductModal({ isOpen, onClose, product }: EditLoanProdu
                     <div className="space-y-1.5">
                       <label className="text-[14px] font-bold text-[#1F2937]">Max interest rate (% p.a.)</label>
                       <NumericInput
-                        
                         min="0"
+                        max="99.99"
                         step="0.01"
+                        maxIntegerDigits={2}
+                        maxDecimalDigits={2}
                         value={form.maxInterestRate}
-                                                onChange={(event) => {
-                          
+                        onChange={(event) => {
                           setForm((current) => ({ ...current, maxInterestRate: event.target.value }));
                         }}
                         placeholder="Optional"
@@ -410,12 +421,12 @@ export function EditLoanProductModal({ isOpen, onClose, product }: EditLoanProdu
                     <div className="space-y-1.5">
                       <label className="text-[14px] font-bold text-[#1F2937]">Min amount (ETB)</label>
                       <NumericInput
-                        
                         min="0"
+                        max="999999"
                         step="1"
+                        maxDigits={6}
                         value={form.minAmount}
-                                                onChange={(event) => {
-                          
+                        onChange={(event) => {
                           setForm((current) => ({ ...current, minAmount: event.target.value }));
                         }}
                         placeholder="Optional"
@@ -427,12 +438,12 @@ export function EditLoanProductModal({ isOpen, onClose, product }: EditLoanProdu
                         Max amount (ETB) <span className="text-red-500">*</span>
                       </label>
                       <NumericInput
-                        
                         min="0"
+                        max="999999"
                         step="1"
+                        maxDigits={6}
                         value={form.maxAmount}
-                                                onChange={(event) => {
-                          
+                        onChange={(event) => {
                           setForm((current) => ({ ...current, maxAmount: event.target.value }));
                         }}
                         placeholder="Enter maximum amount"
@@ -526,7 +537,7 @@ export function EditLoanProductModal({ isOpen, onClose, product }: EditLoanProdu
                 <button
                   type="button"
                   onClick={handleSaveData}
-                  disabled={isSubmitting || isLoadingDetail}
+                  disabled={isSubmitting || isLoadingDetail || isProductActive}
                   className="flex min-w-[160px] items-center justify-center gap-2 rounded-lg bg-[#16A34A] px-6 py-2.5 text-[14px] font-bold text-white transition-colors hover:bg-[#15803d] disabled:cursor-not-allowed disabled:opacity-80"
                 >
                   {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}

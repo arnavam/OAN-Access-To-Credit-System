@@ -76,6 +76,7 @@ export function LoanProductCard({ product }: LoanProductCardProps) {
   const CategoryIcon = theme.icon;
 
   const isDraft = product.status === 'Draft';
+  const isActive = product.status === 'Active';
   const statusLabel = isDraft ? 'Pending Approved' : product.status;
   const statusBadgeBg = isDraft ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-emerald-50 border-emerald-200 text-emerald-700';
   const statusDotBg = isDraft ? 'bg-amber-500' : 'bg-emerald-500';
@@ -129,14 +130,16 @@ export function LoanProductCard({ product }: LoanProductCardProps) {
 
         {/* Right Actions */}
         <div className="flex items-center gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={() => setIsEditModalOpen(true)}
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-50 text-blue-500 transition-colors hover:bg-blue-100 active:scale-95"
-            aria-label={`Edit ${product.product_name}`}
-          >
-            <Pencil size={15} />
-          </button>
+          {!isActive && (
+            <button
+              type="button"
+              onClick={() => setIsEditModalOpen(true)}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-50 text-blue-500 transition-colors hover:bg-blue-100 active:scale-95"
+              aria-label={`Edit ${product.product_name}`}
+            >
+              <Pencil size={15} />
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setIsDeleteModalOpen(true)}

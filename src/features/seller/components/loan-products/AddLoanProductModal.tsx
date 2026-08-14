@@ -376,21 +376,19 @@ export function AddLoanProductModal({ isOpen, onClose }: AddLoanProductModalProp
                       placeholder="Enter Tenure (months)"
                       className={`w-full rounded-xl border px-3.5 py-2 text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20 ${fieldErrors.tenure_months ? 'border-red-400 focus:border-red-400' : 'border-gray-300 focus:border-[#16A34A]'}`}
                     />
-                    {fieldErrors.tenure_months && <p className="mt-1 text-[11px] text-red-600">{fieldErrors.tenure_months}</p>}
                   </div>
-
                   <div>
                     <label className="block text-xs font-bold text-gray-900 mb-1.5">
                       Minimum Interest Rate (%) <span className="text-red-500">*</span>
                     </label>
                     <NumericInput
-                      
                       min="0"
-                      max="100"
-                      step="0.1"
+                      max="99.99"
+                      step="0.01"
+                      maxIntegerDigits={2}
+                      maxDecimalDigits={2}
                       value={form.minInterestRate}
-                                            onChange={(e) => {
-                        
+                      onChange={(e) => {
                         clearFieldError('min_interest_rate');
                         setForm((curr) => ({ ...curr, minInterestRate: e.target.value }));
                       }}
@@ -405,13 +403,13 @@ export function AddLoanProductModal({ isOpen, onClose }: AddLoanProductModalProp
                       Maximum Interest Rate (%)
                     </label>
                     <NumericInput
-                      
                       min="0"
-                      max="100"
-                      step="0.1"
+                      max="99.99"
+                      step="0.01"
+                      maxIntegerDigits={2}
+                      maxDecimalDigits={2}
                       value={form.maxInterestRate}
-                                            onChange={(e) => {
-                        
+                      onChange={(e) => {
                         clearFieldError('max_interest_rate');
                         setForm((curr) => ({ ...curr, maxInterestRate: e.target.value }));
                       }}
@@ -426,11 +424,12 @@ export function AddLoanProductModal({ isOpen, onClose }: AddLoanProductModalProp
                       Min amount (ETB)
                     </label>
                     <NumericInput
-                      
                       min="0"
+                      max="999999"
+                      step="1"
+                      maxDigits={6}
                       value={form.minAmount}
-                                            onChange={(e) => {
-                        
+                      onChange={(e) => {
                         clearFieldError('min_amount');
                         setForm((curr) => ({ ...curr, minAmount: e.target.value }));
                       }}
@@ -445,11 +444,12 @@ export function AddLoanProductModal({ isOpen, onClose }: AddLoanProductModalProp
                       Max amount (ETB) <span className="text-red-500">*</span>
                     </label>
                     <NumericInput
-                      
                       min="0"
+                      max="999999"
+                      step="1"
+                      maxDigits={6}
                       value={form.maxAmount}
-                                            onChange={(e) => {
-                        
+                      onChange={(e) => {
                         clearFieldError('max_amount');
                         setForm((curr) => ({ ...curr, maxAmount: e.target.value }));
                       }}
