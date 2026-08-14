@@ -3,8 +3,7 @@ import { InputField } from './InputField';
 
 export interface OrganisationFields {
   bank_name: string;
-  entity_type: string;
-  bank_code: string;
+  brand_name: string;
 }
 
 interface OrganisationSectionProps {
@@ -27,21 +26,8 @@ export function OrganisationSection({ fields, onChange }: OrganisationSectionPro
           label="Brand / display name"
           placeholder="Enter if different from legal name"
           hint="If different from legal name"
-        />
-        <InputField
-          label="Entity type"
-          required
-          placeholder="Enter Entity type"
-          value={fields.entity_type}
-          onChange={(e) => onChange({ entity_type: e.target.value })}
-        />
-        <InputField
-          label="Tax registration number"
-          required
-          placeholder="Enter Tax registration number"
-          hint="Tax Identification number (9-10 characters)"
-          value={fields.bank_code}
-          onChange={(e) => onChange({ bank_code: e.target.value })}
+          value={fields.brand_name}
+          onChange={(e) => onChange({ brand_name: e.target.value })}
         />
       </div>
     </FormCard>

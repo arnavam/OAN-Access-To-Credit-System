@@ -1,5 +1,6 @@
 'use client';
 
+import { useModalA11y } from '@/hooks/useModalA11y';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { Check, Eye, Filter, Phone } from 'lucide-react';
 import { memo, useEffect, useRef, useState } from 'react';
@@ -76,6 +77,11 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
   const loanTypeRef = useRef<HTMLButtonElement>(null);
   const amountRef = useRef<HTMLButtonElement>(null);
   const dateRef = useRef<HTMLButtonElement>(null);
+
+  const statusDialogRef = useModalA11y<HTMLDivElement>(statusFilterOpen, () => setStatusFilterOpen(false));
+  const loanTypeDialogRef = useModalA11y<HTMLDivElement>(loanTypeFilterOpen, () => setLoanTypeFilterOpen(false));
+  const amountDialogRef = useModalA11y<HTMLDivElement>(amountFilterOpen, () => setAmountFilterOpen(false));
+  const dateDialogRef = useModalA11y<HTMLDivElement>(dateFilterOpen, () => setDateFilterOpen(false));
 
   useEffect(() => {
     if (statusFilterOpen) setLocalStatuses(selectedStatuses);
@@ -159,12 +165,17 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
                     ref={statusRef}
                     type="button"
                     onClick={(e) => { e.stopPropagation(); setStatusFilterOpen(!statusFilterOpen); }}
-                    className={`p-1 rounded transition hover:bg-gray-200 ${statusFilterOpen || selectedStatuses.length > 0 ? 'text-emerald-600' : 'text-gray-400'}`}
+                    className={`p-1 rounded transition hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-1 ${statusFilterOpen || selectedStatuses.length > 0 ? 'text-emerald-600' : 'text-gray-400'}`}
                   >
                     <Filter size={15} strokeWidth={2} />
                   </button>
                   {statusFilterOpen && typeof document !== 'undefined' && createPortal(
                     <div
+                      ref={statusDialogRef}
+                      role="dialog"
+                      aria-modal="true"
+                      aria-label="Status filter"
+                      tabIndex={-1}
                       className="loan-filter-popup fixed z-[9999] w-64 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 normal-case font-normal text-sm text-gray-800"
                       style={{
                         top: (statusRef.current?.getBoundingClientRect().bottom ?? 0) + 8,
@@ -180,8 +191,9 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
                           const isAll = opt === 'All';
                           const isChecked = isAll ? localStatuses.length === 0 : localStatuses.includes(opt);
                           return (
-                            <label
+                            <button
                               key={opt}
+                              type="button"
                               onClick={() => {
                                 if (isAll) {
                                   setLocalStatuses([]);
@@ -189,13 +201,13 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
                                   toggleLocalStatus(opt);
                                 }
                               }}
-                              className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-gray-700"
+                              className="flex w-full items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-gray-700 text-left focus:outline-none focus-visible:bg-gray-50"
                             >
                               <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${isChecked ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-gray-300'}`}>
                                 {isChecked && <Check size={12} strokeWidth={3} />}
                               </div>
                               <span className="text-sm font-medium">{opt}</span>
-                            </label>
+                            </button>
                           );
                         })}
                       </div>
@@ -229,12 +241,17 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
                     ref={loanTypeRef}
                     type="button"
                     onClick={(e) => { e.stopPropagation(); setLoanTypeFilterOpen(!loanTypeFilterOpen); }}
-                    className={`p-1 rounded transition hover:bg-gray-200 ${loanTypeFilterOpen || selectedLoanTypes.length > 0 ? 'text-emerald-600' : 'text-gray-400'}`}
+                    className={`p-1 rounded transition hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-1 ${loanTypeFilterOpen || selectedLoanTypes.length > 0 ? 'text-emerald-600' : 'text-gray-400'}`}
                   >
                     <Filter size={15} strokeWidth={2} />
                   </button>
                   {loanTypeFilterOpen && typeof document !== 'undefined' && createPortal(
                     <div
+                      ref={loanTypeDialogRef}
+                      role="dialog"
+                      aria-modal="true"
+                      aria-label="Loan product filter"
+                      tabIndex={-1}
                       className="loan-filter-popup fixed z-[9999] w-72 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 normal-case font-normal text-sm text-gray-800"
                       style={{
                         top: (loanTypeRef.current?.getBoundingClientRect().bottom ?? 0) + 8,
@@ -250,8 +267,9 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
                           const isAll = opt === 'All';
                           const isChecked = isAll ? localLoanTypes.length === 0 : localLoanTypes.includes(opt);
                           return (
-                            <label
+                            <button
                               key={opt}
+                              type="button"
                               onClick={() => {
                                 if (isAll) {
                                   setLocalLoanTypes([]);
@@ -259,13 +277,13 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
                                   toggleLocalLoanType(opt);
                                 }
                               }}
-                              className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-gray-700"
+                              className="flex w-full items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-gray-700 text-left focus:outline-none focus-visible:bg-gray-50"
                             >
                               <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${isChecked ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-gray-300'}`}>
                                 {isChecked && <Check size={12} strokeWidth={3} />}
                               </div>
                               <span className="text-sm font-medium">{opt}</span>
-                            </label>
+                            </button>
                           );
                         })}
                       </div>
@@ -299,12 +317,17 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
                     ref={amountRef}
                     type="button"
                     onClick={(e) => { e.stopPropagation(); setAmountFilterOpen(!amountFilterOpen); }}
-                    className={`p-1 rounded transition hover:bg-gray-200 ${amountFilterOpen || currentAdvancedFilters.minLoan !== null ? 'text-emerald-600' : 'text-gray-400'}`}
+                    className={`p-1 rounded transition hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-1 ${amountFilterOpen || currentAdvancedFilters.minLoan !== null ? 'text-emerald-600' : 'text-gray-400'}`}
                   >
                     <Filter size={15} strokeWidth={2} />
                   </button>
                   {amountFilterOpen && typeof document !== 'undefined' && createPortal(
                     <div
+                      ref={amountDialogRef}
+                      role="dialog"
+                      aria-modal="true"
+                      aria-label="Loan amount filter"
+                      tabIndex={-1}
                       className="loan-filter-popup fixed z-[9999] w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 p-5 normal-case font-normal text-sm text-gray-800"
                       style={{
                         top: (amountRef.current?.getBoundingClientRect().bottom ?? 0) + 8,
@@ -359,16 +382,17 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
                         {RANGE_STEPS.slice(0, 4).map((opt, idx) => {
                           const isSel = tempAmountIndex === idx;
                           return (
-                            <label
+                            <button
                               key={opt.value}
+                              type="button"
                               onClick={() => handleApplyAmount(idx)}
-                              className="flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-gray-50 cursor-pointer"
+                              className="flex w-full items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-gray-50 cursor-pointer text-left focus:outline-none focus-visible:bg-gray-50"
                             >
                               <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${isSel ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-gray-300'}`}>
                                 {isSel && <Check size={12} strokeWidth={3} />}
                               </div>
                               <span className="text-xs font-medium text-gray-700">{opt.label}</span>
-                            </label>
+                            </button>
                           );
                         })}
                       </div>
@@ -386,12 +410,17 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
                     ref={dateRef}
                     type="button"
                     onClick={(e) => { e.stopPropagation(); setDateFilterOpen(!dateFilterOpen); }}
-                    className={`p-1 rounded transition hover:bg-gray-200 ${dateFilterOpen || currentAdvancedFilters.dateFrom ? 'text-emerald-600' : 'text-gray-400'}`}
+                    className={`p-1 rounded transition hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-1 ${dateFilterOpen || currentAdvancedFilters.dateFrom ? 'text-emerald-600' : 'text-gray-400'}`}
                   >
                     <Filter size={15} strokeWidth={2} />
                   </button>
                   {dateFilterOpen && typeof document !== 'undefined' && createPortal(
                     <div
+                      ref={dateDialogRef}
+                      role="dialog"
+                      aria-modal="true"
+                      aria-label="Date filter"
+                      tabIndex={-1}
                       className="loan-filter-popup fixed z-[9999] w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 normal-case font-normal text-sm text-gray-800"
                       style={{
                         top: (dateRef.current?.getBoundingClientRect().bottom ?? 0) + 8,
@@ -413,8 +442,9 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
                         ].map((o) => {
                           const isChecked = tempQuickDate === o.label;
                           return (
-                            <label
+                            <button
                               key={o.label}
+                              type="button"
                               onClick={() => {
                                 setTempQuickDate(o.label);
                                 const to = new Date();
@@ -428,13 +458,13 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
                                 setTempDateFrom(from.toISOString().split('T')[0] ?? '');
                                 setTempDateTo(to.toISOString().split('T')[0] ?? '');
                               }}
-                              className="flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-gray-50 cursor-pointer"
+                              className="flex w-full items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-gray-50 cursor-pointer text-left focus:outline-none focus-visible:bg-gray-50"
                             >
                               <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${isChecked ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-gray-300'}`}>
                                 {isChecked && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                               </div>
                               <span className="text-xs font-medium text-gray-700">{o.label}</span>
-                            </label>
+                            </button>
                           );
                         })}
                       </div>

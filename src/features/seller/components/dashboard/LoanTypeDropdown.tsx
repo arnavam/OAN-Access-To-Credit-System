@@ -1,4 +1,5 @@
 'use client';
+import { useEscapeToClose } from '@/hooks/useEscapeToClose';
 import { ChevronDown } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -25,6 +26,8 @@ interface LoanTypeDropdownProps {
 export function LoanTypeDropdown({ selectedTypes, options, placeholder, singleSelect = false, onChange }: LoanTypeDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEscapeToClose(isOpen, () => setIsOpen(false), dropdownRef);
 
   const formattedOptions: LoanTypeOption[] = options && options.length > 0
     ? options.map((opt) => (typeof opt === 'string' ? { term_id: opt, term_name: opt } : opt))
@@ -65,8 +68,18 @@ export function LoanTypeDropdown({ selectedTypes, options, placeholder, singleSe
   return (
     <div className="relative" ref={dropdownRef}>
       <div
-        className="flex w-full cursor-pointer items-center justify-between rounded-lg border border-[#D1D5DB] bg-white px-4 py-2.5 transition-all focus-within:border-[#00C48C] focus-within:ring-2 focus-within:ring-[#00C48C]"
+        role="button"
+        tabIndex={0}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        className="flex w-full cursor-pointer items-center justify-between rounded-lg border border-[#D1D5DB] bg-white px-4 py-2.5 transition-all focus-within:border-[#00C48C] focus-within:ring-2 focus-within:ring-[#00C48C] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00C48C]"
         onClick={() => setIsOpen(!isOpen)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setIsOpen((o) => !o);
+          }
+        }}
       >
         <div className="flex-1 truncate pr-4 text-[14px] text-[#1F2937]">
           {selectedDisplayNames.length > 0 ? (

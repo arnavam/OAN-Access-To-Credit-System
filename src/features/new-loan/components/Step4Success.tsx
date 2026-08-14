@@ -13,6 +13,9 @@ export function Step4Success() {
   const router = useRouter();
   const dispatch = useDispatch();
   const [showSummaryPopup, setShowSummaryPopup] = useState(false);
+  // Captured once (lazy initializer) rather than called directly in the render
+  // body, where Date.now() would return a new value on every re-render.
+  const [submittedAt] = useState(() => Date.now());
   const formData = useSelector((state: RootState) => state.loanForm.formData);
   const applicationId = useSelector((state: RootState) => state.loanForm.applicationId);
 
@@ -41,7 +44,7 @@ export function Step4Success() {
     loanTerm: formData.duration || "—",
     loanAmount: formData.requestedAmount ? `ETB ${parseFloat(formData.requestedAmount).toLocaleString()}` : "—",
     action: "view",
-    timestamp: Date.now(),
+    timestamp: submittedAt,
   };
 
   const handleReturnToDashboard = () => {

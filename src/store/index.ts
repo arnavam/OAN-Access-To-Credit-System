@@ -26,8 +26,8 @@ const permissionToastMiddleware: Middleware = () => (next) => (action) => {
     const msg: string =
       typeof payload === 'string'
         ? payload
-        : typeof (payload as any)?.message === 'string'
-        ? (payload as any).message
+        : typeof (payload as { message?: string })?.message === 'string'
+        ? (payload as { message?: string }).message!
         : '';
     if (msg && /permission denied/i.test(msg)) {
       toast.error('You don\'t have permission to perform this action. Please complete KYC setup first.');
@@ -36,16 +36,34 @@ const permissionToastMiddleware: Middleware = () => (next) => (action) => {
   return result;
 };
 
+const LOAN_FORM_STORAGE_KEY = 'loan_form_state';
+let loanFormPersistTimer: ReturnType<typeof setTimeout> | null = null;
+
+// Redacted: consent data + OTP-verified status are excluded from Web Storage
+// since any script running in the tab can read it. A refresh mid-flow
+// re-requires OTP verification rather than trusting a stored flag.
+function persistLoanFormState(state: RootState) {
+  const { consentRequestData: _consentRequestData, otpVerified: _otpVerified, ...persistable } = state.loanForm;
+  sessionStorage.setItem(LOAN_FORM_STORAGE_KEY, JSON.stringify(persistable));
+}
+
 const storageMiddleware: Middleware = (store) => (next) => (action) => {
   const result = next(action);
   const unknownAction = action as UnknownAction;
   if (typeof window !== 'undefined') {
     // Handle Loan Form Persistence (stored in sessionStorage to avoid localStorage PII)
     if (unknownAction.type === 'loanForm/resetForm') {
-      sessionStorage.removeItem('loan_form_state');
+      if (loanFormPersistTimer) clearTimeout(loanFormPersistTimer);
+      loanFormPersistTimer = null;
+      sessionStorage.removeItem(LOAN_FORM_STORAGE_KEY);
     } else if (unknownAction.type.startsWith('loanForm/')) {
-      const loanState = (store.getState() as RootState).loanForm;
-      sessionStorage.setItem('loan_form_state', JSON.stringify(loanState));
+      // Debounced so this isn't synchronous main-thread I/O on every keystroke;
+      // see the pagehide flush below for the tab-close/navigate-away case.
+      if (loanFormPersistTimer) clearTimeout(loanFormPersistTimer);
+      loanFormPersistTimer = setTimeout(() => {
+        loanFormPersistTimer = null;
+        persistLoanFormState(store.getState() as RootState);
+      }, 400);
     }
   }
   return result;
@@ -117,6 +135,18 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(storageMiddleware, unauthenticatedMiddleware, permissionToastMiddleware),
 });
+
+if (typeof window !== 'undefined') {
+  // Flush any pending debounced write immediately so closing the tab or
+  // navigating away within the debounce window can't silently drop the last edit.
+  window.addEventListener('pagehide', () => {
+    if (loanFormPersistTimer) {
+      clearTimeout(loanFormPersistTimer);
+      loanFormPersistTimer = null;
+      persistLoanFormState(store.getState());
+    }
+  });
+}
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;

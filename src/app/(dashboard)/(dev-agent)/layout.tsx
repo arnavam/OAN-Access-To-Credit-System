@@ -79,6 +79,9 @@ export default function DevAgentLayout({ children }: { children: React.ReactNode
   }, [pageTitle]);
 
   useEffect(() => {
+    // Closes the mobile nav on route change — can't be computed during render
+    // since it has to react to navigation, not just the current render's props.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsMobileOpen(false);
   }, [pathname]);
 

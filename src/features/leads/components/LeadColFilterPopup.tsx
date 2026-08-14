@@ -1,8 +1,9 @@
 import { selectLeadStatusesOptions } from '@/features/new-lead/store/newLeadSlice';
 import { selectCategories } from '@/features/seller/store/loanProductsSlice';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import { useAppSelector } from '@/store/hooks';
 import { Check, Filter } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 
 /* ─── LeadColFilterPopup ────────────────────────────────────────────── */
@@ -15,12 +16,9 @@ interface LeadColFilterPopupProps {
 }
 
 export function LeadColFilterPopup({ col, anchorRef, initialSelected = [], onApply, onClose }: LeadColFilterPopupProps) {
-  const popupRef = useRef<HTMLDivElement>(null);
   const [selected, setSelected] = useState<string[]>(initialSelected);
-
-  useEffect(() => {
-    // Positioning is now handled by absolute positioning relative to the column header.
-  }, [anchorRef]);
+  // Only ever mounted while open, so it's always "open" from this hook's perspective.
+  const popupRef = useModalA11y<HTMLDivElement>(true, onClose);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -31,7 +29,7 @@ export function LeadColFilterPopup({ col, anchorRef, initialSelected = [], onApp
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [anchorRef, onClose]);
+  }, [anchorRef, onClose, popupRef]);
 
 
   const loanTypesOptions = useAppSelector(selectCategories).map((c) => c.term_name);
@@ -47,6 +45,10 @@ export function LeadColFilterPopup({ col, anchorRef, initialSelected = [], onApp
   return (
     <div
       ref={popupRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label={col === 'CALL START TIME' ? 'Filter by date' : `Filter by ${col}`}
+      tabIndex={-1}
       className="loan-filter-popup absolute top-full left-0 mt-2 z-[99] flex min-w-[240px] w-max flex-col rounded-xl border border-gray-200 bg-white shadow-xl normal-case tracking-normal text-gray-900"
       onClick={(e) => e.stopPropagation()}
     >

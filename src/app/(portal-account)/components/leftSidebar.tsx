@@ -1,3 +1,5 @@
+import Image from 'next/image';
+
 // Bundled local assets — the CSP intentionally restricts img-src to 'self', so
 // these decorative avatars stay same-origin (no external host, works offline).
 const activeAgents = [
@@ -10,7 +12,7 @@ export function LeftSidebar() {
   return (
     <div className="w-full md:w-[45%] bg-[#0B6C43] p-10 md:p-14 flex flex-col relative overflow-hidden">
       <div className="flex items-center space-x-2 mb-16 relative z-10">
-        <img src="/logo.png" alt="OARI Logo" className="h-[40px] sm:h-[48px] w-auto shrink-0" />
+        <Image src="/logo.png" alt="OARI Logo" width={1536} height={1024} className="h-[40px] sm:h-[48px] w-auto shrink-0" />
         <div className="flex flex-col border-l border-white/30 pl-2">
           <span className="text-xs font-bold text-white leading-tight tracking-wide">Ethiopia OpenAgriNet</span>
           <span className="text-[10px] text-white/80 font-medium leading-tight tracking-wide">Access to Credit</span>
@@ -33,7 +35,7 @@ export function LeftSidebar() {
         <div className="flex -space-x-3">
           {activeAgents.map((agent, index) => (
             <div key={index} className="w-10 h-10 rounded-full border-2 border-[#0B6C43] overflow-hidden flex items-center justify-center bg-white z-[3]">
-              <img src={agent.src} alt={agent.alt} className="w-full h-full object-cover" />
+              <Image src={agent.src} alt={agent.alt} width={80} height={80} className="w-full h-full object-cover" />
             </div>
           ))}
           <div className="w-10 h-10 rounded-full bg-[#1F2937] border-2 border-[#0B6C43] flex items-center justify-center text-[10px] font-bold text-white z-[0]">

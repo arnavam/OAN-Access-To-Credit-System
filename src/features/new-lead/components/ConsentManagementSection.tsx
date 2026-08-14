@@ -30,12 +30,12 @@ export function ConsentManagementSection() {
 
   const isProfileCreated = !!farmerDetails?.farmer_profile_created || !!farmerDetails?.firstName;
   const isFinalizingConsent = isOtpVerified && !consentDate;
-  
+
   // Only consider sync in progress if we are actively tracking it in this session (isOtpVerified = true)
   const isSyncInProgress = isOtpVerified &&
-                           farmerDetails?.consent_request_status !== 'Pending OTP' && 
-                           farmerDetails?.consent_request_otp_verified === true && 
-                           farmerDetails?.farmer_profile_created === false;
+    farmerDetails?.consent_request_status !== 'Pending OTP' &&
+    farmerDetails?.consent_request_otp_verified === true &&
+    farmerDetails?.farmer_profile_created === false;
 
   const isVerified = isProfileCreated || isFinalizingConsent || (isSyncInProgress && !detailsError);
 
@@ -87,7 +87,7 @@ export function ConsentManagementSection() {
       </div>
 
       <div className="flex flex-col items-start px-4 sm:px-6 w-full max-w-2xl gap-1">
-        <label className="text-[14px] font-medium text-[#374151] mb-1">
+        <label htmlFor="consent-farmer-id" className="text-[14px] font-medium text-[#374151] mb-1">
           Farmer ID / Fayda ID <span className="text-red-500">*</span>
         </label>
         {isVerified ? (
@@ -115,6 +115,7 @@ export function ConsentManagementSection() {
           <div className="flex flex-col gap-3 w-full">
             <div className="flex flex-col sm:flex-row gap-3 w-full">
               <input
+                id="consent-farmer-id"
                 type="text"
                 value={farmerId}
                 onChange={(e) => dispatch(setFarmerId(e.target.value))}
@@ -129,13 +130,13 @@ export function ConsentManagementSection() {
                   }
                 }}
                 disabled={!farmerId?.trim() || isLoadingConsent || isSearchingFarmer}
-                className="h-[42px] px-6 rounded-md border border-[#16A34A] text-[15px] font-medium text-[#16A34A] hover:bg-[#F0FDFA] transition-colors bg-white shadow-sm flex items-center justify-center shrink-0 disabled:opacity-50"
+                className="h-[42px] px-6 rounded-md border border-[#16A34A] text-[15px] font-bold text-[#16A34A] hover:bg-[#F0FDFA] transition-colors bg-white shadow-sm flex items-center justify-center shrink-0 disabled:opacity-50"
               >
                 {isSearchingFarmer ? 'Searching...' : 'Search'}
               </button>
             </div>
             {searchedFarmer?.firstName && (
-              <div className="text-[13px] text-green-600 font-medium bg-[#F0FDFA] border border-[#DCFCE7] rounded px-3 py-1.5 w-full">
+              <div className="text-[13px] text-green-600 font-medium bg-[#F0FDFA] border border-[#DCFCE7] rounded px-3 py-1.5 w-full break-all">
                 Farmer: {searchedFarmer.firstName} {searchedFarmer.lastName} ({searchedFarmer.phoneNumber})
               </div>
             )}
@@ -143,12 +144,12 @@ export function ConsentManagementSection() {
               type="button"
               onClick={handleSendOtp}
               disabled={!searchedFarmer?.firstName || isLoadingConsent || isSearchingFarmer}
-              className="w-full h-[42px] rounded-md bg-[#16A34A] text-[15px] font-medium text-white hover:bg-[#15803d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex items-center justify-center"
+              className="w-full h-[42px] rounded-md bg-[#16A34A] text-[15px] font-bold text-white hover:bg-[#15803d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex items-center justify-center"
             >
               {isLoadingConsent ? 'Sending...' : 'Send OTP'}
             </button>
             {(consentError || searchError) && (
-              <div className="flex items-start gap-2 w-full mt-1 bg-[#FEF2F2] text-[#DC2626] p-3 rounded-md border border-[#FECACA]">
+              <div role="alert" aria-live="assertive" className="flex items-start gap-2 w-full mt-1 bg-[#FEF2F2] text-[#DC2626] p-3 rounded-md border border-[#FECACA]">
                 <AlertCircle size={16} className="mt-0.5 shrink-0" />
                 <p className="text-[14px] font-medium leading-[20px]">{consentError || searchError}</p>
               </div>

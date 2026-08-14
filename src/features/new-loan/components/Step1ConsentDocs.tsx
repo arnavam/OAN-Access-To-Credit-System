@@ -49,11 +49,14 @@ export function Step1ConsentDocs({ leadId }: { leadId?: string | undefined }) {
 
   useEffect(() => {
     if (!selectedSupportingDoc) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSupportPreviewUrl(null);
       return;
     }
 
     if (selectedSupportingDoc.file) {
+      // URL.createObjectURL/revokeObjectURL is an imperative browser API with
+      // required cleanup — can't be computed during render, has to live in an effect.
       const url = URL.createObjectURL(selectedSupportingDoc.file);
       setSupportPreviewUrl(url);
       return () => URL.revokeObjectURL(url);

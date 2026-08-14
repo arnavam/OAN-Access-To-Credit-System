@@ -118,6 +118,7 @@ export function CreateAccountForm() {
             </div>
             <input
               type="tel"
+              maxLength={10}
               value={phoneNumber}
               onChange={(e) => setPhoneNumber(e.target.value)}
               placeholder="Enter mobile Number"

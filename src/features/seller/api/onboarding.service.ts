@@ -18,8 +18,8 @@ export interface BankProfile {
   registered_street: string;
   registered_kebele_village?: string;
   registered_woreda_district?: string;
-  registered_city: string;
-  registered_country: string;
+  registered_zone: string;
+  registered_region: string;
   registered_postal_code: string;
   registered_email: string;
   registered_phone: string;
@@ -42,8 +42,8 @@ export interface UpdateBankProfilePayload {
   registered_street?: string;
   registered_kebele_village?: string;
   registered_woreda_district?: string;
-  registered_city?: string;
-  registered_country?: string;
+  registered_zone?: string;
+  registered_region?: string;
   registered_postal_code?: string;
   registered_email?: string;
   registered_phone?: string;

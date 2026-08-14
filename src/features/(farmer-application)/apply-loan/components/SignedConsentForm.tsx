@@ -123,6 +123,7 @@ export default function SignedConsentForm() {
               </div>
               <div className="flex-1 p-4 sm:p-8 bg-gray-100/50 flex items-center justify-center overflow-hidden">
                 {uploadedFile.type.includes('image') ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- fileUrl is a blob: URL from URL.createObjectURL, which next/image's optimizer can't fetch
                   <img src={fileUrl} className="w-full h-full object-contain rounded shadow-sm border border-gray-200 bg-white" alt="Document" />
                 ) : (
                   <iframe src={fileUrl} className="w-full h-full rounded shadow-sm border border-gray-200 bg-white" title="Document Viewer" />

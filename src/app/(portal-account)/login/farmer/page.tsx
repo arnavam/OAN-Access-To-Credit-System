@@ -1,16 +1,20 @@
 'use client';
 
+import { OtpVerificationPopup } from '@/components/ui/OtpVerificationPopup';
 import { ForgotPasswordModal } from '@/features/auth/components/ForgotPasswordModal';
 import {
     ArrowLeft,
     ArrowRight, ShieldCheck, User
 } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { LanguageSelector } from '../../components/LanguageSelector';
-import OtpVerificationPopup from './components/OtpVerificationPopup';
 
+// TODO: these external dicebear.com avatars are already blocked in production
+// by the CSP's `img-src 'self' data: blob:` (see src/proxy.ts) — replace with
+// local static assets, same as leftSidebar.tsx's activeAgents.
 const activeAgents = [
   { src: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix', alt: 'Agent 1' },
   { src: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka', alt: 'Agent 2' },
@@ -55,7 +59,7 @@ export default function FarmerLoginPage() {
           <div className="w-full md:w-[45%] bg-[#0f6b45] p-10 md:p-14 flex flex-col relative overflow-hidden">
 
             <div className="flex items-center space-x-2 mb-16 relative z-10">
-              <img src="/logo.png" alt="OARI Logo" className="h-[40px] sm:h-[48px] w-auto shrink-0" />
+              <Image src="/logo.png" alt="OARI Logo" width={1536} height={1024} className="h-[40px] sm:h-[48px] w-auto shrink-0" />
               <div className="flex flex-col border-l border-white/30 pl-2">
                 <span className="text-xs font-bold text-white leading-tight tracking-wide">Ethiopia OpenAgriNet</span>
                 <span className="text-[10px] text-white/80 font-medium leading-tight tracking-wide">Access to Credit</span>
@@ -78,6 +82,7 @@ export default function FarmerLoginPage() {
               <div className="flex -space-x-3">
                 {activeAgents.map((agent, index) => (
                   <div key={index} className="w-10 h-10 rounded-full border-2 border-[#0B6C43] overflow-hidden flex items-center justify-center bg-white z-[3]">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- external host already blocked by CSP img-src (see TODO above); not converting to next/image since that wouldn't fix the actual issue */}
                     <img src={agent.src} alt={agent.alt} className="w-full h-full object-cover" />
                   </div>
                 ))}

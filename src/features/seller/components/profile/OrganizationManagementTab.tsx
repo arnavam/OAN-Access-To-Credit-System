@@ -7,8 +7,8 @@ import { ArrowRight, Camera } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 const inputClass = (disabled: boolean) =>
-  `w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-[#16A34A] ${
-    disabled ? 'bg-gray-50 text-gray-500 cursor-not-allowed' : 'bg-white'
+  `w-full px-3.5 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-[#16A34A] ${
+    disabled ? 'border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed' : 'border-gray-300 bg-white text-gray-900'
   }`;
 
 export default function OrganizationManagementTab({ readOnly = false }: { readOnly?: boolean }) {
@@ -42,16 +42,16 @@ export default function OrganizationManagementTab({ readOnly = false }: { readOn
         registered_street: profile.registered_street,
         ...(profile.registered_kebele_village !== undefined && { registered_kebele_village: profile.registered_kebele_village }),
         ...(profile.registered_woreda_district !== undefined && { registered_woreda_district: profile.registered_woreda_district }),
-        registered_city: profile.registered_city,
-        registered_country: profile.registered_country,
+        registered_zone: profile.registered_zone,
+        registered_region: profile.registered_region,
         registered_postal_code: profile.registered_postal_code,
         registered_email: profile.registered_email,
         registered_phone: profile.registered_phone,
         ...(logoPreview || profile.logo ? { logo: logoPreview || profile.logo } : {}),
       });
       toast.success('Organization profile updated successfully');
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to update profile');
+    } catch (err) {
+      toast.error((err instanceof Error && err.message) || 'Failed to update profile');
     } finally {
       setSaving(false);
     }
@@ -72,8 +72,8 @@ export default function OrganizationManagementTab({ readOnly = false }: { readOn
         if (res?.data?.file_url) {
           setLogoPreview(res.data.file_url); // replace preview with the real URL
         }
-      } catch (err: any) {
-        toast.error(err.message || 'Failed to upload logo');
+      } catch (err) {
+        toast.error((err instanceof Error && err.message) || 'Failed to upload logo');
         setLogoPreview(null);
       }
     };
@@ -108,12 +108,12 @@ export default function OrganizationManagementTab({ readOnly = false }: { readOn
             { label: 'Street address', name: 'registered_street', placeholder: 'Enter Street address', required: true },
             { label: 'Kebele / Village', name: 'registered_kebele_village', placeholder: 'Enter Kebele / Village' },
             { label: 'Woreda / District', name: 'registered_woreda_district', placeholder: 'Enter Woreda / District' },
-            { label: 'City', name: 'registered_city', placeholder: 'Enter City', required: true },
-            { label: 'Country', name: 'registered_country', placeholder: 'Enter Country', required: true },
-            { label: 'Postal code', name: 'registered_postal_code', placeholder: 'Enter Postal code', required: true },
+            { label: 'Zone', name: 'registered_zone', placeholder: 'Enter Zone', required: true },
+            { label: 'Region', name: 'registered_region', placeholder: 'Enter Region', required: true },
+            { label: 'Postal code', name: 'registered_postal_code', placeholder: 'Enter Postal code', required: true, maxLength: 6 },
             { label: 'Organization Type', name: 'entity_type', placeholder: 'e.g. Bank, Microfinance Institution', required: true },
             { label: 'Website URL', name: 'website', placeholder: 'https://www.example.com', type: 'url' },
-          ].map(({ label, name, placeholder, required, type }) => (
+          ].map(({ label, name, placeholder, required, type, maxLength }) => (
             <div key={name}>
               <label className="block text-xs font-bold text-gray-900 mb-1.5">
                 {label} {required && <span className="text-red-500">*</span>}
@@ -121,10 +121,11 @@ export default function OrganizationManagementTab({ readOnly = false }: { readOn
               <input
                 type={type ?? 'text'}
                 name={name}
-                value={(profile as any)[name] || ''}
+                value={(profile as unknown as Record<string, string>)[name] || ''}
                 onChange={handleChange}
                 disabled={readOnly}
                 placeholder={placeholder}
+                maxLength={maxLength}
                 className={inputClass(readOnly)}
               />
             </div>
@@ -141,6 +142,7 @@ export default function OrganizationManagementTab({ readOnly = false }: { readOn
             <div className="relative">
               <div className="w-16 h-16 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center overflow-hidden">
                 {logoPreview || profile.logo ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- logoPreview can be a data: URL (fresh selection, needs `unoptimized` on next/image, unverified without a browser here)
                   <img src={toProxiedFileUrl(logoPreview || profile.logo)} alt="Logo" className="w-full h-full object-cover" />
                 ) : (
                   <span className="text-[#16A34A] font-bold text-lg">oan</span>

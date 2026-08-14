@@ -33,11 +33,16 @@ export function LoanApplicationsTable() {
   // pagination, etc.). Filtering is server-side, so the params must be passed to
   // fetchLoans — an argument-less call ignores all active filters.
   const loadLoans = useCallback(() => {
-    dispatch(fetchLoans(queryParams));
+    return dispatch(fetchLoans(queryParams));
   }, [dispatch, queryParams]);
 
   useEffect(() => {
-    loadLoans();
+    // Abort the in-flight request when queryParams change (or on unmount) so a
+    // slower earlier response can't overwrite the results for a newer query.
+    const promise = loadLoans();
+    return () => {
+      promise.abort();
+    };
   }, [loadLoans]);
 
   const handleRetry = () => {

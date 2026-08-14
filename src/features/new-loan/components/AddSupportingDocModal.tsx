@@ -1,6 +1,7 @@
 'use client';
 
 import { uploadDocumentAPI } from '@/features/new-loan/store/newLoanFormSlice';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import { logger } from '@/lib/logger';
 import type { AppDispatch } from '@/store';
 import { AlertTriangle, ChevronDown, FolderOpen, Loader2, X } from 'lucide-react';
@@ -28,6 +29,7 @@ export function AddSupportingDocModal({
   const [newDocFile, setNewDocFile] = useState<File | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const addDocFileRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useModalA11y<HTMLDivElement>(isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -69,9 +71,16 @@ export function AddSupportingDocModal({
 
   return (
     <div className="fixed inset-0 z-[999] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full max-w-lg rounded-xl bg-white shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col max-h-[95vh]">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="supporting-doc-modal-title"
+        tabIndex={-1}
+        className="w-full max-w-lg rounded-xl bg-white shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col max-h-[95vh]"
+      >
         <div className="flex items-center justify-between border-b border-gray-200 px-4 sm:px-6 py-4 shrink-0">
-          <h3 className="text-lg font-bold text-gray-900">Supporting Documents</h3>
+          <h3 id="supporting-doc-modal-title" className="text-lg font-bold text-gray-900">Supporting Documents</h3>
           <button
             type="button"
             onClick={onClose}

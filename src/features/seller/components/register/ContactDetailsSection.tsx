@@ -91,6 +91,7 @@ export function ContactDetailsSection({ fields, onChange, isAgreed, setIsAgreed 
             </div>
             <input
               type="tel"
+              maxLength={10}
               placeholder="Enter Phone Number"
               value={fields.registered_phone.startsWith(selectedPhoneCode) ? fields.registered_phone.slice(selectedPhoneCode.length).trimStart() : fields.registered_phone}
               onChange={(e) => {

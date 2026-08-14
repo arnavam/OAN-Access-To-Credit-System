@@ -26,7 +26,14 @@ export const handlers = [
   }),
 
   http.post('/api/loans', async ({ request }) => {
-    const body = await request.json() as any;
+    const body = await request.json() as {
+      fullName?: string;
+      loanType?: string;
+      requestedAmount?: string;
+      mobilePhone?: string;
+      region?: string;
+      loanDuration?: string;
+    };
     const newLoan = {
       id: `APP-2024-${Math.floor(Math.random() * 9000) + 1000}`,
       applicant: body.fullName || 'New Applicant',
@@ -66,7 +73,7 @@ export const handlers = [
     }
 
     // Map the mock format to the backend format expected by lead.service.ts
-    const mappedResults = filteredRows.map((row: any) => ({
+    const mappedResults = filteredRows.map((row) => ({
       ...row,
       name: row.id,
       farmer_name: row.farmerName,
@@ -93,7 +100,7 @@ export const handlers = [
 
   http.get('*/api/proxy/api/method/oan_a2c.api.v1.leads.get_lead_summary', () => {
     // Dynamically calculate the summary based on the mock data
-    const by_status = leadRows.reduce((acc: any, lead: any) => {
+    const by_status = leadRows.reduce((acc: Record<string, number>, lead) => {
       acc[lead.status] = (acc[lead.status] || 0) + 1;
       return acc;
     }, {});
@@ -201,7 +208,7 @@ export const handlers = [
     let filteredRows = getFallbackMockRows();
 
     if (searchQuery) {
-      filteredRows = filteredRows.filter((r: any) =>
+      filteredRows = filteredRows.filter((r) =>
         (r.id && r.id.toLowerCase().includes(searchQuery)) ||
         (r.phone && r.phone.toLowerCase().includes(searchQuery)) ||
         (r.applicant && r.applicant.toLowerCase().includes(searchQuery))
@@ -212,10 +219,10 @@ export const handlers = [
       try {
         const statuses = JSON.parse(statusQuery);
         if (statuses.length > 0 && statuses[0] !== '__NONE__') {
-          filteredRows = filteredRows.filter((r: any) => statuses.includes(r.status));
+          filteredRows = filteredRows.filter((r) => statuses.includes(r.status));
         }
-      } catch (e) {
-        filteredRows = filteredRows.filter((r: any) => r.status === statusQuery);
+      } catch {
+        filteredRows = filteredRows.filter((r) => r.status === statusQuery);
       }
     } else if (statusQuery === '["__NONE__"]') {
       filteredRows = [];
@@ -225,20 +232,19 @@ export const handlers = [
       try {
         const types = JSON.parse(loanTypeQuery);
         if (types.length > 0) {
-          filteredRows = filteredRows.filter((r: any) => types.includes(r.type));
+          filteredRows = filteredRows.filter((r) => types.includes(r.type));
         }
-      } catch (e) { }
+      } catch { }
     }
 
     if (locationQuery) {
-      filteredRows = filteredRows.filter((r: any) =>
-        (r.applicant && r.applicant.toLowerCase().includes(locationQuery)) ||
-        (r.region && r.region.toLowerCase().includes(locationQuery))
+      filteredRows = filteredRows.filter((r) =>
+        r.applicant && r.applicant.toLowerCase().includes(locationQuery)
       );
     }
 
     if (amountMin) {
-      filteredRows = filteredRows.filter((r: any) => {
+      filteredRows = filteredRows.filter((r) => {
         if (!r.loanAmount) return false;
         const numVal = parseInt(r.loanAmount.replace(/[^0-9]/g, ''), 10);
         const minVal = parseInt(amountMin, 10);
@@ -250,7 +256,7 @@ export const handlers = [
     if (fromDate || toDate) {
       const fromTime = fromDate ? new Date(fromDate).getTime() : 0;
       const toTime = toDate ? new Date(toDate).setHours(23, 59, 59, 999) : Infinity;
-      filteredRows = filteredRows.filter((r: any) => {
+      filteredRows = filteredRows.filter((r) => {
         const dStr = r.updated ? r.updated.split(' · ')[0] : null;
         if (!dStr) return false;
         const rTime = new Date(dStr).getTime();
@@ -269,7 +275,7 @@ export const handlers = [
     const paginatedRows = filteredRows.slice(startIndex, startIndex + pageSize);
 
     // Map paginatedRows to the new backend format so UI can parse it correctly
-    const mappedRows = paginatedRows.map((r: any) => ({
+    const mappedRows = paginatedRows.map((r) => ({
       application_id: r.id,
       first_name: r.applicant?.split(' ')[0] || '',
       last_name: r.applicant?.split(' ').slice(1).join(' ') || '',
@@ -277,7 +283,7 @@ export const handlers = [
       status: r.status,
       loan_amount: parseFloat((r.loanAmount || '0').replace(/[^0-9.]/g, '')),
       loan_type: r.type,
-      location: r.region,
+      location: '',
       creation: new Date().toISOString().replace('T', ' ').slice(0, 26) // Mock creation time
     }));
 
@@ -300,7 +306,7 @@ export const handlers = [
 
   http.get('*/api/proxy/api/method/oan_a2c.api.v1.loan_applications.get_loan_summary', () => {
     const allRows = getFallbackMockRows();
-    const summary = allRows.reduce((acc: any, row: any) => {
+    const summary = allRows.reduce((acc, row) => {
       acc.total = (acc.total || 0) + 1;
 
       const s = row.status.toLowerCase();
@@ -309,7 +315,10 @@ export const handlers = [
       else acc.processing = (acc.processing || 0) + 1; // Draft, Pending Review, Processing, etc.
 
       return acc;
-    }, { total: 0, approved: 0, processing: 0, rejected: 0 });
+    }, {
+      total: 0, approved: 0, processing: 0, rejected: 0,
+      tab_counts: undefined as { all: number; my: number; unassigned: number } | undefined,
+    });
 
     summary.tab_counts = {
       all: summary.total,
@@ -427,7 +436,7 @@ export const handlers = [
   }),
 
   http.post('*/api/proxy/api/method/oan_a2c.api.v1.loan_applications.update_loan_step', async ({ request }) => {
-    const data = await request.json() as any;
+    const data = await request.json() as { step?: number };
     return HttpResponse.json({
       message: {
         status: "success",
@@ -437,7 +446,7 @@ export const handlers = [
   }),
 
   http.post('*/api/proxy/api/method/oan_a2c.api.v1.leads.update_lead_status', async ({ request }) => {
-    const data = await request.json() as any;
+    const data = await request.json() as { lead_id?: string; status?: string };
     return HttpResponse.json({
       message: {
         status: "success",
@@ -465,7 +474,7 @@ export const handlers = [
   }),
 
   http.post('*/api/proxy/api/method/oan_a2c.api.v1.leads.assign_lead', async ({ request }) => {
-    const data = await request.json() as any;
+    const data = await request.json() as { lead_id?: string; assigned_to?: string };
     return HttpResponse.json({
       message: {
         status: "success",
@@ -488,7 +497,7 @@ export const handlers = [
   }),
 
   http.post('*/api/proxy/api/method/oan_a2c.api.v1.leads.update_visit_schedule_status', async ({ request }) => {
-    const data = await request.json() as any;
+    const data = await request.json() as { schedule_id?: string; status?: string };
     return HttpResponse.json({
       message: {
         status: "success",

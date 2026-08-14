@@ -48,15 +48,15 @@ export default function RegisterPage() {
 
   const [orgFields, setOrgFields] = useState<OrganisationFields>({
     bank_name: '',
-    entity_type: '',
-    bank_code: '',
+    brand_name: '',
   });
 
   const [addressFields, setAddressFields] = useState<RegisteredAddressFields>({
     registered_street: '',
-    registered_city: '',
-    registered_country: '',
+    registered_zone: '',
+    registered_region: '',
     registered_postal_code: '',
+    website: '',
   });
 
   const [contactFields, setContactFields] = useState<ContactFields>({

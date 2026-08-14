@@ -2,10 +2,11 @@ import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
 import { selectLeadSourcesOptions } from '@/features/new-lead/store/newLeadSlice';
 import { selectCategories } from '@/features/seller/store/loanProductsSlice';
 import { useClickOutside } from '@/hooks/useClickOutside';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { Portal } from '@/components/Portal';
 import { Check, ChevronDown, SlidersHorizontal, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { KPI_CARDS_LAYOUT, STATUS_STYLE_MAP } from '../constants/leads.constants';
 import { resetFilters, selectAdvFilters, setAdvFilters } from '../store/leadSlice';
 
@@ -31,12 +32,6 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
   const activeFilters = useAppSelector(selectAdvFilters);
   const leadSourcesOptions = useAppSelector(selectLeadSourcesOptions);
   const loanTypesOptions = useAppSelector(selectCategories).map((c) => c.term_name);
-
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const [selStatuses, setSelStatuses] = useState<string[]>(() =>
     activeFilters.statuses.map(s => {
@@ -81,6 +76,10 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
   const sourcesRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // Resyncs this panel's local editable copy whenever the committed Redux
+    // filters change externally (e.g. cleared elsewhere) — can't be computed
+    // during render since it has to stay independently editable in between.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelStatuses(activeFilters.statuses.map(s => {
       const match = KPI_CARDS_LAYOUT.find(item => item.id.toLowerCase() === s.toLowerCase() || item.label.toLowerCase() === s.toLowerCase());
       return match ? match.label : s;
@@ -92,12 +91,19 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
     setTempIndex(getInitialIndex());
     setTempLoanTypes(activeFilters.loanType || []);
     setTempSources(activeFilters.leadSources || []);
+    // getInitialIndex is a closure derived purely from activeFilters (already
+    // a dependency); listing it too would just churn on its unstable reference.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeFilters]);
 
   useClickOutside(amountRef, () => setIsAmountOpen(false), isAmountOpen);
   useClickOutside(loanTypeRef, () => setIsLoanTypeOpen(false), isLoanTypeOpen);
   useClickOutside(sourcesRef, () => setIsSourcesOpen(false), isSourcesOpen);
   useClickOutside(locationRef, () => setIsLocationOpen(false), isLocationOpen);
+
+  // This panel is only ever mounted while it should be visible (no isOpen
+  // prop — the parent conditionally renders it), so it's always "open" here.
+  const dialogRef = useModalA11y<HTMLElement>(true, onClose);
 
   const toggleStatus = (s: string) => {
     const layoutItem = KPI_CARDS_LAYOUT.find(item => item.id === s);
@@ -119,12 +125,16 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
     (tempLoanTypes.length > 0 ? 1 : 0) +
     (tempSources.length > 0 ? 1 : 0);
 
-  if (!mounted) return null;
-
-  return createPortal(
-    <>
+  return (
+    <Portal>
       <div className="fixed inset-0 z-[9998] bg-black/25" onClick={onClose} />
-      <aside className="fixed right-0 top-0 z-[9999] flex h-full w-[540px] flex-col bg-white shadow-2xl font-sans">
+      <aside
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Advanced Filters"
+        tabIndex={-1}
+        className="fixed right-0 top-0 z-[9999] flex h-full w-[540px] flex-col bg-white shadow-2xl font-sans">
 
         {/* header */}
         <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
@@ -152,8 +162,17 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
                 return (
                   <div
                     key={s}
+                    role="button"
+                    tabIndex={0}
+                    aria-pressed={sel}
                     onClick={() => toggleStatus(s)}
-                    className={`flex cursor-pointer items-center justify-between rounded-xl border px-3 py-3 transition ${sel ? 'border-green-500 bg-green-50' : 'border-gray-200 bg-white hover:border-gray-300'
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        toggleStatus(s);
+                      }
+                    }}
+                    className={`flex cursor-pointer items-center justify-between rounded-xl border px-3 py-3 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-2 ${sel ? 'border-green-500 bg-green-50' : 'border-gray-200 bg-white hover:border-gray-300'
                       }`}
                   >
                     <div className="flex items-center gap-3">
@@ -179,7 +198,7 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
               <button
                 type="button"
                 onClick={() => setIsAmountOpen(prev => !prev)}
-                className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-sm shadow-sm transition-all focus:outline-none ${isAmountOpen
+                className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-sm shadow-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-1 ${isAmountOpen
                   ? 'border-green-600 bg-white ring-2 ring-green-600/15'
                   : 'border-gray-200 bg-white hover:border-green-600/50'
                   }`}
@@ -249,8 +268,17 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
                       return (
                         <div
                           key={opt.value}
+                          role="button"
+                          tabIndex={0}
+                          aria-pressed={isSel}
                           onClick={() => setTempIndex(isSel ? 4 : idx)}
-                          className="flex items-center gap-4 py-4 px-6 border-b border-[#F3F3F3] last:border-0 hover:bg-slate-50 cursor-pointer select-none"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              setTempIndex(isSel ? 4 : idx);
+                            }
+                          }}
+                          className="flex items-center gap-4 py-4 px-6 border-b border-[#F3F3F3] last:border-0 hover:bg-slate-50 cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-inset"
                         >
                           <div className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-md border-2 transition-all ${isSel ? 'border-[#16A34A] bg-[#16A34A]' : 'border-gray-400 bg-white'}`}>
                             {isSel && <Check size={14} strokeWidth={4} className="text-white" />}
@@ -273,7 +301,7 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
               <button
                 type="button"
                 onClick={() => setIsLoanTypeOpen(prev => !prev)}
-                className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-sm shadow-sm transition-all focus:outline-none ${isLoanTypeOpen
+                className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-sm shadow-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-1 ${isLoanTypeOpen
                   ? 'border-green-600 bg-white ring-2 ring-green-600/15'
                   : 'border-[#EDEFF1] bg-white hover:border-green-600/50'
                   }`}
@@ -300,8 +328,17 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
                       return (
                         <div
                           key={opt}
+                          role="button"
+                          tabIndex={0}
+                          aria-pressed={isSel}
                           onClick={() => setTempLoanTypes(prev => isSel ? prev.filter(x => x !== opt) : [...prev, opt])}
-                          className={`flex items-center gap-4 py-4 px-6 border-b border-[#F3F3F3] last:border-0 hover:bg-slate-50 cursor-pointer select-none ${idx === loanTypesOptions.length - 1 ? 'rounded-b-lg' : ''
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              setTempLoanTypes(prev => isSel ? prev.filter(x => x !== opt) : [...prev, opt]);
+                            }
+                          }}
+                          className={`flex items-center gap-4 py-4 px-6 border-b border-[#F3F3F3] last:border-0 hover:bg-slate-50 cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-inset ${idx === loanTypesOptions.length - 1 ? 'rounded-b-lg' : ''
                             }`}
                         >
                           <div className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-md border-2 transition-all ${isSel
@@ -327,7 +364,7 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
               <button
                 type="button"
                 onClick={() => setIsSourcesOpen(prev => !prev)}
-                className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-sm shadow-sm transition-all focus:outline-none ${isSourcesOpen
+                className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-sm shadow-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-1 ${isSourcesOpen
                   ? 'border-green-600 bg-white ring-2 ring-green-600/15'
                   : 'border-[#EDEFF1] bg-white hover:border-green-600/50'
                   }`}
@@ -355,8 +392,17 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
                       return (
                         <div
                           key={opt}
+                          role="button"
+                          tabIndex={0}
+                          aria-pressed={isSel}
                           onClick={() => toggleSource(opt)}
-                          className={`flex items-center gap-4 py-4 px-6 border-b border-[#F3F3F3] last:border-0 hover:bg-slate-50 cursor-pointer select-none ${idx === leadSourcesOptions.length - 1 ? 'rounded-b-lg' : ''
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              toggleSource(opt);
+                            }
+                          }}
+                          className={`flex items-center gap-4 py-4 px-6 border-b border-[#F3F3F3] last:border-0 hover:bg-slate-50 cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-inset ${idx === leadSourcesOptions.length - 1 ? 'rounded-b-lg' : ''
                             }`}
                         >
                           <div className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-md border-2 transition-all ${isSel
@@ -401,11 +447,20 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
                     {LOCATION_OPTS.filter(opt => opt.toLowerCase().includes(location.toLowerCase())).map((opt, idx) => (
                       <div
                         key={opt}
+                        role="button"
+                        tabIndex={0}
                         onClick={() => {
                           setLocation(opt);
                           setIsLocationOpen(false);
                         }}
-                        className={`py-3 px-4 border-b border-[#F3F3F3] last:border-0 hover:bg-slate-50 cursor-pointer select-none ${idx === LOCATION_OPTS.length - 1 ? 'rounded-b-lg' : ''}`}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setLocation(opt);
+                            setIsLocationOpen(false);
+                          }
+                        }}
+                        className={`py-3 px-4 border-b border-[#F3F3F3] last:border-0 hover:bg-slate-50 cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-inset ${idx === LOCATION_OPTS.length - 1 ? 'rounded-b-lg' : ''}`}
                       >
                         <span className="text-[15px] text-[#4B5563] font-sans">{opt}</span>
                       </div>
@@ -476,8 +531,7 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
           </button>
         </div>
       </aside>
-    </>,
-    document.body
+    </Portal>
   );
 }
 

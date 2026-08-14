@@ -10,11 +10,14 @@ const NO_STATUS_SENTINEL = '__NONE__';
 
 export const fetchLoans = createAsyncThunk(
   'loanDashboard/fetchLoans',
-  async (params: GetLoansParams | undefined, { rejectWithValue }) => {
+  async (params: GetLoansParams | undefined, { signal, rejectWithValue }) => {
     try {
-      const response = await loanService.getLoans(params);
+      const response = await loanService.getLoans(params, { signal });
       return response;
     } catch (error: unknown) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw error;
+      }
       const message = error instanceof Error ? error.message : 'Failed to fetch loans';
       return rejectWithValue(message);
     }
@@ -36,11 +39,11 @@ export const fetchLoanSummary = createAsyncThunk(
 
 export const updateLoanStatus = createAsyncThunk(
   'loanDashboard/updateLoanStatus',
-  async ({ id, status, reason, notes }: { id: string; status: string; reason?: string; notes?: string }, { rejectWithValue, dispatch }) => {
+  async ({ id, status, reason, notes }: { id: string; status: string; reason?: string; notes?: string }, { rejectWithValue, dispatch, getState }) => {
     try {
       const response = await loanService.updateLoanStatus(id, status, reason, notes);
-      // Re-fetch loans after a successful update to refresh the list
-      dispatch(fetchLoans());
+      // Re-fetch with the user's current filters/pagination (not the defaults) so the view doesn't silently reset.
+      dispatch(fetchLoans(selectQueryParams(getState() as RootState)));
       return response;
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Failed to update loan status';
@@ -82,6 +85,12 @@ interface LoanDashboardState {
   rawActivityData: ApiResponse<LoanApplicationSummary[]> | null;
   isLoading: boolean;
   loansError: string | null;
+  // The most recently *dispatched* fetchLoans requestId — including the
+  // untracked one updateLoanStatus fires after a status change, which has no
+  // component-side abort to rely on. Gates .fulfilled/.rejected so a slower
+  // older request can never overwrite a newer one's result, regardless of
+  // which order they settle in.
+  latestFetchRequestId: string | null;
   rawSummaryData: ApiResponse<LoanSummaryMetrics> | null;
   isSummaryLoading: boolean;
   summaryError: string | null;
@@ -102,6 +111,7 @@ const initialState: LoanDashboardState = {
   rawActivityData: null,
   isLoading: false,
   loansError: null,
+  latestFetchRequestId: null,
   rawSummaryData: null,
   isSummaryLoading: false,
   summaryError: null,
@@ -232,15 +242,24 @@ const loanDashboardSlice = createSlice({
   extraReducers: (builder) => {
     builder
       // fetchLoans
-      .addCase(fetchLoans.pending, (state) => {
+      .addCase(fetchLoans.pending, (state, action) => {
+        state.latestFetchRequestId = action.meta.requestId;
         state.isLoading = true;
         state.loansError = null;
       })
       .addCase(fetchLoans.fulfilled, (state, action) => {
+        // Ignore a response for a request that's been superseded by a newer
+        // one (e.g. updateLoanStatus's untracked refetch resolving after the
+        // user has since changed filters) — only the latest dispatch may write.
+        if (action.meta.requestId !== state.latestFetchRequestId) return;
         state.isLoading = false;
         state.rawActivityData = action.payload;
       })
       .addCase(fetchLoans.rejected, (state, action) => {
+        // Ignore aborted requests, and any response for a superseded request —
+        // the newer request's pending/fulfilled owns the loading/error state.
+        if (action.meta.aborted) return;
+        if (action.meta.requestId !== state.latestFetchRequestId) return;
         state.isLoading = false;
         state.loansError = action.payload as string;
       })
@@ -300,9 +319,9 @@ export const selectPagedRowsData = createSelector(
   [selectRawActivityData, selectPageSize],
   (rawActivityData, _pageSize) => {
     // fetchApi automatically unwraps the "message" envelope, so the data is directly on rawActivityData
-    let rows = rawActivityData?.data || [];
+    const rows = rawActivityData?.data || [];
 
-    let totalCount = rawActivityData?.pagination?.total ?? 0;
+    const totalCount = rawActivityData?.pagination?.total ?? 0;
 
     const mapped = rows.map((row: LoanApplicationSummary): MappedLoanRow => {
       const rawDate = row.creation ? new Date(row.creation) : new Date();

@@ -1,8 +1,9 @@
+import { Portal } from '@/components/Portal';
 import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { Check, ChevronDown, SlidersHorizontal, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { selectAdvancedFilters, setAdvancedFilters } from '../store/loanDashboardSlice';
 
 interface LoanAdvancedFiltersProps {
@@ -39,7 +40,6 @@ const LOAN_TYPE_OPTS = [
 export default function LoanAdvancedFilters({ isOpen, onClose }: LoanAdvancedFiltersProps) {
   const dispatch = useAppDispatch();
   const currentFilters = useAppSelector(selectAdvancedFilters);
-  const [mounted, setMounted] = useState(false);
 
   // Form states
   const [selStatuses, setSelStatuses] = useState<string[]>(currentFilters.status);
@@ -56,13 +56,12 @@ export default function LoanAdvancedFilters({ isOpen, onClose }: LoanAdvancedFil
   const [isLoanTypeOpen, setIsLoanTypeOpen] = useState(false);
   const loanTypeRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Sync state when opened
+  // Sync state when opened — this panel stays mounted while closed (isOpen
+  // just gates the portal render below), so its local editable copy of the
+  // filters must be resynced here on reopen rather than via unmount/remount.
   useEffect(() => {
     if (isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelStatuses(currentFilters.status);
       setLocation(currentFilters.location);
       setDateFrom(currentFilters.dateFrom);
@@ -81,7 +80,7 @@ export default function LoanAdvancedFilters({ isOpen, onClose }: LoanAdvancedFil
       setTempIndex(amtIdx);
 
       // Removed automatic date setting to 'Today'
-      setQuickDate(currentFilters.dateFrom || currentFilters.dateTo ? '' : quickDate);
+      setQuickDate((q) => (currentFilters.dateFrom || currentFilters.dateTo ? '' : q));
     }
   }, [isOpen, currentFilters]);
 
@@ -100,7 +99,9 @@ export default function LoanAdvancedFilters({ isOpen, onClose }: LoanAdvancedFil
     return getRangeStep(tempIndex).display;
   }, [tempIndex]);
 
-  if (!mounted || !isOpen) return null;
+  const dialogRef = useModalA11y<HTMLElement>(isOpen, onClose);
+
+  if (!isOpen) return null;
 
   const toggleStatus = (s: string) => setSelStatuses(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s]);
 
@@ -141,7 +142,13 @@ export default function LoanAdvancedFilters({ isOpen, onClose }: LoanAdvancedFil
         onClick={onClose}
       />
 
-      <aside className="relative w-full max-w-[540px] bg-white shadow-2xl flex flex-col h-full animate-in slide-in-from-right duration-300">
+      <aside
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Advanced Filters"
+        tabIndex={-1}
+        className="relative w-full max-w-[540px] bg-white shadow-2xl flex flex-col h-full animate-in slide-in-from-right duration-300">
 
         {/* Header */}
         <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4 ">
@@ -170,8 +177,17 @@ export default function LoanAdvancedFilters({ isOpen, onClose }: LoanAdvancedFil
                 return (
                   <div
                     key={opt.value}
+                    role="button"
+                    tabIndex={0}
+                    aria-pressed={sel}
                     onClick={() => toggleStatus(opt.value)}
-                    className={`flex cursor-pointer items-center justify-between rounded-xl border px-3 py-3 transition ${sel ? 'border-green-500 bg-green-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        toggleStatus(opt.value);
+                      }
+                    }}
+                    className={`flex cursor-pointer items-center justify-between rounded-xl border px-3 py-3 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-2 ${sel ? 'border-green-500 bg-green-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}
                   >
                     <div className="flex items-center gap-3">
                       <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition ${sel ? 'border-green-600 bg-green-600' : 'border-gray-300 bg-white'}`}>
@@ -193,7 +209,7 @@ export default function LoanAdvancedFilters({ isOpen, onClose }: LoanAdvancedFil
               <button
                 type="button"
                 onClick={() => setIsAmountOpen(prev => !prev)}
-                className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-sm shadow-sm transition-all focus:outline-none ${isAmountOpen ? 'border-green-600 bg-white ring-2 ring-green-600/15' : 'border-gray-200 bg-white hover:border-green-600/50'}`}
+                className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-sm shadow-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-1 ${isAmountOpen ? 'border-green-600 bg-white ring-2 ring-green-600/15' : 'border-gray-200 bg-white hover:border-green-600/50'}`}
               >
                 <span className={selectedAmountSummary ? 'text-[#232F34] font-medium' : 'text-[#8E9AA0]'}>
                   {selectedAmountSummary || 'Select Loan Amount'}
@@ -258,8 +274,17 @@ export default function LoanAdvancedFilters({ isOpen, onClose }: LoanAdvancedFil
                       return (
                         <div
                           key={opt.value}
+                          role="button"
+                          tabIndex={0}
+                          aria-pressed={isSel}
                           onClick={() => setTempIndex(isSel ? 4 : idx)}
-                          className="flex items-center gap-4 py-4 px-6 border-b border-[#F3F3F3] last:border-0 hover:bg-slate-50 cursor-pointer select-none"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              setTempIndex(isSel ? 4 : idx);
+                            }
+                          }}
+                          className="flex items-center gap-4 py-4 px-6 border-b border-[#F3F3F3] last:border-0 hover:bg-slate-50 cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-inset"
                         >
                           <div className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-md border-2 transition-all ${isSel ? 'border-[#16A34A] bg-[#16A34A]' : 'border-gray-400 bg-white'}`}>
                             {isSel && <Check size={14} strokeWidth={4} className="text-white" />}
@@ -281,7 +306,7 @@ export default function LoanAdvancedFilters({ isOpen, onClose }: LoanAdvancedFil
               <button
                 type="button"
                 onClick={() => setIsLoanTypeOpen(prev => !prev)}
-                className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-sm shadow-sm transition-all focus:outline-none ${isLoanTypeOpen ? 'border-green-600 bg-white ring-2 ring-green-600/15' : 'border-[#EDEFF1] bg-white hover:border-green-600/50'}`}
+                className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-sm shadow-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-1 ${isLoanTypeOpen ? 'border-green-600 bg-white ring-2 ring-green-600/15' : 'border-[#EDEFF1] bg-white hover:border-green-600/50'}`}
               >
                 <span className={tempLoanTypes.length > 0 ? 'text-[#232F34] font-medium' : 'text-[#8E9AA0]'}>
                   {tempLoanTypes.length > 0 ? `${tempLoanTypes.length} Selected` : 'Select Loan Type'}
@@ -297,8 +322,17 @@ export default function LoanAdvancedFilters({ isOpen, onClose }: LoanAdvancedFil
                       return (
                         <div
                           key={opt}
+                          role="button"
+                          tabIndex={0}
+                          aria-pressed={isSel}
                           onClick={() => setTempLoanTypes(prev => isSel ? prev.filter(x => x !== opt) : [...prev, opt])}
-                          className={`flex items-center gap-4 py-4 px-6 border-b border-[#F3F3F3] last:border-0 hover:bg-slate-50 cursor-pointer select-none ${idx === LOAN_TYPE_OPTS.length - 1 ? 'rounded-b-lg' : ''}`}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              setTempLoanTypes(prev => isSel ? prev.filter(x => x !== opt) : [...prev, opt]);
+                            }
+                          }}
+                          className={`flex items-center gap-4 py-4 px-6 border-b border-[#F3F3F3] last:border-0 hover:bg-slate-50 cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-inset ${idx === LOAN_TYPE_OPTS.length - 1 ? 'rounded-b-lg' : ''}`}
                         >
                           <div className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-md border-2 transition-all ${isSel ? 'border-[#16A34A] bg-[#16A34A]' : 'border-gray-400 bg-white'}`}>
                             {isSel && <Check size={14} strokeWidth={4} className="text-white" />}
@@ -366,5 +400,5 @@ export default function LoanAdvancedFilters({ isOpen, onClose }: LoanAdvancedFil
     </div>
   );
 
-  return createPortal(sidebarContent, document.body);
+  return <Portal>{sidebarContent}</Portal>;
 }

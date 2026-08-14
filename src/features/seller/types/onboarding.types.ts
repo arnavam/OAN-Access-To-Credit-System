@@ -19,14 +19,14 @@ export interface UploadKycDocumentPayload {
 
 export interface RegisterBankPayload {
   bank_name: string;
-  bank_code: string;
-  entity_type: string;
+  brand_name: string;
   registered_street: string;
-  registered_city: string;
-  registered_country: string;
+  registered_zone: string;
+  registered_region: string;
   registered_postal_code: string;
   registered_email: string;
   registered_phone: string;
+  website: string;
 }
 
 export interface UpdateBankStatusPayload {
