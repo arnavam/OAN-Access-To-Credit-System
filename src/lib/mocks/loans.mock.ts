@@ -71,7 +71,7 @@ export const baseFallbackRows = [
 ];
 
 export const getFallbackMockRows = () => {
-  let fallbackMockRows: any[] = [];
+  let fallbackMockRows: (typeof baseFallbackRows)[number][] = [];
   for (let i = 0; i < 20; i++) {
     fallbackMockRows = [...fallbackMockRows, ...baseFallbackRows.map(r => ({ ...r, id: r.id + `-${i}` }))];
   }

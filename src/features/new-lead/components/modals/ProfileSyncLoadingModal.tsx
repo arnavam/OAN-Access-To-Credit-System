@@ -1,19 +1,12 @@
+import { Portal } from '@/components/Portal';
 import { AlertTriangle, CheckCircle2, Circle, Loader2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
 
 interface ProfileSyncLoadingModalProps {
   isOpen: boolean;
 }
 
 export function ProfileSyncLoadingModal({ isOpen }: ProfileSyncLoadingModalProps) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!isOpen || !mounted) return null;
+  if (!isOpen) return null;
 
   const modalContent = (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#0F172A]/50 backdrop-blur-md p-4">
@@ -104,5 +97,5 @@ export function ProfileSyncLoadingModal({ isOpen }: ProfileSyncLoadingModalProps
     </div>
   );
 
-  return createPortal(modalContent, document.body);
+  return <Portal>{modalContent}</Portal>;
 }

@@ -1,9 +1,10 @@
 'use client';
 import { Portal } from '@/components/Portal';
+import { useModalA11y } from '@/hooks/useModalA11y';
 
 import { CheckCircle2, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useId } from 'react';
 
 interface OrganizationRegisteredPopupProps {
   isOpen: boolean;
@@ -13,27 +14,25 @@ interface OrganizationRegisteredPopupProps {
 
 export function OrganizationRegisteredPopup({ isOpen, message, onClose }: OrganizationRegisteredPopupProps) {
   const router = useRouter();
-
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, [isOpen]);
+  const dialogRef = useModalA11y<HTMLDivElement>(isOpen, onClose);
+  const titleId = useId();
 
   if (!isOpen) return null;
 
   return (
     <Portal>
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-[520px] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        className="bg-white rounded-xl shadow-xl w-full max-w-[520px] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200"
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-8 py-5 border-b border-[#E5E7EB]">
-          <h2 className="text-[18px] font-bold text-[#1F2937]">Registration Successful</h2>
+          <h2 id={titleId} className="text-[18px] font-bold text-[#1F2937]">Registration Successful</h2>
           <button 
             onClick={onClose}
             className="text-[#6B7280] hover:text-[#1F2937] transition-colors"

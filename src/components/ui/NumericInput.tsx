@@ -3,7 +3,7 @@
 import { InputHTMLAttributes, forwardRef, KeyboardEvent, ChangeEvent } from 'react';
 import { preventInvalidNumberChars, sanitizeNumberInput } from '@/lib/utils';
 
-export interface NumericInputProps extends InputHTMLAttributes<HTMLInputElement> {}
+export type NumericInputProps = InputHTMLAttributes<HTMLInputElement>;
 
 /**
  * A standard numeric input that automatically prevents 'e', 'E', '+', and '-' 

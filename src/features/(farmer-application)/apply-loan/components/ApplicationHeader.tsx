@@ -1,6 +1,7 @@
 "use client";
 import type { Loan } from '@/features/(farmer-application)/discover-loans/data/mockLoans';
 import { Landmark } from 'lucide-react';
+import Image from 'next/image';
 
 interface ApplicationHeaderProps {
   loan: Loan;
@@ -12,10 +13,12 @@ export default function ApplicationHeader({ loan }: ApplicationHeaderProps) {
       <div className="flex items-start gap-4 mb-6">
         <div className="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center border border-gray-100 overflow-hidden shrink-0 relative">
           {loan.bankLogo ? (
-            <img
+            <Image
               src={loan.bankLogo}
               alt={`${loan.bankName} logo`}
-              className="w-full h-full object-cover z-10 bg-white"
+              fill
+              sizes="56px"
+              className="object-cover z-10 bg-white"
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
               }}

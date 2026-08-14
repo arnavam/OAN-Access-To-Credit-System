@@ -24,7 +24,7 @@ export default function BankAdminDashboardPage() {
       <BankAdminSidebar isExpanded={isSidebarExpanded} setIsExpanded={setIsSidebarExpanded} />
       <div className="flex-1 flex flex-col min-w-0">
         <DashboardTopNav onMenuClick={() => setIsSidebarExpanded(!isSidebarExpanded)} />
-        <main className="flex-1 p-8 overflow-y-auto">
+        <main id="main-content" className="flex-1 p-8 overflow-y-auto">
           <div className="w-full mx-auto space-y-6">
             <DashboardHeader portalLabel="Bank Admin Portal - Loan Product Management" />
             <KycAlertBanner />

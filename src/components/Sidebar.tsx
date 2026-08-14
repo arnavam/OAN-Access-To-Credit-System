@@ -1,6 +1,7 @@
 import { LucideIcon } from 'lucide-react';
 import Image from 'next/image';
-import { usePathname, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useMemo } from 'react';
 
 export interface NavItem {
@@ -22,7 +23,6 @@ export interface SidebarProps {
 }
 
 function Sidebar({ isCollapsed, isMobileOpen = false, sections = [] }: SidebarProps) {
-  const router = useRouter();
   const pathname = usePathname();
 
   // Find the single most-specifically matched nav item for the current path.
@@ -148,13 +148,12 @@ function Sidebar({ isCollapsed, isMobileOpen = false, sections = [] }: SidebarPr
                 const isActive = activeItem === item;
 
                 return (
-                  <button
+                  <Link
                     key={item.path}
-                    type="button"
+                    href={item.path}
                     aria-label={item.label}
                     aria-current={isActive ? 'page' : undefined}
                     title={isCollapsed ? item.label : undefined}
-                    onClick={() => router.push(item.path)}
                     className={[
                       'flex w-full items-center gap-[0.65rem] rounded-[0.55rem] border-0',
                       'px-[0.68rem] py-[0.7rem] text-left text-[1rem] leading-[1.1]',
@@ -183,7 +182,7 @@ function Sidebar({ isCollapsed, isMobileOpen = false, sections = [] }: SidebarPr
                     >
                       {item.label}
                     </span>
-                  </button>
+                  </Link>
                 );
               })}
             </div>

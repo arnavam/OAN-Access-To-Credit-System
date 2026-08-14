@@ -1,6 +1,5 @@
+import { Portal } from '@/components/Portal';
 import { CheckCircle2, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
 
 interface ConsentDetailsModalProps {
   isOpen: boolean;
@@ -16,13 +15,7 @@ export function ConsentDetailsModal({
   onClose,
   requestedDataFields,
 }: ConsentDetailsModalProps) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!isOpen || !mounted) return null;
+  if (!isOpen) return null;
 
   const modalContent = (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#0F172A]/40 backdrop-blur-sm p-4">
@@ -66,5 +59,5 @@ export function ConsentDetailsModal({
     </div>
   );
 
-  return createPortal(modalContent, document.body);
+  return <Portal>{modalContent}</Portal>;
 }

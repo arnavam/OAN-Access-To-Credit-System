@@ -25,8 +25,8 @@ export function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProp
     try {
       await forgotPassword(email);
       setIsSuccess(true);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to send reset link');
+    } catch (error) {
+      toast.error((error instanceof Error && error.message) || 'Failed to send reset link');
     } finally {
       setIsSubmitting(false);
     }
@@ -54,7 +54,7 @@ export function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProp
                 </div>
                 <h3 className="text-[18px] font-bold text-gray-900 mb-2">Check your email</h3>
                 <p className="text-[14px] text-gray-500 mb-6">
-                  We've sent password reset instructions to <span className="font-semibold text-gray-700">{email}</span>
+                  We&apos;ve sent password reset instructions to <span className="font-semibold text-gray-700">{email}</span>
                 </p>
                 <button
                   onClick={() => {
@@ -69,7 +69,7 @@ export function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProp
             ) : (
               <form onSubmit={handleSubmit} className="space-y-5">
                 <p className="text-[14px] text-gray-500 mb-4">
-                  Enter the email address associated with your account and we'll send you a link to reset your password.
+                  Enter the email address associated with your account and we&apos;ll send you a link to reset your password.
                 </p>
                 <div className="space-y-1.5">
                   <label className="text-[14px] font-bold text-[#1F2937]">Email Address</label>

@@ -294,9 +294,10 @@ export const newLeadService = {
   },
 
   // Fetch basic details of a consent_request (farmer details, etc.)
-  async getLeadDetails(leadId: string): Promise<FarmerDetails> {
+  async getLeadDetails(leadId: string, signal?: AbortSignal): Promise<FarmerDetails> {
     const cleanLeadId = cleanId(leadId);
-    const response = await fetchApi(`oan_a2c.api.v1.loan_applications.get_basic_profile?lead_id=${cleanLeadId}&include_consent_data=1`) as ApiResponse<
+    const fetchInit = signal ? { signal } : {};
+    const response = await fetchApi(`oan_a2c.api.v1.loan_applications.get_basic_profile?lead_id=${cleanLeadId}&include_consent_data=1`, fetchInit) as ApiResponse<
       BasicProfileBackendData | null
     >;
 

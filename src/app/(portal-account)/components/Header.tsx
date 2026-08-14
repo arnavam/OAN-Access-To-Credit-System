@@ -1,4 +1,5 @@
 import { ArrowRight } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 
 interface HeaderProps {
@@ -10,7 +11,7 @@ export function Header({ activeTab }: HeaderProps) {
     <div className="w-full bg-white border-b border-gray-100 shadow-md relative z-50 py-4 px-6 sm:px-12 flex justify-between items-center">
 
       <div className="flex items-center space-x-2">
-        <img src="/logo.png" alt="OARI Logo" className="h-[40px] sm:h-[48px] w-auto shrink-0" />
+        <Image src="/logo.png" alt="OARI Logo" width={1536} height={1024} className="h-[40px] sm:h-[48px] w-auto shrink-0" />
         <div className="flex flex-col border-l border-gray-300 pl-2">
           <span className="text-xs font-bold text-[#16335A] leading-tight tracking-wide">Ethiopia OpenAgriNet</span>
           <span className="text-[10px] text-gray-500 font-medium leading-tight tracking-wide uppercase">Access to Credit</span>

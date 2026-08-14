@@ -1,4 +1,5 @@
 "use client";
+import { useModalA11y } from '@/hooks/useModalA11y';
 import { Check, X } from 'lucide-react';
 import { useState } from 'react';
 import SignedConsentForm from './SignedConsentForm';
@@ -45,6 +46,8 @@ export default function ConsentManagement() {
     setIsModalOpen(false);
   };
 
+  const dialogRef = useModalA11y<HTMLDivElement>(isModalOpen, handleModalClose);
+
   return (
     <>
       <div className="bg-white rounded-2xl p-6 mb-6 border border-[#F1F3F4] shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.05),0px_2px_4px_-1px_rgba(0,0,0,0.03)] hover:-translate-y-1 hover:shadow-lg transition-all duration-300 rounded-xl">
@@ -54,8 +57,9 @@ export default function ConsentManagement() {
 
         <div className="grid grid-cols-2 gap-8">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Farmer ID</label>
+            <label htmlFor="apply-loan-farmer-id" className="block text-sm font-medium text-gray-700 mb-2">Farmer ID</label>
             <input
+              id="apply-loan-farmer-id"
               type="text"
               value="12233441122"
               readOnly
@@ -87,10 +91,17 @@ export default function ConsentManagement() {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-2xl w-[550px] overflow-hidden">
+          <div
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="consent-review-modal-title"
+            tabIndex={-1}
+            className="bg-white rounded-xl shadow-2xl w-[550px] overflow-hidden"
+          >
             {/* Modal Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <h2 className="text-lg font-bold text-gray-900">Consent</h2>
+              <h2 id="consent-review-modal-title" className="text-lg font-bold text-gray-900">Consent</h2>
               <button
                 onClick={handleModalClose}
                 className="text-gray-400 hover:text-gray-600 transition-colors"

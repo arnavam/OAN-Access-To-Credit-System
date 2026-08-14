@@ -1,22 +1,20 @@
 'use client';
 
+import type { LoanApplicationFull } from '@/lib/api/api.schemas';
 import { logger } from '@/lib/logger';
 import { useEffect, useState } from 'react';
 import { loanService } from '../../api/loan.service';
 import { LoanTableRow } from '../LoanTable';
 
 export function useLoanApplicationModal(isOpen: boolean, data: LoanTableRow | null) {
-  const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [fullProfile, setFullProfile] = useState<any>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const [fullProfile, setFullProfile] = useState<LoanApplicationFull | null>(null);
 
   useEffect(() => {
     const fetchId = data?.application_id || data?.id;
     if (isOpen && fetchId) {
+      // Signals loading immediately when the fetch starts, not just once it resolves.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsLoading(true);
       loanService.getFullProfile(fetchId)
         .then((profileRes) => {
@@ -33,7 +31,7 @@ export function useLoanApplicationModal(isOpen: boolean, data: LoanTableRow | nu
     }
   }, [isOpen, data?.application_id, data?.id]);
 
-  return { mounted, isLoading, fullProfile };
+  return { isLoading, fullProfile };
 }
 
 // Keys already rendered in pinned sections or that are metadata-only.

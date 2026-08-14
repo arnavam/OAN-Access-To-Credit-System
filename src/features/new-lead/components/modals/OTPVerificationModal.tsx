@@ -1,9 +1,9 @@
+import { Portal } from '@/components/Portal';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { Check, ShieldCheck, X } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import * as React from 'react';
 import { useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { selectConsentState, verifyOtpThunk } from '../..';
 
 // Seconds the farmer must wait before a code can be resent.
@@ -28,16 +28,15 @@ export function OTPVerificationModal({ isOpen, onClose, farmerId: _farmerId, mas
   const [error, setError] = useState<string | null>(null);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  const [mounted, setMounted] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(RESEND_COOLDOWN_SECONDS);
   const [isResending, setIsResending] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
+    // This modal stays mounted while closed (isOpen just gates the render via
+    // the early return below), so its form state must be reset here on
+    // reopen rather than relying on unmount/remount to clear stale values.
     if (isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setOtp(Array(6).fill(''));
       setError(null);
       setResendCooldown(RESEND_COOLDOWN_SECONDS);
@@ -55,7 +54,7 @@ export function OTPVerificationModal({ isOpen, onClose, farmerId: _farmerId, mas
     return () => clearInterval(timer);
   }, [isOpen, resendCooldown]);
 
-  if (!isOpen || !mounted) return null;
+  if (!isOpen) return null;
 
   const handleResend = async () => {
     if (!onResend || resendCooldown > 0 || isResending) return;
@@ -182,7 +181,7 @@ export function OTPVerificationModal({ isOpen, onClose, farmerId: _farmerId, mas
                 Enter Verification Code
               </h3>
               <p className="font-inter font-normal text-[14px] leading-5 text-center text-[#6B7280] m-0">
-                A 6-digit code has been sent to the farmer's registered phone {maskedPhone}.
+                A 6-digit code has been sent to the farmer&apos;s registered phone {maskedPhone}.
               </p>
 
               {/* Inputs */}
@@ -221,7 +220,7 @@ export function OTPVerificationModal({ isOpen, onClose, farmerId: _farmerId, mas
               {/* Resend */}
               <div className="flex flex-row items-center justify-center gap-1 mt-2">
                 <span className="font-inter font-normal text-[14px] leading-5 text-[#6B7280]">
-                  Didn't receive the code?
+                  Didn&apos;t receive the code?
                 </span>
                 {resendCooldown > 0 ? (
                   <span className="font-inter font-medium text-[14px] leading-5 text-[#9CA3AF]">
@@ -247,5 +246,5 @@ export function OTPVerificationModal({ isOpen, onClose, farmerId: _farmerId, mas
     </div>
   );
 
-  return createPortal(modalContent, document.body);
+  return <Portal>{modalContent}</Portal>;
 }

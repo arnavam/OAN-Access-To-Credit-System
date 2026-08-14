@@ -82,15 +82,23 @@ export const submitConsentThunk = createAsyncThunk<
   { state: RootState }
 >(
   'consent/submitConsent',
-  async (payload, { getState, dispatch, rejectWithValue }) => {
+  async (payload, { getState, dispatch, rejectWithValue, signal }) => {
+    // Registered before the submitConsent call starts (not after it resolves) so
+    // an abort fired while that request is still in flight isn't missed — the
+    // polling dispatch below has its own AbortController, independent of this
+    // thunk's `signal`, so this is what wires them together on unmount.
+    let pollingRequest: { abort: (reason?: string) => void; unwrap: () => Promise<unknown> } | null = null;
+    const abortPolling = () => pollingRequest?.abort();
+    signal.addEventListener('abort', abortPolling);
+
     try {
       const state = getState();
       const consentRequestId = state.consent.consentRequestId;
-      
+
       if (!consentRequestId) {
         throw new Error('Missing active consent request.');
       }
-      
+
       const response = await newLeadService.submitConsent({
         lead_id: payload.leadId,
         consent_request: consentRequestId,
@@ -101,11 +109,30 @@ export const submitConsentThunk = createAsyncThunk<
         consent_form_base64: payload.consentFormBase64,
         allowed_data_field_ids: payload.allowed_data_field_ids,
       });
-      
-      await dispatch(fetchLeadDetailsThunk({ leadId: payload.leadId, shouldPoll: true }));
+
+      if (signal.aborted) {
+        // Cancelled while submitConsent itself was still in flight — don't start polling.
+        throw new DOMException('Aborted', 'AbortError');
+      }
+
+      pollingRequest = dispatch(fetchLeadDetailsThunk({ leadId: payload.leadId, shouldPoll: true }));
+
+      // .unwrap() so a demographic-sync failure (or an abort) rejects this thunk
+      // instead of being silently discarded — without it, submitConsentThunk
+      // always resolved as "success" even when the sync polling failed.
+      await pollingRequest.unwrap();
       return response;
     } catch (error) {
-      return rejectWithValue(error instanceof Error ? error.message : 'Failed to submit consent details');
+      // unwrap() throws the raw rejectWithValue payload (often a plain string),
+      // not always an Error instance — fall back to it, then to a SerializedError's
+      // .message, before the generic message.
+      const message =
+        error instanceof Error ? error.message
+          : typeof error === 'string' ? error
+            : (error as { message?: string } | undefined)?.message ?? 'Failed to submit consent details';
+      return rejectWithValue(message);
+    } finally {
+      signal.removeEventListener('abort', abortPolling);
     }
   }
 );

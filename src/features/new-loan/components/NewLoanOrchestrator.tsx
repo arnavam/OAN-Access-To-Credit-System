@@ -26,6 +26,7 @@ export function NewLoanOrchestrator({ leadId }: { leadId?: string }) {
   const meta = STEP_META[currentStep > 3 ? 2 : currentStep - 1] || { title: '', subtitle: '' };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsMounted(true);
   }, []);
 

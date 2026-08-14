@@ -2,7 +2,8 @@
 import { selectBankName, selectOfficerName, setUserImage } from '@/features/auth/store/authSlice';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { Camera, Eye, EyeOff, X, Loader2 } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { getUserProfile, updateProfile, changePassword, type UserProfileResponse } from '@/features/auth/api/authApi';
 import { onboardingService } from '@/features/seller/api/onboarding.service';
@@ -46,13 +47,7 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
   const officerName = profile?.personal_information.full_name || formData.full_name || fallbackOfficerName;
   const organization = profile?.account_information.organization || fallbackOrganization;
 
-  useEffect(() => {
-    if (isOpen) {
-      loadProfile();
-    }
-  }, [isOpen]);
-
-  const loadProfile = async () => {
+  const loadProfile = useCallback(async () => {
     try {
       setIsLoading(true);
       const data = await getUserProfile();
@@ -66,12 +61,20 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
       if (data.personal_information.user_image) {
         dispatch(setUserImage(data.personal_information.user_image));
       }
-    } catch (error: any) {
+    } catch {
       toast.error('Failed to load profile');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (isOpen) {
+      // Signals loading immediately when the fetch starts, not just once it resolves.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      loadProfile();
+    }
+  }, [isOpen, loadProfile]);
 
   const handleSaveProfile = async () => {
     try {
@@ -84,7 +87,7 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
       });
       setProfile(updated);
       toast.success('Profile updated successfully');
-    } catch (error: any) {
+    } catch {
       toast.error('Failed to update profile');
     } finally {
       setIsSaving(false);
@@ -109,8 +112,8 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to update password');
+    } catch (error) {
+      toast.error((error instanceof Error && error.message) || 'Failed to update password');
     } finally {
       setIsChangingPassword(false);
     }
@@ -142,14 +145,14 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
             dispatch(setUserImage(uploadRes.data.file_url));
             toast.success('Photo updated successfully');
           }
-        } catch (error) {
+        } catch {
           toast.error('Failed to upload photo');
         } finally {
           setIsUploading(false);
         }
       };
       reader.readAsDataURL(file);
-    } catch (error) {
+    } catch {
       toast.error('Failed to read file');
       setIsUploading(false);
     }
@@ -211,11 +214,15 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
                   <div className="flex flex-col items-center justify-center min-w-[200px]">
                     <div className="relative">
                       {profile?.personal_information.user_image ? (
-                        <img
-                          src={toProxiedFileUrl(profile.personal_information.user_image)}
-                          alt="Profile"
-                          className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-sm"
-                        />
+                        <div className="relative w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-sm">
+                          <Image
+                            src={toProxiedFileUrl(profile.personal_information.user_image)!}
+                            alt="Profile"
+                            fill
+                            sizes="96px"
+                            className="object-cover"
+                          />
+                        </div>
                       ) : (
                         <div className="w-24 h-24 rounded-full bg-[#F59E0B] flex items-center justify-center text-white text-3xl font-bold shadow-sm">
                           {initials}

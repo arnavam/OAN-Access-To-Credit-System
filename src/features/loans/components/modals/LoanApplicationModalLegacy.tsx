@@ -1,7 +1,8 @@
 'use client';
 
+import { Portal } from '@/components/Portal';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import { Building2, CheckCircle2, Info, Loader2, Lock, User, X } from 'lucide-react';
-import { createPortal } from 'react-dom';
 import { LoanTableRow } from '../LoanTable';
 import { PINNED_OR_META_KEYS, useLoanApplicationModal } from './useLoanApplicationModal';
 
@@ -21,9 +22,10 @@ const Field = ({ label, value }: { label: string; value: string | null | undefin
 );
 
 export default function LoanApplicationModalLegacy({ isOpen, onClose, data }: LoanApplicationModalLegacyProps) {
-  const { mounted, isLoading, fullProfile } = useLoanApplicationModal(isOpen, data);
+  const { isLoading, fullProfile } = useLoanApplicationModal(isOpen, data);
+  const dialogRef = useModalA11y<HTMLDivElement>(isOpen, onClose);
 
-  if (!mounted || !isOpen || !data) return null;
+  if (!isOpen || !data) return null;
 
   const extraEntries = fullProfile
     ? Object.entries(fullProfile).filter(
@@ -38,13 +40,18 @@ export default function LoanApplicationModalLegacy({ isOpen, onClose, data }: Lo
   const modalContent = (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-[#0F172A]/40 backdrop-blur-sm overflow-y-auto">
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="loan-application-legacy-modal-title"
+        tabIndex={-1}
         className="relative flex flex-col w-full max-w-[850px] bg-white rounded-[10px] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="bg-[#387f50] px-8 py-5 flex justify-between items-start">
           <div>
-            <h2 className="text-xl font-bold text-white mb-1">Application Summary</h2>
+            <h2 id="loan-application-legacy-modal-title" className="text-xl font-bold text-white mb-1">Application Summary</h2>
             <p className="text-emerald-100 text-[13px] font-medium tracking-wide">
               ID: {data.id} &bull; Submitted {data.updated}
             </p>
@@ -116,7 +123,7 @@ export default function LoanApplicationModalLegacy({ isOpen, onClose, data }: Lo
                 <Field label="PRIMARY CROPS" value={fullProfile?.primary_crops || null} />
                 <Field label="CROP VARIETY" value={fullProfile?.crop_variety || null} />
                 <Field label="LAND SIZE" value={fullProfile?.farmland_size_hectares ? `${fullProfile.farmland_size_hectares} Hectares` : null} />
-                <Field label="EXPECTED YIELD" value={fullProfile?.expected_yield || null} />
+                <Field label="EXPECTED YIELD" value={fullProfile?.expected_yield != null ? String(fullProfile.expected_yield) : null} />
               </div>
             )}
           </section>
@@ -155,7 +162,7 @@ export default function LoanApplicationModalLegacy({ isOpen, onClose, data }: Lo
         {/* Footer */}
         <div className="bg-white px-8 py-5 flex justify-between items-center border-t border-gray-100">
           <span className="text-xs font-medium text-gray-400">
-            {mounted ? `Generated on ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} • ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}` : 'Loading...'}
+            {`Generated on ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} • ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`}
           </span>
           <button
             onClick={onClose}
@@ -169,5 +176,5 @@ export default function LoanApplicationModalLegacy({ isOpen, onClose, data }: Lo
     </div>
   );
 
-  return createPortal(modalContent, document.body);
+  return <Portal>{modalContent}</Portal>;
 }

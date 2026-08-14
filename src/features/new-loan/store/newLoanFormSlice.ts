@@ -1,5 +1,6 @@
 import { loanService, type LoanApplicationSummary } from '@/features/loans/api/loan.service';
 import { newLeadService } from '@/features/new-lead/api/newLead.service';
+import type { VerifyOtpResponse } from '@/lib/api/api.schemas';
 import { logger } from '@/lib/logger';
 import { normalizeLeadId } from '@/lib/utils';
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
@@ -52,12 +53,15 @@ const loadInitialState = (): LoanFormState => {
         const parsed = JSON.parse(saved);
         return {
           ...parsed,
+          // Never trust a persisted consent/OTP state — always re-verify after a reload.
+          consentRequestData: null,
+          otpVerified: false,
           loadingStates: { createApp: false, sendOtp: false, verifyOtp: false, uploadDoc: false, submitApp: false, fetchApp: false },
           errors: {},
           loadedSteps: parsed.loadedSteps || {},
           supportingDocs: parsed.supportingDocs || []
         };
-      } catch (e) {
+      } catch {
         logger.error('Failed to parse saved loan form state');
       }
     }
@@ -207,7 +211,7 @@ export const sendOtpAPI = createAsyncThunk(
 );
 
 export const verifyOtpAPI = createAsyncThunk<
-  any,
+  VerifyOtpResponse,
   { leadId?: string; otp_code: string },
   { state: RootState }
 >(

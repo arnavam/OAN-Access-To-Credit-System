@@ -39,11 +39,16 @@ export function LoanApplicationDashboardClient() {
   const [selectedRow, setSelectedRow] = useState<LoanTableRow | null>(null);
 
   const loadLoans = useCallback(() => {
-    dispatch(fetchLoans(queryParams));
+    return dispatch(fetchLoans(queryParams));
   }, [dispatch, queryParams]);
 
   useEffect(() => {
-    loadLoans();
+    // Abort the in-flight request when queryParams change (or on unmount) so a
+    // slower earlier response can't overwrite the results for a newer query.
+    const promise = loadLoans();
+    return () => {
+      promise.abort();
+    };
   }, [loadLoans]);
 
   useEffect(() => {

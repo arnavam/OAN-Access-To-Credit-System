@@ -68,62 +68,77 @@ export default function CreditInformation() {
 
       <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] gap-5 mb-8 items-end">
         <div ref={loanTypeRef} className="relative">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Loan Type <span className="text-red-500">*</span></label>
-          <div
+          <label id="loan-type-label" className="block text-sm font-medium text-gray-700 mb-2">Loan Type <span className="text-red-500">*</span></label>
+          <button
+            type="button"
+            aria-labelledby="loan-type-label"
+            aria-haspopup="listbox"
+            aria-expanded={isLoanTypeOpen}
             onClick={() => setIsLoanTypeOpen(!isLoanTypeOpen)}
             className={`w-full bg-white border ${isLoanTypeOpen ? 'border-green-500 ring-2 ring-green-500/20' : 'border-gray-200'} rounded-lg px-4 py-2.5 text-gray-900 cursor-pointer transition-all flex items-center justify-between`}
           >
             <span>{selectedLoanType}</span>
             <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${isLoanTypeOpen ? 'rotate-180' : ''}`} />
-          </div>
+          </button>
           {isLoanTypeOpen && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-20 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div role="listbox" aria-label="Loan Type" className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-20 animate-in fade-in slide-in-from-top-2 duration-200">
               {['Crop Loan', 'Equipment Loan', 'Livestock Loan'].map((type) => (
-                <div
+                <button
                   key={type}
+                  type="button"
+                  role="option"
+                  aria-selected={selectedLoanType === type}
                   onClick={() => {
                     setSelectedLoanType(type);
                     setIsLoanTypeOpen(false);
                   }}
-                  className="px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-sm text-gray-700 transition-colors"
+                  className="w-full text-left px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-sm text-gray-700 transition-colors"
                 >
                   {type}
-                </div>
+                </button>
               ))}
             </div>
           )}
         </div>
 
         <div ref={loanAmountRef} className="relative">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Loan Amount <span className="text-red-500">*</span></label>
-          <div
+          <label id="loan-amount-label" className="block text-sm font-medium text-gray-700 mb-2">Loan Amount <span className="text-red-500">*</span></label>
+          <button
+            type="button"
+            aria-labelledby="loan-amount-label"
+            aria-haspopup="listbox"
+            aria-expanded={isLoanAmountOpen}
             onClick={() => setIsLoanAmountOpen(!isLoanAmountOpen)}
             className={`w-full bg-white border ${isLoanAmountOpen ? 'border-green-500 ring-2 ring-green-500/20' : 'border-gray-200'} rounded-lg px-4 py-2.5 text-gray-900 cursor-pointer transition-all flex items-center justify-between`}
           >
             <span>{selectedLoanAmount}</span>
             <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-300 ${isLoanAmountOpen ? 'rotate-180' : ''}`} />
-          </div>
+          </button>
           {isLoanAmountOpen && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-20 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div role="listbox" aria-label="Loan Amount" className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-20 animate-in fade-in slide-in-from-top-2 duration-200">
               {['350,000', '200,000', '150,000', '50,000'].map((amount) => (
-                <div
+                <button
                   key={amount}
+                  type="button"
+                  role="option"
+                  aria-selected={selectedLoanAmount === amount}
                   onClick={() => {
                     setSelectedLoanAmount(amount);
                     setIsLoanAmountOpen(false);
                   }}
-                  className="px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-sm text-gray-700 transition-colors"
+                  className="w-full text-left px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-sm text-gray-700 transition-colors"
                 >
                   {amount}
-                </div>
+                </button>
               ))}
             </div>
           )}
         </div>
 
         <div className="w-full">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Loan Purpose <span className="text-red-500">*</span></label>
+          <label htmlFor="loan-purpose-input" className="block text-sm font-medium text-gray-700 mb-2">Loan Purpose <span className="text-red-500">*</span></label>
           <input
+            id="loan-purpose-input"
             type="text"
             value={loanPurpose}
             onChange={(e) => setLoanPurpose(e.target.value)}

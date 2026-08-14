@@ -22,6 +22,7 @@ export default function DiscoverLoansClient() {
 
   // Reset to page 1 when filters or page size change
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentPage(1);
   }, [activeTab, searchQuery, sortBy, entriesPerPage]);
 

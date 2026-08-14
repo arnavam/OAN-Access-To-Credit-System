@@ -57,7 +57,7 @@ export function VisitHistoryCard() {
                             if (!isNaN(d.getTime())) {
                                 formattedDate = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
                             }
-                        } catch(e) {}
+                        } catch {}
 
                         const locationText = visit.meeting_location || (visit.region ? `${visit.region}, ${visit.zone}` : '');
 

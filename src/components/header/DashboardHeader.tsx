@@ -5,6 +5,7 @@ import { logout, selectBankName, selectOfficerName, selectUserImage, selectUserK
 import type { UserKind } from '@/features/auth/rbac';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { Bell, Building2, ChevronDown, LogOut, Menu, UserRound, UsersRound } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
@@ -62,7 +63,9 @@ export function DashboardHeader({ onMenuClick, title = 'Dashboard', subtitle }: 
 
   const config = (userKind && ROLE_CONFIG[userKind]) || FALLBACK_CONFIG;
 
-  // Initial fetch of unread count on header mount
+  // Initial fetch of unread count on header mount. userImage is intentionally
+  // checked only at mount, not re-run whenever it changes — this fetches the
+  // profile image once if it wasn't already loaded, not on every image update.
   useEffect(() => {
     dispatch(fetchNotifications({ read_status: 'all', limit: 20, start: 0 }));
     if (!userImage) {
@@ -74,6 +77,7 @@ export function DashboardHeader({ onMenuClick, title = 'Dashboard', subtitle }: 
         })
         .catch(() => {});
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch]);
 
   // Close dropdown when clicking outside
@@ -147,12 +151,14 @@ export function DashboardHeader({ onMenuClick, title = 'Dashboard', subtitle }: 
             onClick={() => setIsProfileOpen(!isProfileOpen)}
             className="flex items-center gap-3 px-3 py-1.5 bg-white border border-gray-200 rounded-full hover:border-gray-300 hover:shadow-sm transition-all cursor-pointer group"
           >
-            <div className="w-9 h-9 rounded-full bg-[#16A34A] flex items-center justify-center border-2 border-emerald-100 shadow-sm shrink-0 group-hover:scale-105 transition-all duration-300 overflow-hidden">
+            <div className="relative w-9 h-9 rounded-full bg-[#16A34A] flex items-center justify-center border-2 border-emerald-100 shadow-sm shrink-0 group-hover:scale-105 transition-all duration-300 overflow-hidden">
               {userImage ? (
-                <img
-                  src={toProxiedFileUrl(userImage)}
+                <Image
+                  src={toProxiedFileUrl(userImage)!}
                   alt="Profile"
-                  className="w-full h-full object-cover"
+                  fill
+                  sizes="36px"
+                  className="object-cover"
                 />
               ) : (
                 <span className="text-white text-xs font-bold leading-none select-none">

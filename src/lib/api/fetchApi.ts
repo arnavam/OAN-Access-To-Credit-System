@@ -24,7 +24,7 @@ export class ApiError extends Error {
 
 export function extractFieldErrors(error: unknown): Record<string, string> {
   if (!(error instanceof ApiError)) return {};
-  const details = (error.responseData as any)?.message?.details;
+  const details = (error.responseData as { message?: { details?: unknown } } | undefined)?.message?.details;
   if (!details || typeof details !== 'object') return {};
   return Object.fromEntries(
     Object.entries(details).filter(([, v]) => typeof v === 'string')
@@ -40,7 +40,7 @@ async function refreshSession(): Promise<boolean> {
       headers: { 'Content-Type': 'application/json' },
     });
     return res.ok;
-  } catch (e) {
+  } catch {
     return false;
   }
 }
@@ -60,12 +60,13 @@ async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 1
     const response = await fetch(url, { ...options, signal: controller.signal });
     clearTimeout(timeoutId);
     return response;
-  } catch (error: any) {
+  } catch (error) {
     clearTimeout(timeoutId);
-    if (error.name === 'AbortError' && options.signal?.aborted) {
+    const err = error as { name?: string; message?: string };
+    if (err.name === 'AbortError' && options.signal?.aborted) {
       throw error; // Intentional abort from frontend (e.g. unmount)
     }
-    if (error.message === 'TimeoutError' || error.name === 'TimeoutError' || error.name === 'AbortError') {
+    if (err.message === 'TimeoutError' || err.name === 'TimeoutError' || err.name === 'AbortError') {
       throw new ApiError('The server is taking too long to respond. Please try again.', null, 408);
     }
     throw new ApiError('Network error. Please check your connection.', null, 0);
@@ -110,7 +111,7 @@ export async function fetchApi(path: string, options: RequestInit = {}) {
   let responseData;
   try {
     responseData = await response.json();
-  } catch (e) {
+  } catch {
     if (!response.ok) throw new Error(`API Request failed with status ${response.status}`);
     return null;
   }
@@ -134,7 +135,7 @@ export async function fetchApi(path: string, options: RequestInit = {}) {
             errorMsg = firstMsg.message;
           }
         }
-      } catch (e) {
+      } catch {
         // ignore
       }
     } else if (responseData?.message?.details && typeof responseData.message.details === 'object') {

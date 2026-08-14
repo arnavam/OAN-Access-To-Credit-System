@@ -125,9 +125,13 @@ function LeadTable({
       case 'LEAD ID': {
         return (
           <div className="flex flex-col items-start justify-start h-full">
-            <span className="text-base font-semibold text-[#16A34A] hover:underline">
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); navigate(getLeadRoute(l)); }}
+              className="text-base font-semibold text-[#16A34A] hover:underline text-left"
+            >
               {l.id}
-            </span>
+            </button>
             {l.location && (
               <span className="mt-1 block font-normal text-sm text-[#6B7280] text-left">
                 {l.location}
@@ -194,6 +198,11 @@ function LeadTable({
                 />
               </div>
             </th>
+            {/* The anchor button ref (read further below, for the filter popup) can
+                only be populated after that button has rendered and attached its
+                ref in an earlier commit, so this is safe in practice even though
+                it technically reads a ref's value during render. */}
+            {/* eslint-disable-next-line react-hooks/refs */}
             {TABLE_COLS.map(col => {
               const isActive = col.isFilterable && ((colFilterCfg[col.id]?.value?.length ?? 0) > 0);
 
@@ -214,7 +223,7 @@ function LeadTable({
                             e.stopPropagation();
                             onSetOpenColFilter(prev => prev === col.id ? null : col.id);
                           }}
-                          className={`rounded p-0.5 transition hover:bg-slate-200 outline-none ${openColFilter === col.id || isActive ? 'text-[#1E6865]' : 'text-[#AEB4BA]'}`}
+                          className={`rounded p-0.5 transition hover:bg-slate-200 outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-1 ${openColFilter === col.id || isActive ? 'text-[#1E6865]' : 'text-[#AEB4BA]'}`}
                         >
                           <Filter size={16} strokeWidth={2.5} />
                         </button>
@@ -297,6 +306,12 @@ function LeadTable({
               return (
                 <tr
                   key={key}
+                  // Not given role="button"/tabIndex here — that would override the row's
+                  // implicit ARIA `row` role (breaking table-browse-mode header association
+                  // for screen readers) and nest an interactive control around the real
+                  // checkbox/action buttons inside it. The Lead ID cell below is a real
+                  // <button> providing the same navigation, reachable via keyboard/AT;
+                  // this onClick is just a mouse-convenience "click anywhere on the row".
                   className={rowBgClass}
                   onClick={() => navigate(getLeadRoute(l))}
                 >

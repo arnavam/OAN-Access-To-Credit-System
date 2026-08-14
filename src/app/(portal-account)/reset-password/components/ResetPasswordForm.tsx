@@ -20,8 +20,11 @@ function ResetPasswordFormContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
+    // Seeds form fields from the URL's query params, which can only be read
+    // client-side via useSearchParams — can't be computed during render.
     const emailParam = searchParams.get('email');
     const keyParam = searchParams.get('key');
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (emailParam) setEmail(emailParam);
     if (keyParam) setOtp(keyParam);
   }, [searchParams]);
@@ -45,8 +48,8 @@ function ResetPasswordFormContent() {
       await resetPassword(email, otp, newPassword);
       toast.success('Password reset successfully');
       router.push('/login');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to reset password');
+    } catch (error) {
+      toast.error((error instanceof Error && error.message) || 'Failed to reset password');
     } finally {
       setIsSubmitting(false);
     }
