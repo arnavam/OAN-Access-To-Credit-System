@@ -263,6 +263,7 @@ export function AddLoanProductModal({ isOpen, onClose }: AddLoanProductModalProp
                       options={categoryOptions}
                       placeholder="Select Loan Type"
                       singleSelect={true}
+                      hideCheckbox={true}
                       onChange={setSelectedCategoryTermIds}
                     />
                   </div>

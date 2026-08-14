@@ -323,6 +323,7 @@ export function EditLoanProductModal({ isOpen, onClose, product }: EditLoanProdu
                         options={categoryOptions}
                         placeholder="Select Loan Type"
                         singleSelect={true}
+                        hideCheckbox={true}
                         onChange={setSelectedCategoryTermIds}
                       />
                     </div>
