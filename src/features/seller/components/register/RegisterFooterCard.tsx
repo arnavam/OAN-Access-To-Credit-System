@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import { FormCard } from './FormCard';
 
 interface RegisterFooterCardProps {
@@ -24,8 +24,17 @@ export function RegisterFooterCard({ isLoading, isAgreed, onBack }: RegisterFoot
         disabled={isLoading || !isAgreed}
         className="px-6 py-2.5 bg-[#16A34A] hover:bg-[#15803d] text-white rounded-lg font-bold text-[14px] transition-all duration-300 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#16A34A] shadow-sm"
       >
-        <span>Register Organization</span>
-        <ArrowRight size={16} />
+        {isLoading ? (
+          <>
+            <Loader2 size={16} className="animate-spin" />
+            <span>Registering...</span>
+          </>
+        ) : (
+          <>
+            <span>Register Organization</span>
+            <ArrowRight size={16} />
+          </>
+        )}
       </button>
     </FormCard>
   );

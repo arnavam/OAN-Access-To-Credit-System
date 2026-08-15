@@ -31,7 +31,7 @@ export async function loginUser({ usr, pwd }: LoginCredentials): Promise<RawUser
   const data = (await res.json().catch(() => ({}))) as LoginApiResponse;
 
   if (!res.ok) {
-    throw new Error(data.message || 'Invalid credentials. Please try again.');
+    throw new Error(data.message || 'Incorrect email/phone number or password.');
   }
 
   if (!data.user) {
