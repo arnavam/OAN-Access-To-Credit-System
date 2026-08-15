@@ -1,5 +1,5 @@
 export interface ListProductsParams {
-  status?: 'Draft' | 'Active' | 'Archived';
+  status?: 'Draft' | 'Active' | 'Archived' | 'Pending Approval' | 'Rejected';
   search?: string;
   category?: string;
   tag?: string;
@@ -60,6 +60,7 @@ export interface ArchiveLoanProductInput {
 
 export interface SetLoanProductStatusInput {
   productId: string;
-  status: 'Draft' | 'Active' | 'Archived';
+  status: 'Active' | 'Rejected' | 'Pending Approval';
+  reason?: string;
   refetchParams?: ListProductsParams;
 }

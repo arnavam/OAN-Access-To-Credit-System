@@ -1,12 +1,12 @@
 import {
-    loanProductDetailSchema, loanProductSummarySchema, sellerDashboardStatsSchema, validateResponse, type LoanProductDetail, type LoanProductSummary, type SellerDashboardStats
+  loanProductDetailSchema, loanProductSummarySchema, sellerDashboardStatsSchema, validateResponse, type LoanProductDetail, type LoanProductSummary, type SellerDashboardStats
 } from '@/lib/api/api.schemas';
 import { fetchApi } from '@/lib/api/fetchApi';
 import { toProxiedFileUrl } from '@/lib/utils';
 import type { ApiResponse } from '@/types/api';
 import { z } from 'zod';
 import type {
-    CreateLoanProductPayload, ListProductsParams, UpdateLoanProductPayload
+  CreateLoanProductPayload, ListProductsParams, UpdateLoanProductPayload
 } from '../types/loan-products.types';
 
 export const loanProductsService = {
@@ -49,11 +49,11 @@ export const loanProductsService = {
     };
   },
 
-  async createProduct(payload: CreateLoanProductPayload): Promise<ApiResponse<{ product_id: string }>> {
+  async createProduct(payload: CreateLoanProductPayload): Promise<ApiResponse<{ product_ids: string[] }>> {
     return fetchApi('oan_a2c.api.v1.seller.loan_products.create_product', {
       method: 'POST',
       body: JSON.stringify(payload),
-    }) as Promise<ApiResponse<{ product_id: string }>>;
+    }) as Promise<ApiResponse<{ product_ids: string[] }>>;
   },
 
   async updateProduct(payload: UpdateLoanProductPayload): Promise<ApiResponse<{ product_id: string }>> {
@@ -63,10 +63,10 @@ export const loanProductsService = {
     }) as Promise<ApiResponse<{ product_id: string }>>;
   },
 
-  async setProductStatus(productId: string, status: 'Draft' | 'Active' | 'Archived'): Promise<ApiResponse<null>> {
+  async setProductStatus(productId: string, status: 'Draft' | 'Active' | 'Archived' | 'Rejected' | 'Pending Approval', reason?: string): Promise<ApiResponse<null>> {
     return fetchApi('oan_a2c.api.v1.seller.loan_products.set_product_status', {
       method: 'POST',
-      body: JSON.stringify({ product_id: productId, status }),
+      body: JSON.stringify({ product_id: productId, status, reason }),
     }) as Promise<ApiResponse<null>>;
   },
 

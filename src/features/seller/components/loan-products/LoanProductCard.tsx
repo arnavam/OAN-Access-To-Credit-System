@@ -5,6 +5,8 @@ import { BarChart3, Box, LucideIcon, Package, Pencil, Sprout, Trash2 } from 'luc
 import { useState } from 'react';
 import { DeleteLoanProductModal } from './DeleteLoanProductModal';
 import { EditLoanProductModal } from './EditLoanProductModal';
+import { ReviewProductModal } from '../product-approvals/ReviewProductModal';
+import { Eye } from 'lucide-react';
 
 interface CategoryConfig {
   icon: LucideIcon;
@@ -71,6 +73,7 @@ export function canEditLoanProduct(status: string | null | undefined): boolean {
 export function LoanProductCard({ product }: LoanProductCardProps) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 
   // Extract the LAST category if given more than one (per user instruction)
   const categories = product.categories || [];
@@ -121,7 +124,7 @@ export function LoanProductCard({ product }: LoanProductCardProps) {
                 {formatCurrencyRange(product.min_amount, product.max_amount)}
               </span>
               <span className="font-semibold text-gray-700">
-                {product.min_interest_rate}% p.a.
+                {product.min_interest_rate}%{product.max_interest_rate ? ` - ${product.max_interest_rate}%` : ''} p.a.
               </span>
               <span className="font-semibold text-gray-700">
                 {product.tenure_months}m tenure
@@ -135,7 +138,7 @@ export function LoanProductCard({ product }: LoanProductCardProps) {
 
         {/* Right Actions */}
         <div className="flex items-center gap-2 shrink-0">
-          {canEdit && (
+          {canEdit ? (
             <button
               type="button"
               onClick={() => setIsEditModalOpen(true)}
@@ -143,6 +146,15 @@ export function LoanProductCard({ product }: LoanProductCardProps) {
               aria-label={`Edit ${product.product_name}`}
             >
               <Pencil size={15} />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsViewModalOpen(true)}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-600 transition-colors hover:bg-gray-200 active:scale-95"
+              aria-label={`View ${product.product_name}`}
+            >
+              <Eye size={15} />
             </button>
           )}
           <button
@@ -158,6 +170,7 @@ export function LoanProductCard({ product }: LoanProductCardProps) {
 
       <EditLoanProductModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} product={product} />
       <DeleteLoanProductModal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} product={product} />
+      <ReviewProductModal isOpen={isViewModalOpen} onClose={() => setIsViewModalOpen(false)} product={product} readOnlyView={true} />
     </>
   );
 }

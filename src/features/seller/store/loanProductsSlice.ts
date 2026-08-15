@@ -115,7 +115,11 @@ export const createProductCompound = createAsyncThunk(
   async (input: CreateLoanProductCompoundInput, { dispatch, rejectWithValue }) => {
     try {
       const created = await loanProductsService.createProduct(input.payload);
-      const productId = created.data.product_id;
+      const productId = created.data.product_ids?.[0];
+
+      if (!productId) {
+        throw new Error('No product ID returned from creation');
+      }
 
       if (input.categoryTermIds && input.categoryTermIds.length > 0) {
         await taxonomyService.setProductCategories(productId, input.categoryTermIds);
@@ -184,7 +188,7 @@ export const setProductStatus = createAsyncThunk(
   'sellerProducts/setProductStatus',
   async (input: SetLoanProductStatusInput, { dispatch, rejectWithValue }) => {
     try {
-      const response = await loanProductsService.setProductStatus(input.productId, input.status);
+      const response = await loanProductsService.setProductStatus(input.productId, input.status, input.reason);
       await dispatch(fetchProducts(input.refetchParams));
       return response.data;
     } catch (error) {

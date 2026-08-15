@@ -187,7 +187,7 @@ export const loanProductSummarySchema = z.object({
   name: z.string(),
   product_name: z.string(),
   slug: z.string().nullable().optional(),
-  status: z.enum(['Draft', 'Active', 'Archived']),
+  status: z.enum(['Draft', 'Active', 'Archived', 'Pending Approval', 'Rejected']),
   min_interest_rate: z.number(),
   max_interest_rate: z.number().nullable().optional(),
   min_amount: z.number().nullable().optional(),

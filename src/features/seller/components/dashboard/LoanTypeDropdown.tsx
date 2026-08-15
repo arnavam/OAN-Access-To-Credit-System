@@ -21,10 +21,11 @@ interface LoanTypeDropdownProps {
   placeholder?: string | undefined;
   singleSelect?: boolean;
   hideCheckbox?: boolean;
+  disabled?: boolean;
   onChange: (types: string[]) => void;
 }
 
-export function LoanTypeDropdown({ selectedTypes, options, placeholder, singleSelect = false, hideCheckbox = false, onChange }: LoanTypeDropdownProps) {
+export function LoanTypeDropdown({ selectedTypes, options, placeholder, singleSelect = false, hideCheckbox = false, disabled = false, onChange }: LoanTypeDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -69,13 +70,16 @@ export function LoanTypeDropdown({ selectedTypes, options, placeholder, singleSe
   return (
     <div className="relative" ref={dropdownRef}>
       <div
-        role="button"
-        tabIndex={0}
+        role={disabled ? undefined : "button"}
+        tabIndex={disabled ? -1 : 0}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
-        className="flex w-full cursor-pointer items-center justify-between rounded-lg border border-[#D1D5DB] bg-white px-4 py-2.5 transition-all focus-within:border-[#00C48C] focus-within:ring-2 focus-within:ring-[#00C48C] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00C48C]"
-        onClick={() => setIsOpen(!isOpen)}
+        className={`flex w-full ${disabled ? 'cursor-not-allowed opacity-70 bg-gray-50' : 'cursor-pointer'} items-center justify-between rounded-lg border border-[#D1D5DB] bg-white px-4 py-2.5 transition-all focus-within:border-[#00C48C] focus-within:ring-2 focus-within:ring-[#00C48C] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00C48C]`}
+        onClick={() => {
+          if (!disabled) setIsOpen(!isOpen);
+        }}
         onKeyDown={(e) => {
+          if (disabled) return;
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             setIsOpen((o) => !o);

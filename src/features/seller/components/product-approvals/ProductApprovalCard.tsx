@@ -1,20 +1,23 @@
 'use client';
 import type { LoanProductSummary } from '@/lib/api/api.schemas';
-import { BarChart3, CalendarDays, Check, LucideIcon, Package, Sprout, X as XIcon } from 'lucide-react';
+import { BarChart3, CalendarDays, LucideIcon, Package, Sprout } from 'lucide-react';
 import { useState } from 'react';
-import { ApproveProductModal } from './ApproveProductModal';
-import { RejectProductModal } from './RejectProductModal';
+import { ReviewProductModal } from './ReviewProductModal';
 
 const statusStyles = {
   Draft: { text: 'text-orange-700', border: 'border-orange-200', dot: 'bg-orange-500', bg: 'bg-orange-100' },
+  'Pending Approval': { text: 'text-amber-700', border: 'border-amber-200', dot: 'bg-amber-500', bg: 'bg-amber-100' },
   Active: { text: 'text-green-700', border: 'border-green-200', dot: 'bg-green-500', bg: 'bg-green-100' },
   Archived: { text: 'text-gray-700', border: 'border-gray-200', dot: 'bg-gray-500', bg: 'bg-gray-100' },
+  Rejected: { text: 'text-red-700', border: 'border-red-200', dot: 'bg-red-500', bg: 'bg-red-100' },
 } as const;
 
 const iconByStatus: Record<LoanProductSummary['status'], LucideIcon> = {
   Draft: Package,
+  'Pending Approval': Package,
   Active: Sprout,
   Archived: BarChart3,
+  Rejected: BarChart3,
 };
 
 function formatCurrencyRange(minAmount: number | null | undefined, maxAmount: number): string {
@@ -33,8 +36,7 @@ export interface ApprovalItem {
 }
 
 export function ProductApprovalCard({ item }: { item: ApprovalItem }) {
-  const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
-  const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const { product } = item;
   const statusStyle = statusStyles[product.status];
   const Icon = iconByStatus[product.status];
@@ -76,26 +78,21 @@ export function ProductApprovalCard({ item }: { item: ApprovalItem }) {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => setIsRejectModalOpen(true)}
-              className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-4 py-2 text-[14px] font-bold text-gray-700 transition-colors hover:bg-gray-50"
-            >
-              <XIcon size={16} />
-              <span>Reject</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsApproveModalOpen(true)}
+              onClick={() => setIsReviewModalOpen(true)}
               className="flex items-center gap-1.5 rounded-lg bg-[#16A34A] px-4 py-2 text-[14px] font-bold text-white shadow-sm transition-colors hover:bg-[#15803d]"
             >
-              <Check size={16} strokeWidth={2.5} />
-              <span>Approve</span>
+              <span>Review</span>
             </button>
           </div>
         </div>
       </div>
 
-      <ApproveProductModal isOpen={isApproveModalOpen} onClose={() => setIsApproveModalOpen(false)} product={product} />
-      <RejectProductModal isOpen={isRejectModalOpen} onClose={() => setIsRejectModalOpen(false)} product={product} />
+      <ReviewProductModal
+        isOpen={isReviewModalOpen}
+        onClose={() => setIsReviewModalOpen(false)}
+        product={product}
+        initialMode={null}
+      />
     </>
   );
 }

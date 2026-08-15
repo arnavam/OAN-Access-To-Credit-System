@@ -53,11 +53,12 @@ interface ProductTextFieldProps {
   maxDecimalDigits?: number;
   /** Caps total digits (integer-only, strips decimals). Renders NumericInput when set. */
   maxDigits?: number;
+  disabled?: boolean;
 }
 
 export function ProductTextField({
   variant, label, required, value, onChange, error, type = 'text', placeholder, min, max, step, blockExponentChars,
-  maxIntegerDigits, maxDecimalDigits, maxDigits,
+  maxIntegerDigits, maxDecimalDigits, maxDigits, disabled,
 }: ProductTextFieldProps) {
   const styles = TEXT_FIELD_STYLES[variant];
   const hasDigitRestrictions = maxIntegerDigits !== undefined || maxDecimalDigits !== undefined || maxDigits !== undefined;
@@ -79,7 +80,8 @@ export function ProductTextField({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className={error ? styles.inputError : styles.input}
+          disabled={disabled}
+          className={`${error ? styles.inputError : styles.input} ${disabled ? 'bg-gray-50 opacity-70 cursor-not-allowed' : ''}`}
         />
       ) : (
         <input
@@ -88,10 +90,11 @@ export function ProductTextField({
           max={max}
           step={step}
           value={value}
+          disabled={disabled}
           onKeyDown={blockExponentChars ? (e) => { if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault(); } : undefined}
           onChange={(e) => onChange(blockExponentChars ? e.target.value.replace(/[eE+-]/g, '') : e.target.value)}
           placeholder={placeholder}
-          className={error ? styles.inputError : styles.input}
+          className={`${error ? styles.inputError : styles.input} ${disabled ? 'bg-gray-50 opacity-70 cursor-not-allowed' : ''}`}
         />
       )}
       {error && <p className={styles.error}>{error}</p>}
@@ -114,10 +117,11 @@ interface ProductImageDropzoneProps {
   onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
   altText: string;
   placeholderText: string;
+  disabled?: boolean;
 }
 
 export function ProductImageDropzone({
-  variant, required, imagePreview, onPick, onRemove, fileInputRef, onFileSelect, altText, placeholderText,
+  variant, required, imagePreview, onPick, onRemove, fileInputRef, onFileSelect, altText, placeholderText, disabled,
 }: ProductImageDropzoneProps) {
   const styles = DROPZONE_STYLES[variant];
   return (
@@ -125,30 +129,32 @@ export function ProductImageDropzone({
       <label className={styles.label}>
         Product Image {required && <span className="text-red-500">*</span>}
       </label>
-      <input type="file" ref={fileInputRef} accept="image/png,image/jpeg,image/jpg" className="hidden" onChange={onFileSelect} />
+      <input type="file" ref={fileInputRef} accept="image/png,image/jpeg,image/jpg" className="hidden" onChange={onFileSelect} disabled={disabled} />
       <div
-        role="button"
-        tabIndex={0}
-        onClick={onPick}
-        onKeyDown={(e) => {
+        role={disabled ? undefined : "button"}
+        tabIndex={disabled ? -1 : 0}
+        onClick={disabled ? undefined : onPick}
+        onKeyDown={disabled ? undefined : (e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             onPick();
           }
         }}
-        className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50/50 p-6 text-center transition-colors hover:bg-gray-50 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A] focus-visible:ring-offset-2"
+        className={`flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50/50 p-6 text-center transition-colors ${disabled ? 'opacity-70 cursor-not-allowed' : 'hover:bg-gray-50 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A] focus-visible:ring-offset-2'}`}
       >
         {imagePreview ? (
           <div className="relative w-full h-32 rounded-xl overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element -- imagePreview can be a data: URL (fresh selection, needs `unoptimized` on next/image, unverified without a browser here) or an already-hosted URL */}
             <img src={imagePreview} alt={altText} className="w-full h-full object-cover" />
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onRemove(); }}
-              className="absolute top-2 right-2 p-1 bg-black/60 text-white rounded-full hover:bg-black/80"
-            >
-              <X size={14} />
-            </button>
+            {!disabled && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onRemove(); }}
+                className="absolute top-2 right-2 p-1 bg-black/60 text-white rounded-full hover:bg-black/80"
+              >
+                <X size={14} />
+              </button>
+            )}
           </div>
         ) : (
           <>
@@ -208,9 +214,10 @@ interface ProductAttributesGridProps {
   selectedAttributeTermIds: string[];
   onToggle: (termId: string) => void;
   emptyMessage: string;
+  disabled?: boolean;
 }
 
-export function ProductAttributesGrid({ variant, heading, attributes, selectedAttributeTermIds, onToggle, emptyMessage }: ProductAttributesGridProps) {
+export function ProductAttributesGrid({ variant, heading, attributes, selectedAttributeTermIds, onToggle, emptyMessage, disabled }: ProductAttributesGridProps) {
   const styles = ATTRIBUTE_STYLES[variant];
   return (
     <div className={variant === 'add' ? 'pt-2' : 'space-y-3 pt-2'}>
@@ -223,17 +230,17 @@ export function ProductAttributesGrid({ variant, heading, attributes, selectedAt
             return (
               <div
                 key={attr.term_id}
-                role="button"
-                tabIndex={0}
+                role={disabled ? undefined : "button"}
+                tabIndex={disabled ? -1 : 0}
                 aria-pressed={isSelected}
-                onClick={() => onToggle(attr.term_id)}
-                onKeyDown={(e) => {
+                onClick={disabled ? undefined : () => onToggle(attr.term_id)}
+                onKeyDown={disabled ? undefined : (e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
                     onToggle(attr.term_id);
                   }
                 }}
-                className={`${styles.card(isSelected, addTheme.card)} focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A] focus-visible:ring-offset-2`}
+                className={`${styles.card(isSelected, addTheme.card)} ${disabled ? 'opacity-70 cursor-not-allowed' : 'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A] focus-visible:ring-offset-2'}`}
               >
                 {variant === 'add' ? (
                   <div className="flex items-center justify-between">
