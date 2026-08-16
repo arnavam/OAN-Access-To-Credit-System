@@ -4,10 +4,14 @@ import LoanTable, { LoanTableRow } from '@/features/loans/components/LoanTable';
 import LoanApplicationModal from '@/features/loans/components/modals/LoanApplicationModal';
 import {
   fetchLoans,
+  selectAdvancedFilters,
   selectIsLoansLoading,
   selectLoansError,
   selectPagedRows,
   selectQueryParams,
+  selectSearchQuery,
+  selectTableStatusFilters,
+  selectTableTypeFilters,
   selectTotalCount,
   setSearchQuery,
   updateLoanStatus
@@ -23,6 +27,15 @@ export function LoanApplicationsTable() {
   const isLoading = useAppSelector(selectIsLoansLoading);
   const error = useAppSelector(selectLoansError);
   const queryParams = useAppSelector(selectQueryParams);
+  const searchQuery = useAppSelector(selectSearchQuery);
+  const tableStatusFilters = useAppSelector(selectTableStatusFilters);
+  const tableTypeFilters = useAppSelector(selectTableTypeFilters);
+  const advancedFilters = useAppSelector(selectAdvancedFilters);
+  // Same active-filters check LoanTable itself uses (plus search) — keeps the
+  // "no data at all" empty state from also covering "filters just match nothing",
+  // which would otherwise hide the table header along with the illustration.
+  const hasActiveFilters = Boolean(searchQuery) || tableStatusFilters.length > 0 || tableTypeFilters.length > 0
+    || advancedFilters.minLoan !== null || Boolean(advancedFilters.dateFrom);
 
   const [selectedRow, setSelectedRow] = useState<LoanTableRow | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -176,7 +189,7 @@ export function LoanApplicationsTable() {
               Retry
             </button>
           </div>
-        ) : rows.length === 0 ? (
+        ) : rows.length === 0 && !hasActiveFilters ? (
           /* Empty state */
           <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="relative w-20 h-20 mb-6 flex items-center justify-center">

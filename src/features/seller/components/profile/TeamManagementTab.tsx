@@ -6,6 +6,21 @@ import { toast } from '@/lib/toast';
 import { CheckCircle2, Search, Trash2, UserPlus, XCircle } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
+// fetchApi unwraps one layer of the raw response (see fetchApi.ts), so depending
+// on how a given endpoint's payload is shaped, the resolved value can land as
+// either a plain string or an { message } / { data: { message } } object.
+// Check all three rather than assuming one, so a real backend message never
+// silently loses to the hardcoded fallback.
+function extractMessage(res: unknown): string | undefined {
+  if (typeof res === 'string') return res;
+  if (res && typeof res === 'object') {
+    const obj = res as { message?: unknown; data?: { message?: unknown } };
+    if (typeof obj.data?.message === 'string') return obj.data.message;
+    if (typeof obj.message === 'string') return obj.message;
+  }
+  return undefined;
+}
+
 // Backend returns a space-separated timestamp (e.g. "2026-07-31 16:07:09.337795").
 // Normalise to ISO so Date parses it reliably across browsers, then show a
 // compact local date/time. Falls back to "Never" when absent/unparseable.
@@ -52,10 +67,11 @@ export default function TeamManagementTab() {
     setInviting(true);
     setInviteErrors({});
     try {
-      await teamService.inviteUser(inviteForm);
-      toast.success('User invited successfully');
+      const res = await teamService.inviteUser(inviteForm);
+      toast.success(extractMessage(res) || 'Team member invited successfully');
       setIsInviteModalOpen(false);
       setInviteForm({ email: '', full_name: '', role: 'A2C Bank Agent', password: '' });
+      fetchUsers();
     } catch (err) {
       const details = (err as { responseData?: { message?: { details?: Record<string, string> } } }).responseData?.message?.details;
       if (details) {

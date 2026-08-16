@@ -225,7 +225,7 @@ export function LoginClient() {
                     {deniedError || authError}
                   </div>
                 )}
-                <form className="flex flex-col gap-6 w-full font-bold" onSubmit={handleSignInSubmit}>
+                <form className="flex flex-col gap-6 w-full font-bold" onSubmit={handleSignInSubmit} autoComplete="off">
                   <label className="flex flex-col gap-2">
                     <span className="font-medium text-[#374151] text-[14px] leading-[20px]">Phone Number or Email</span>
                     <span className="relative flex items-center bg-white border border-[#D4D4D4] rounded-lg transition-shadow duration-200 h-[46px] focus-within:border-[var(--button-bg)] focus-within:ring-2 focus-within:ring-[rgba(3,164,79,0.2)] focus-within:ring-offset-0">
@@ -236,7 +236,7 @@ export function LoginClient() {
                         className="w-full h-full bg-transparent border-0 pl-10 pr-3 focus:outline-none text-gray-900 placeholder:text-[#9CA3AF] text-[14px] font-normal"
                         type="text"
                         placeholder="+251 911 234 567"
-                        autoComplete="username"
+                        autoComplete="off"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                         required
@@ -254,7 +254,7 @@ export function LoginClient() {
                         className="w-full h-full bg-transparent border-0 pl-10 pr-[40px] focus:outline-none text-gray-900 placeholder:text-[#9CA3AF] text-[14px] font-normal"
                         type={isPasswordVisible ? 'text' : 'password'}
                         placeholder="•••••••"
-                        autoComplete="current-password"
+                        autoComplete="new-password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
@@ -288,12 +288,6 @@ export function LoginClient() {
                       Forgot Password?
                     </button>
                   </div>
-
-                  {authError && (
-                    <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-[0.85rem] font-medium text-red-600">
-                      {authError}
-                    </p>
-                  )}
 
                   <button className="flex items-center justify-center gap-2 rounded-lg font-bold text-white transition-colors duration-200 mt-2 w-full h-[56px] bg-[#16A34A] shadow-[0px_1px_2px_rgba(0,0,0,0.05)] text-[14px] hover:bg-[#10883c] disabled:opacity-70 disabled:cursor-not-allowed" type="submit" disabled={isLoading}>
                     {isLoading ? 'Signing in…' : (

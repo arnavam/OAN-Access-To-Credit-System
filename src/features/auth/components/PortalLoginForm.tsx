@@ -64,7 +64,7 @@ export function PortalLoginForm({
           setErrorMessage('These credentials are not valid for this portal. Please use your designated login page.');
         }
       } else {
-        setErrorMessage((result.payload as string) || 'Invalid credentials or login failed.');
+        setErrorMessage((result.payload as string) || 'Incorrect email/phone number or password.');
       }
     } catch {
       setErrorMessage('An unexpected error occurred. Please try again.');
@@ -88,7 +88,7 @@ export function PortalLoginForm({
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="w-full space-y-6">
+      <form onSubmit={handleSubmit} className="w-full space-y-6" autoComplete="off">
         <div className="space-y-4">
           <div className="space-y-1.5">
             <label className="text-[14px] font-semibold text-[#374151]">Phone Number or Email</label>
@@ -98,6 +98,7 @@ export function PortalLoginForm({
               </div>
               <input
                 type="text"
+                autoComplete="off"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder={usernamePlaceholder}
@@ -115,6 +116,7 @@ export function PortalLoginForm({
               </div>
               <input
                 type={showPassword ? 'text' : 'password'}
+                autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"

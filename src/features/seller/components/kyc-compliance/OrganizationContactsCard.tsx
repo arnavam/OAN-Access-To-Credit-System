@@ -1,5 +1,5 @@
 'use client';
-import { clearOnboardingErrors, saveOrgContacts, selectOnboardingMutationError, selectOnboardingMutationStatus, updateBankStatus } from '@/features/seller/store/onboardingSlice';
+import { clearOnboardingErrors, saveOrgContacts, selectOnboardingMutationError, selectOnboardingMutationSource, selectOnboardingMutationStatus, updateBankStatus } from '@/features/seller/store/onboardingSlice';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { Check, Loader2, UserCheck } from 'lucide-react';
 import { useState } from 'react';
@@ -24,7 +24,12 @@ export function OrganizationContactsCard() {
   const [localError, setLocalError] = useState<string | null>(null);
   const [isSaved, setIsSaved] = useState(false);
   const mutationStatus = useAppSelector(selectOnboardingMutationStatus);
-  const mutationError = useAppSelector(selectOnboardingMutationError);
+  const mutationErrorRaw = useAppSelector(selectOnboardingMutationError);
+  const mutationSource = useAppSelector(selectOnboardingMutationSource);
+  // handleSave drives both saveOrgContacts and (on success) updateBankStatus,
+  // so this card owns errors from either — but not the document card's upload.
+  const isOwnMutation = mutationSource === 'contacts' || mutationSource === 'bankStatus';
+  const mutationError = isOwnMutation ? mutationErrorRaw : null;
 
   const handleSave = async () => {
     if (!form.groName.trim() || !form.groMobile.trim() || !form.opsName.trim() || !form.opsMobile.trim()) {
@@ -56,7 +61,7 @@ export function OrganizationContactsCard() {
     }
   };
 
-  const isSaving = mutationStatus === 'loading';
+  const isSaving = mutationStatus === 'loading' && isOwnMutation;
 
   return (
     <div className="flex h-full w-full flex-col rounded-xl border border-[#F1F3F4] bg-white shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.05),0px_2px_4px_-1px_rgba(0,0,0,0.03)] transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">

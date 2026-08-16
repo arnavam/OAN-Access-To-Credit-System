@@ -1,5 +1,5 @@
 'use client';
-import { clearOnboardingErrors, selectOnboardingMutationError, selectOnboardingMutationStatus, selectUploadedFileUrl, uploadKycDocument } from '@/features/seller/store/onboardingSlice';
+import { clearOnboardingErrors, selectOnboardingMutationError, selectOnboardingMutationSource, selectOnboardingMutationStatus, selectUploadedFileUrl, uploadKycDocument } from '@/features/seller/store/onboardingSlice';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { FileText, Loader2, Upload } from 'lucide-react';
 import React, { useRef, useState } from 'react';
@@ -31,7 +31,11 @@ export function OrganisationDocumentsCard() {
   const [localError, setLocalError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mutationStatus = useAppSelector(selectOnboardingMutationStatus);
-  const mutationError = useAppSelector(selectOnboardingMutationError);
+  const mutationErrorRaw = useAppSelector(selectOnboardingMutationError);
+  const mutationSource = useAppSelector(selectOnboardingMutationSource);
+  // mutationError is shared with the contacts card's saveOrgContacts/updateBankStatus
+  // calls — only surface it here when this card's own upload actually caused it.
+  const mutationError = mutationSource === 'document' ? mutationErrorRaw : null;
   const uploadedFileUrl = useAppSelector(selectUploadedFileUrl);
 
   const handleBoxClick = () => {
@@ -84,7 +88,7 @@ export function OrganisationDocumentsCard() {
     }
   };
 
-  const isUploading = mutationStatus === 'loading';
+  const isUploading = mutationStatus === 'loading' && mutationSource === 'document';
 
   return (
     <>
