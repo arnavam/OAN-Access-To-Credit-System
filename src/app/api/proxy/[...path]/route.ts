@@ -1,6 +1,8 @@
 import { checkCsrf } from '@/lib/csrf';
 import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
+import { buildClientResponse, buildUpstreamHeaders } from '@/lib/proxyHeaders';
+import { AUTH_TOKEN_COOKIE } from '@/lib/session';
 import { NextRequest, NextResponse } from 'next/server';
 
 type RouteContext = { params: Promise<{ path: string[] }> };
@@ -34,24 +36,14 @@ async function handleProxy(request: NextRequest, pathArray: string[]) {
   const search = request.nextUrl.search;
   const targetUrl = `${env.API_BASE_URL}/${targetPath}${search}`;
 
-  const authToken = request.cookies.get('auth_token')?.value;
+  const authToken = request.cookies.get(AUTH_TOKEN_COOKIE)?.value;
 
-  // Prepare headers
-  const headers = new Headers();
-  request.headers.forEach((value, key) => {
-    // Avoid forwarding headers that might cause issues
-    if (!['host', 'cookie', 'connection', 'content-length'].includes(key.toLowerCase())) {
-      headers.set(key, value);
-    }
-  });
-
-  // Inject Authorization header if we have the token
-  if (authToken) {
-    headers.set('Authorization', `Bearer ${authToken}`);
-  }
+  // Allowlisted client headers plus a trustworthy X-Forwarded-For and the JWT
+  // injected from the httpOnly cookie. See lib/proxyHeaders.ts for why both
+  // directions are filtered rather than blocklisted.
+  const headers = buildUpstreamHeaders(request, authToken);
 
   try {
-    // Prepare fetch options
     const fetchOptions: RequestInit = {
       method: request.method,
       headers,
@@ -66,15 +58,10 @@ async function handleProxy(request: NextRequest, pathArray: string[]) {
     // Forward the request to the external backend
     const response = await fetch(targetUrl, fetchOptions);
 
-    // Forward the response back to the client
-    const responseHeaders = new Headers(response.headers);
-    responseHeaders.delete('content-encoding'); // Let Next.js handle encoding
-
-    return new NextResponse(response.body, {
-      status: response.status,
-      statusText: response.statusText,
-      headers: responseHeaders,
-    });
+    // Relay it back with response headers allowlisted (no Set-Cookie, no stack
+    // disclosure) and Frappe's debug fields stripped from JSON bodies.
+    const { body, init } = await buildClientResponse(response, targetUrl);
+    return new NextResponse(body, init);
   } catch (error) {
     logger.error(`Proxy error for ${targetUrl}:`, error);
     return NextResponse.json({ message: 'Proxy request failed' }, { status: 502 });

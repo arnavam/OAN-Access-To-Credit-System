@@ -4,7 +4,7 @@ import { OtpVerificationPopup } from '@/components/ui/OtpVerificationPopup';
 import { ForgotPasswordModal } from '@/features/auth/components/ForgotPasswordModal';
 import {
     ArrowLeft,
-    ArrowRight, ShieldCheck, User
+    ArrowRight, User
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -169,14 +169,6 @@ export default function FarmerLoginPage() {
                   {!isLoading && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
                 </button>
               </form>
-
-              {/* Security Badge */}
-              <div className="bg-[#16A34A]/5 border border-[#16A34A]/20 rounded-xl p-3.5 flex items-start gap-3 mb-8">
-                <ShieldCheck className="w-5 h-5 text-[#16A34A] shrink-0 mt-0.5" />
-                <div className="text-xs text-[#16335A] leading-relaxed font-medium">
-                  <span className="font-bold text-[#0B6C43]">Secured by FaydaPass</span> — All sessions authenticated via Ethiopia National ID (Fayda Auth API)
-                </div>
-              </div>
 
               {/* Partner Banks */}
               <div className="text-center">

@@ -1,20 +1,24 @@
+import { AUTH_MESSAGES } from '@/lib/authMessages';
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import type { RootState } from '../../../store';
 import { getMe, loginUser } from '../api/authApi';
-import { classifyUser, type AuthState, type User } from '../types/auth.types';
+import { classifyUser, type AuthState, type LoginOutcome, type User } from '../types/auth.types';
 
 export const loginThunk = createAsyncThunk<
-  User,
-  { usr: string; pwd: string },
+  LoginOutcome,
+  { usr: string; pwd: string; rememberMe?: boolean },
   { rejectValue: string }
 >(
   'auth/login',
-  async ({ usr, pwd }, { rejectWithValue }) => {
+  async ({ usr, pwd, rememberMe = false }, { rejectWithValue }) => {
     try {
-      const raw = await loginUser({ usr, pwd });
-      return classifyUser(raw);
+      const result = await loginUser({ usr, pwd, rememberMe });
+      if (result.outcome === 'password_change_required') {
+        return { outcome: 'password_change_required', usr: result.usr };
+      }
+      return { outcome: 'authenticated', user: classifyUser(result.user) };
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Unknown Cause. Please Try Again Later';
+      const message = err instanceof Error ? err.message : AUTH_MESSAGES.unexpected;
       return rejectWithValue(message);
     }
   },
@@ -31,7 +35,7 @@ export const getMeThunk = createAsyncThunk<
       const raw = await getMe();
       return classifyUser(raw);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to fetch current user session';
+      const message = err instanceof Error ? err.message : AUTH_MESSAGES.sessionExpired;
       return rejectWithValue(message);
     }
   },
@@ -76,9 +80,17 @@ const authSlice = createSlice({
         state.status = 'loading';
         state.error = null;
       })
-      .addCase(loginThunk.fulfilled, (state, action: PayloadAction<User>) => {
+      .addCase(loginThunk.fulfilled, (state, action: PayloadAction<LoginOutcome>) => {
+        if (action.payload.outcome === 'password_change_required') {
+          // Authenticated, but no session exists until the temporary password is
+          // rotated. Returning to 'idle' rather than 'succeeded' keeps every
+          // `user !== null` guard in the app honest.
+          state.status = 'idle';
+          state.user = null;
+          return;
+        }
         state.status = 'succeeded';
-        state.user = action.payload;
+        state.user = action.payload.user;
       })
       .addCase(loginThunk.rejected, (state, action) => {
         state.status = 'failed';

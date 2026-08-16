@@ -34,16 +34,19 @@ export default function config(phase) {
       root: process.cwd(),
     },
 
-    async rewrites() {
-      return {
-        fallback: [
-          {
-            source: '/api/:path*',
-            destination: `${API_BASE_URL}/api/:path*`,
-          },
-        ],
-      };
-    },
+    // NOTE: there is deliberately no `rewrites()` fallback here.
+    //
+    // A `/api/:path*` -> `${API_BASE_URL}/api/:path*` fallback used to catch
+    // every /api/ path with no explicit route handler and hand it straight to
+    // the bench. Anything reaching the backend that way skipped all three of the
+    // protections the BFF exists to apply: no Authorization header injected from
+    // the httpOnly cookie, no CSRF origin check on mutating verbs, and no header
+    // or body sanitization in either direction. It was a way around the proxy
+    // that happened to be reachable from the browser.
+    //
+    // All backend traffic now goes through an explicit handler
+    // (src/app/api/proxy, src/app/api/files, src/app/api/auth); an unmatched
+    // /api/ path 404s, which is the correct answer.
 
     async headers() {
       // Note: Content-Security-Policy is set per-request in `src/proxy.ts`

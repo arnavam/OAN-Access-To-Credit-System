@@ -22,6 +22,14 @@ const config: Config = {
         accent: 'var(--accent)',
         'accent-soft': 'var(--accent-soft)',
         success: 'var(--success)',
+        // Portal/login brand greens. The values already existed as CSS variables
+        // in styles/variables.scss but were being written as raw hex (bg-[#16A34A])
+        // in ~300 places; new code uses these tokens so the palette is one edit.
+        'brand-green': 'var(--color-green-primary)',
+        'brand-green-hover': 'var(--color-green-hover)',
+        'brand-green-strong': 'var(--color-green-text)',
+        'brand-green-surface': 'var(--color-green-light-bg)',
+        'brand-green-border': 'var(--color-green-light-hover)',
         button: 'var(--button-bg)',
         'button-hover': 'var(--button-bg-hover)',
         background: 'var(--background)',

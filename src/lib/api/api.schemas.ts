@@ -249,19 +249,27 @@ export const teamUserSchema = z.object({
   enabled: z.union([z.literal(0), z.literal(1)]),
   role: z.string().nullable().optional(),
   last_active: z.string().nullable().optional(),
+  // True while the member is still on the temporary password their admin issued.
+  // Older backends omit the field entirely, so treat "absent" as "already set".
+  must_change_password: z.boolean().optional().default(false),
 });
 export type TeamUser = z.infer<typeof teamUserSchema>;
+
+// Mirrors validate_password_complexity in the backend (oan_a2c/api/utils.py).
+// Every place a user picks their own password validates against this one schema,
+// so the rule the UI enforces can't drift from the rule the server enforces.
+export const strongPasswordSchema = z
+  .string()
+  .min(8, 'Password must be between 8 and 64 characters long.')
+  .max(64, 'Password must be between 8 and 64 characters long.')
+  .regex(/[A-Za-z]/, 'Password must contain at least 1 letter.')
+  .regex(/\d/, 'Password must contain at least 1 number.')
+  .regex(/[^A-Za-z0-9]/, 'Password must contain at least 1 special character.');
 
 export const registerSellerSchema = z.object({
   email: z.string().email('Invalid email address format.'),
   full_name: z.string().min(2, 'Full name must be at least 2 characters long.'),
-  password: z
-    .string()
-    .min(8, 'Password must be between 8 and 64 characters long.')
-    .max(64, 'Password must be between 8 and 64 characters long.')
-    .regex(/[A-Za-z]/, 'Password must contain at least 1 letter.')
-    .regex(/\d/, 'Password must contain at least 1 number.')
-    .regex(/[^A-Za-z0-9]/, 'Password must contain at least 1 special character.'),
+  password: strongPasswordSchema,
   phone_number: z.string().min(8, 'Mobile number must be at least 8 digits.'),
 });
 export type RegisterSellerSchemaPayload = z.infer<typeof registerSellerSchema>;

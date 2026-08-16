@@ -1,5 +1,6 @@
 'use client';
 
+import { getLoanProductStatusPresentation } from '@/features/seller/constants/loan-product-status';
 import type { LoanProductSummary } from '@/lib/api/api.schemas';
 import { BarChart3, Box, LucideIcon, Package, Pencil, Sprout, Trash2 } from 'lucide-react';
 import { useState } from 'react';
@@ -75,10 +76,7 @@ export function LoanProductCard({ product }: LoanProductCardProps) {
   const theme = categoryThemeMap[categoryKey] || defaultConfig;
   const CategoryIcon = theme.icon;
 
-  const isDraft = product.status === 'Draft';
-  const statusLabel = isDraft ? 'Pending Approved' : product.status;
-  const statusBadgeBg = isDraft ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-emerald-50 border-emerald-200 text-emerald-700';
-  const statusDotBg = isDraft ? 'bg-amber-500' : 'bg-emerald-500';
+  const status = getLoanProductStatusPresentation(product.status);
 
   const applicantsCount = product.applications_count ?? 0;
 
@@ -103,9 +101,9 @@ export function LoanProductCard({ product }: LoanProductCardProps) {
                 </span>
               ) : null}
 
-              <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[12px] font-bold ${statusBadgeBg}`}>
-                <span className={`h-1.5 w-1.5 rounded-full ${statusDotBg}`} />
-                {statusLabel}
+              <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[12px] font-bold ${status.badgeClasses}`}>
+                <span className={`h-1.5 w-1.5 rounded-full ${status.dotClasses}`} />
+                {status.label}
               </span>
             </div>
 

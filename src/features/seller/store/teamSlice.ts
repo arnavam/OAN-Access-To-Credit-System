@@ -3,7 +3,11 @@ import { logger } from '@/lib/logger';
 import type { RootState } from '@/store';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { teamService } from '../api/team.service';
-import type { InviteUserPayload, UpdateUserPayload } from '../types/team.types';
+import type {
+  InviteTeamMemberPayload,
+  ResetMemberPasswordPayload,
+  UpdateUserPayload,
+} from '../types/team.types';
 
 type AsyncStatus = 'idle' | 'loading' | 'succeeded' | 'failed';
 
@@ -36,16 +40,33 @@ export const fetchTeamUsers = createAsyncThunk(
   }
 );
 
-export const inviteUser = createAsyncThunk(
-  'sellerTeam/inviteUser',
-  async (payload: InviteUserPayload, { dispatch, rejectWithValue }) => {
+export const inviteTeamMember = createAsyncThunk(
+  'sellerTeam/inviteTeamMember',
+  async (payload: InviteTeamMemberPayload, { dispatch, rejectWithValue }) => {
     try {
-      const response = await teamService.inviteUser(payload);
+      const response = await teamService.inviteTeamMember(payload);
       await dispatch(fetchTeamUsers());
       return response.data;
     } catch (error) {
-      logger.error('inviteUser thunk failed', { email: payload.email, error });
+      logger.error('inviteTeamMember thunk failed', { email: payload.email, error });
       return rejectWithValue(error instanceof Error ? error.message : 'Failed to invite team member');
+    }
+  }
+);
+
+export const resetMemberPassword = createAsyncThunk(
+  'sellerTeam/resetMemberPassword',
+  async (payload: ResetMemberPasswordPayload, { dispatch, rejectWithValue }) => {
+    try {
+      const response = await teamService.resetMemberPassword(payload);
+      // Refetch so the member's "pending password setup" flag reappears in the list.
+      await dispatch(fetchTeamUsers());
+      return response.data;
+    } catch (error) {
+      logger.error('resetMemberPassword thunk failed', { email: payload.email, error });
+      return rejectWithValue(
+        error instanceof Error ? error.message : 'Failed to reset the team member password'
+      );
     }
   }
 );
@@ -73,7 +94,7 @@ export const updateUser = createAsyncThunk(
       return response.data;
     } catch (error) {
       logger.error('updateUser thunk failed', { email: payload.email, error });
-      return rejectWithValue(error instanceof Error ? error.message : 'Failed to update user');
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to update team member');
     }
   }
 );
@@ -92,9 +113,12 @@ const teamSlice = createSlice({
       .addCase(fetchTeamUsers.pending, (s) => { s.listStatus = 'loading'; s.listError = null; })
       .addCase(fetchTeamUsers.fulfilled, (s, action) => { s.listStatus = 'succeeded'; s.users = action.payload; })
       .addCase(fetchTeamUsers.rejected, (s, action) => { s.listStatus = 'failed'; s.listError = action.payload as string; })
-      .addCase(inviteUser.pending, (s) => { s.mutationStatus = 'loading'; s.mutationError = null; })
-      .addCase(inviteUser.fulfilled, (s) => { s.mutationStatus = 'succeeded'; })
-      .addCase(inviteUser.rejected, (s, action) => { s.mutationStatus = 'failed'; s.mutationError = action.payload as string; })
+      .addCase(inviteTeamMember.pending, (s) => { s.mutationStatus = 'loading'; s.mutationError = null; })
+      .addCase(inviteTeamMember.fulfilled, (s) => { s.mutationStatus = 'succeeded'; })
+      .addCase(inviteTeamMember.rejected, (s, action) => { s.mutationStatus = 'failed'; s.mutationError = action.payload as string; })
+      .addCase(resetMemberPassword.pending, (s) => { s.mutationStatus = 'loading'; s.mutationError = null; })
+      .addCase(resetMemberPassword.fulfilled, (s) => { s.mutationStatus = 'succeeded'; })
+      .addCase(resetMemberPassword.rejected, (s, action) => { s.mutationStatus = 'failed'; s.mutationError = action.payload as string; })
       .addCase(deactivateUser.pending, (s) => { s.mutationStatus = 'loading'; s.mutationError = null; })
       .addCase(deactivateUser.fulfilled, (s) => { s.mutationStatus = 'succeeded'; })
       .addCase(deactivateUser.rejected, (s, action) => { s.mutationStatus = 'failed'; s.mutationError = action.payload as string; })

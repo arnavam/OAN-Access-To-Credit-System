@@ -15,6 +15,7 @@ import { useEffect, useRef, useState } from 'react';
 import { logoutUser } from '@/features/auth/api/authApi';
 import { HavingTroubleModal } from '@/features/auth/components/HavingTroubleModal';
 import { clearAuthError, loginThunk, logout, selectAuthError, selectAuthStatus } from '@/features/auth/store/authSlice';
+import { AUTH_MESSAGES } from '@/lib/authMessages';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 
 const activeAgents = [
@@ -43,6 +44,10 @@ export function LoginClient() {
   const [isTroubleModalOpen, setIsTroubleModalOpen] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  // Sent to /api/auth/login, which uses it to pick the session lifetime (30 days
+  // vs 24 hours). Until it was wired up the box rendered but was never read, so
+  // every session got the same treatment whatever the person chose.
+  const [rememberMe, setRememberMe] = useState(false);
   const languageMenuRef = useRef<HTMLDivElement>(null);
 
   const portalSubtitle = 'Coordinate field-level agricultural credit access across regions';
@@ -66,9 +71,19 @@ export function LoginClient() {
     event.preventDefault();
     setDeniedError(null);
     dispatch(clearAuthError());
-    const result = await dispatch(loginThunk({ usr: username, pwd: password }));
+    const result = await dispatch(loginThunk({ usr: username, pwd: password, rememberMe }));
     if (loginThunk.fulfilled.match(result)) {
-      const user = result.payload;
+      if (result.payload.outcome === 'password_change_required') {
+        // Development Agents self-register, so they never hold an admin-issued
+        // password. Handled anyway: the outcome is reachable if an A2C
+        // Administrator ever resets one, and silently doing nothing here would
+        // look like a dead login button.
+        setDeniedError(
+          'Your password was set by an administrator and must be changed before you can sign in. Please contact support.'
+        );
+        return;
+      }
+      const user = result.payload.user;
       if (user.kind === 'dev_agent') {
         router.push('/leads');
       } else {
@@ -76,9 +91,7 @@ export function LoginClient() {
         // isn't left silently authenticated, then show a generic message.
         await logoutUser();
         dispatch(logout());
-        setDeniedError(
-          'These credentials are not valid for this portal. Please use your designated login page.'
-        );
+        setDeniedError(AUTH_MESSAGES.wrongPortal);
       }
     }
   };
@@ -276,7 +289,11 @@ export function LoginClient() {
 
                   <div className="mt-6 flex items-center justify-between gap-2 text-[0.84rem]">
                     <label className="inline-flex cursor-pointer select-none items-center gap-2 text-slate-700">
-                      <input type="checkbox" />
+                      <input
+                        type="checkbox"
+                        checked={rememberMe}
+                        onChange={(e) => setRememberMe(e.target.checked)}
+                      />
                       <span>Remember me</span>
                     </label>
 
@@ -305,17 +322,6 @@ export function LoginClient() {
                   </button>
 
                   <div className="mt-4 flex flex-col items-center">
-                    <div className="w-full flex items-start gap-3 bg-[#f0fdf4] border border-[#bbf7d0] rounded-xl p-4">
-                      <div className="mt-0.5 text-[#16A34A]">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                        </svg>
-                      </div>
-                      <p className="text-[13px] text-[#166534] leading-relaxed">
-                        <span className="font-bold">Secured by FaydaPass</span> — All sessions authenticated via Ethiopia National ID (Fayda Auth API)
-                      </p>
-                    </div>
-
                     <div className="mt-6 flex flex-col items-center w-full">
                       <span className="text-[#6B7280] text-[12px] mb-3">Partner Banks</span>
                       <div className="flex flex-wrap justify-center gap-2">

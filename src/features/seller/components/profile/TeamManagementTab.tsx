@@ -1,9 +1,12 @@
 'use client';
 import { teamService } from '@/features/seller/api/team.service';
 import type { TeamUser } from '@/lib/api/api.schemas';
-import type { InviteUserPayload } from '@/features/seller/types/team.types';
+import type { InviteTeamMemberPayload } from '@/features/seller/types/team.types';
 import { toast } from '@/lib/toast';
-import { CheckCircle2, Search, Trash2, UserPlus, XCircle } from 'lucide-react';
+import { ResetMemberPasswordModal } from '@/features/seller/components/profile/ResetMemberPasswordModal';
+import { generateTemporaryPassword } from '@/features/seller/utils/team.utils';
+import { useModalA11y } from '@/hooks/useModalA11y';
+import { CheckCircle2, KeyRound, RefreshCw, Search, Trash2, UserPlus, XCircle } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 // Backend returns a space-separated timestamp (e.g. "2026-07-31 16:07:09.337795").
@@ -26,9 +29,10 @@ export default function TeamManagementTab() {
   const [users, setUsers] = useState<TeamUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-  const [inviteForm, setInviteForm] = useState<InviteUserPayload>({ email: '', full_name: '', role: 'A2C Bank Agent', password: '' });
+  const [inviteForm, setInviteForm] = useState<InviteTeamMemberPayload>({ email: '', full_name: '', role: 'A2C Bank Agent', password: '' });
   const [inviteErrors, setInviteErrors] = useState<Record<string, string>>({});
   const [inviting, setInviting] = useState(false);
+  const [resetTarget, setResetTarget] = useState<TeamUser | null>(null);
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -52,8 +56,8 @@ export default function TeamManagementTab() {
     setInviting(true);
     setInviteErrors({});
     try {
-      await teamService.inviteUser(inviteForm);
-      toast.success('User invited successfully');
+      await teamService.inviteTeamMember(inviteForm);
+      toast.success('Team member invited successfully');
       setIsInviteModalOpen(false);
       setInviteForm({ email: '', full_name: '', role: 'A2C Bank Agent', password: '' });
     } catch (err) {
@@ -61,7 +65,7 @@ export default function TeamManagementTab() {
       if (details) {
         setInviteErrors(details);
       }
-      toast.error((err instanceof Error && err.message) || 'Failed to invite user');
+      toast.error((err instanceof Error && err.message) || 'Failed to invite team member');
     } finally {
       setInviting(false);
     }
@@ -70,17 +74,22 @@ export default function TeamManagementTab() {
   const toggleUserStatus = async (email: string, currentEnabled: boolean) => {
     try {
       await teamService.updateUser({ email, enabled: !currentEnabled });
-      toast.success(`User ${!currentEnabled ? 'activated' : 'deactivated'} successfully`);
+      toast.success(`Team member ${!currentEnabled ? 'activated' : 'deactivated'} successfully`);
       fetchUsers();
     } catch (err) {
-      toast.error((err instanceof Error && err.message) || 'Failed to update user status');
+      toast.error((err instanceof Error && err.message) || 'Failed to update team member status');
     }
   };
 
-  const closeInviteModal = () => {
+  const closeInviteModal = useCallback(() => {
     setIsInviteModalOpen(false);
     setInviteErrors({});
-  };
+  }, []);
+
+  // Focus trap, Escape-to-close and scroll lock for the invite dialog. Declared
+  // at component level (not inside the conditional render) because it's a hook —
+  // `isInviteModalOpen` is what turns the behavior on.
+  const inviteModalRef = useModalA11y<HTMLDivElement>(isInviteModalOpen, closeInviteModal);
 
   const openInviteModal = () => {
     setInviteForm({ email: '', full_name: '', role: 'A2C Bank Agent', password: '' });
@@ -161,18 +170,39 @@ export default function TeamManagementTab() {
                         </>
                       )}
                     </div>
+                    {/* Still on the temporary password the admin issued — i.e. a
+                        credential someone other than the member knows. */}
+                    {user.must_change_password && (
+                      <span className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-amber-50 text-amber-700 rounded-full border border-amber-100">
+                        <KeyRound className="w-3 h-3" aria-hidden="true" />
+                        Pending password setup
+                      </span>
+                    )}
                   </td>
                   <td className="px-6 py-4 text-gray-500">
                     {formatLastActive(user.last_active)}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button 
-                      onClick={() => toggleUserStatus(user.email, !!user.enabled)}
-                      className={`p-1.5 rounded-lg transition-colors ${user.enabled ? 'text-red-500 hover:bg-red-50' : 'text-green-600 hover:bg-green-50'}`}
-                      title={user.enabled ? "Deactivate User" : "Activate User"}
-                    >
-                      {user.enabled ? <Trash2 className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
-                    </button>
+                    <div className="inline-flex items-center gap-1">
+                      <button
+                        onClick={() => setResetTarget(user)}
+                        className="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+                        title="Issue a new temporary password"
+                      >
+                        <KeyRound className="w-4 h-4" aria-hidden="true" />
+                        <span className="sr-only">Reset password for {user.first_name || user.email}</span>
+                      </button>
+                      <button
+                        onClick={() => toggleUserStatus(user.email, !!user.enabled)}
+                        className={`p-1.5 rounded-lg transition-colors ${user.enabled ? 'text-red-500 hover:bg-red-50' : 'text-green-600 hover:bg-green-50'}`}
+                        title={user.enabled ? 'Deactivate team member' : 'Activate team member'}
+                      >
+                        {user.enabled ? <Trash2 className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
+                        <span className="sr-only">
+                          {user.enabled ? 'Deactivate' : 'Activate'} {user.first_name || user.email}
+                        </span>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -190,10 +220,17 @@ export default function TeamManagementTab() {
 
       {isInviteModalOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div
+            ref={inviteModalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="invite-member-title"
+            tabIndex={-1}
+            className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+          >
             <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-              <h3 className="font-bold text-gray-900">Invite Team Member</h3>
-              <button onClick={closeInviteModal} className="text-gray-400 hover:text-gray-600">
+              <h3 id="invite-member-title" className="font-bold text-gray-900">Invite Team Member</h3>
+              <button onClick={closeInviteModal} aria-label="Close" className="text-gray-400 hover:text-gray-600">
                 <XCircle className="w-5 h-5" />
               </button>
             </div>
@@ -220,29 +257,40 @@ export default function TeamManagementTab() {
                 />
                 {inviteErrors.email && <p className="mt-1 text-xs text-red-500">{inviteErrors.email}</p>}
               </div>
+              {/* Not a choice: a Bank Admin can only add Bank Agents. Offering a
+                  "Bank Admin" option would just collect a 400 from the backend. */}
               <div>
                 <label className="block text-sm font-medium text-gray-900 mb-1.5">Role</label>
-                <select 
-                  required
-                  value={inviteForm.role}
-                  onChange={e => setInviteForm(f => ({ ...f, role: e.target.value as InviteUserPayload['role'] }))}
-                  className={`w-full px-3 py-2 bg-white border ${inviteErrors.role ? 'border-red-500' : 'border-gray-300'} rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500`}
-                >
-                  <option value="A2C Bank Agent">Bank Agent (Read/Write)</option>
-                  <option value="A2C Bank Admin">Bank Admin (Full Access)</option>
-                </select>
+                <p className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700">
+                  Bank Agent (Read/Write)
+                </p>
                 {inviteErrors.role && <p className="mt-1 text-xs text-red-500">{inviteErrors.role}</p>}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-1.5">Temporary Password</label>
-                <input 
-                  type="text" 
-                  required
-                  minLength={6}
-                  value={inviteForm.password}
-                  onChange={e => setInviteForm(f => ({ ...f, password: e.target.value }))}
-                  className={`w-full px-3 py-2 bg-white border ${inviteErrors.password ? 'border-red-500' : 'border-gray-300'} rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500`}
-                />
+                <label htmlFor="invite-temp-password" className="block text-sm font-medium text-gray-900 mb-1.5">Temporary Password</label>
+                <div className="flex gap-2">
+                  <input
+                    id="invite-temp-password"
+                    type="text"
+                    required
+                    minLength={8}
+                    value={inviteForm.password}
+                    onChange={e => setInviteForm(f => ({ ...f, password: e.target.value }))}
+                    className={`flex-1 px-3 py-2 bg-white border ${inviteErrors.password ? 'border-red-500' : 'border-gray-300'} rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-green/20 focus:border-brand-green`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setInviteForm(f => ({ ...f, password: generateTemporaryPassword() }))}
+                    title="Generate a new password"
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
+                  >
+                    <RefreshCw className="w-4 h-4" aria-hidden="true" />
+                    <span className="sr-only">Generate a new password</span>
+                  </button>
+                </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  Share this with the agent. They must set their own password the first time they sign in.
+                </p>
                 {inviteErrors.password && <p className="mt-1 text-xs text-red-500">{inviteErrors.password}</p>}
               </div>
               <div className="pt-4 flex justify-end gap-3">
@@ -264,6 +312,14 @@ export default function TeamManagementTab() {
             </form>
           </div>
         </div>
+      )}
+
+      {resetTarget && (
+        <ResetMemberPasswordModal
+          member={resetTarget}
+          onClose={() => setResetTarget(null)}
+          onReset={fetchUsers}
+        />
       )}
     </div>
   );
