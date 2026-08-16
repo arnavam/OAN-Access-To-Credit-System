@@ -39,17 +39,6 @@ function LoanEmptyState({ hasFilters, onClearFilters, title, description, icon }
               }
             </p>
           </div>
-          <div className="flex items-center gap-1.5">
-            {[0, 150, 300].map(delay => (
-              <span
-                key={delay}
-                className={`h-2 w-2 rounded-full animate-bounce ${
-                  hasFilters ? 'bg-orange-300' : 'bg-slate-300'
-                }`}
-                style={{ animationDelay: `${delay}ms`, animationDuration: '1.2s' }}
-              />
-            ))}
-          </div>
           {hasFilters && (
             <button
               type="button"

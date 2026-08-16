@@ -1,5 +1,5 @@
 'use client';
-import { selectBankName, selectBankStatus } from '@/features/auth/store/authSlice';
+import { selectAuthStatus, selectBankName, selectBankStatus } from '@/features/auth/store/authSlice';
 import { useAppSelector } from '@/store/hooks';
 import { Landmark, Loader2, ShieldCheck } from 'lucide-react';
 import { OrganisationDocumentsCard } from './OrganisationDocumentsCard';
@@ -8,6 +8,10 @@ import { OrganizationContactsCard } from './OrganizationContactsCard';
 export function KycComplianceContent() {
   const bankStatus = useAppSelector(selectBankStatus);
   const bankName = useAppSelector(selectBankName);
+  const authStatus = useAppSelector(selectAuthStatus);
+  // Session is still being restored on refresh — bankName reads as null until
+  // then, which briefly showed the "Seller Portal" fallback for a real bank.
+  const isSessionLoading = authStatus === 'idle' || authStatus === 'loading';
 
   if (bankStatus === 'Active') {
     return (
@@ -39,7 +43,7 @@ export function KycComplianceContent() {
             <Landmark size={24} />
           </div>
           <div>
-            <h2 className="text-[18px] font-bold text-gray-900">{bankName ?? 'Seller Portal'}</h2>
+            <h2 className="text-[18px] font-bold text-gray-900 min-h-[1em]">{isSessionLoading ? '' : (bankName ?? 'Seller Portal')}</h2>
             <p className="text-[14px] text-gray-500">KYC & compliance settings for your bank tenant</p>
           </div>
         </div>

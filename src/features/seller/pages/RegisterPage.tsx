@@ -2,12 +2,12 @@
 
 import { ContactDetailsSection, type ContactFields } from '@/features/seller/components/register/ContactDetailsSection';
 import { OrganisationSection, type OrganisationFields } from '@/features/seller/components/register/OrganisationSection';
-import { OrganizationRegisteredPopup } from '@/features/seller/components/register/OrganizationRegisteredPopup';
 import { RegisteredAddressSection, type RegisteredAddressFields } from '@/features/seller/components/register/RegisteredAddressSection';
 import { RegisterFooterCard } from '@/features/seller/components/register/RegisterFooterCard';
 import { RegisterHeaderCard } from '@/features/seller/components/register/RegisterHeaderCard';
 import { selectAuthStatus, selectUser } from '@/features/auth/store/authSlice';
 import { registerBank, selectOnboardingRegistrationError, selectOnboardingRegistrationStatus } from '@/features/seller/store/onboardingSlice';
+import { toast } from '@/lib/toast';
 import type { AppDispatch } from '@/store';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
@@ -31,20 +31,12 @@ export default function RegisterPage() {
   const alreadyProvisioned = user?.kind === 'bank_admin' && !!user.bankId;
 
   const [isAgreed, setIsAgreed] = useState(false);
-  const [isSuccessPopupOpen, setIsSuccessPopupOpen] = useState(false);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-  // Once the admin has just registered, keep them on this page so the success
-  // popup is visible. Without this guard, a background `getMe` that reports the
-  // now-provisioned bank would flip `alreadyProvisioned` and redirect to the
-  // dashboard before the confirmation is ever seen.
-  const justRegistered = isSuccessPopupOpen || registrationStatus === 'succeeded';
 
   useEffect(() => {
-    if (authResolved && alreadyProvisioned && !justRegistered) {
+    if (authResolved && alreadyProvisioned) {
       router.replace('/dashboard');
     }
-  }, [authResolved, alreadyProvisioned, justRegistered, router]);
+  }, [authResolved, alreadyProvisioned, router]);
 
   const [orgFields, setOrgFields] = useState<OrganisationFields>({
     bank_name: '',
@@ -74,9 +66,9 @@ export default function RegisterPage() {
       ...contactFields,
     }));
     if (registerBank.fulfilled.match(result)) {
-      const message = (result.payload as { message?: string } | undefined)?.message ?? null;
-      setSuccessMessage(message);
-      setIsSuccessPopupOpen(true);
+      const message = (result.payload as { message?: string } | undefined)?.message;
+      toast.success(message || 'Bank registered successfully.');
+      router.push('/dashboard');
     } else if (registerBank.rejected.match(result)) {
       const msg = (result.payload as string) ?? '';
       if (msg.toLowerCase().includes('already associated')) {
@@ -87,7 +79,7 @@ export default function RegisterPage() {
 
   // Don't flash the registration form while we resolve auth or redirect an
   // already-provisioned admin away.
-  if (!authResolved || (alreadyProvisioned && !justRegistered)) {
+  if (!authResolved || alreadyProvisioned) {
     return null;
   }
 
@@ -127,12 +119,6 @@ export default function RegisterPage() {
             onBack={() => router.back()}
           />
         </form>
-
-        <OrganizationRegisteredPopup
-          isOpen={isSuccessPopupOpen}
-          message={successMessage}
-          onClose={() => setIsSuccessPopupOpen(false)}
-        />
       </div>
     </div>
   );
