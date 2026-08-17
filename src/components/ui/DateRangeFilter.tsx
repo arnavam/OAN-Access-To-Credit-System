@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import DatePickerField from './DatePickerField';
+import { DatePickerField } from './DatePickerField';
 
 interface DateRangeFilterProps {
   fromValue: string;
