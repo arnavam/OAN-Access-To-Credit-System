@@ -1,9 +1,16 @@
-import { canAccess, homeRouteFor, readUserKindForRouting } from '@/features/auth/rbac';
+import { canAccess, homeRouteFor, isProtectedRoute, readRoutingSession } from '@/features/auth/rbac';
+import {
+    AUTH_TOKEN_COOKIE,
+    clearAuthTokenCookie,
+    clearSessionCookies,
+    isIdleExpired,
+    REFRESH_TOKEN_COOKIE,
+    touchActivityCookie,
+} from '@/lib/session';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
 export function proxy(request: NextRequest) {
-  const token = request.cookies.get('auth_token')?.value;
   const { pathname } = request.nextUrl;
 
   // Per-request nonce + CSP. The nonce is forwarded on the request headers so
@@ -21,33 +28,83 @@ export function proxy(request: NextRequest) {
     return response;
   };
 
-  // 1. Define routes that require authentication
-  const isDashboardRoute =
-    pathname.startsWith('/leads') ||
-    pathname.startsWith('/loans') ||
-    pathname.startsWith('/loan-application-dashboard') ||
-    pathname.startsWith('/update-loan-application-status');
-  if (isDashboardRoute && !token) {
+  const redirectToLogin = (reason?: string) => {
     const loginUrl = new URL('/login', request.url);
+    if (reason) loginUrl.searchParams.set('reason', reason);
     return withCsp(NextResponse.redirect(loginUrl));
+  };
+
+  const token = request.cookies.get(AUTH_TOKEN_COOKIE)?.value;
+  const session = readRoutingSession(token);
+  const hasRefreshToken = !!request.cookies.get(REFRESH_TOKEN_COOKIE)?.value;
+
+  // 0. Idle timeout. The activity cookie outlives its own max-age only while
+  //    someone is actually using the app, so its absence alongside a session
+  //    cookie means the screen has been unattended past the policy window.
+  //    Handled before anything else so an idle session cannot be routed as live.
+  if (session.state !== 'none' && isIdleExpired(request)) {
+    const response = redirectToLogin('idle');
+    clearSessionCookies(response);
+    return response;
+  }
+
+  // 1. Authenticated routes.
+  //
+  //    `active` is the plain case. `expired` is accepted only while a refresh
+  //    token is present: the access token is meant to expire every 15 minutes
+  //    and be rotated by /api/auth/refresh, so bouncing on expiry alone would
+  //    sign everyone out four times an hour. Once both are gone — after logout,
+  //    or after a failed refresh clears them — the session is over.
+  //
+  //    This replaces a bare "is the cookie non-empty" test, which accepted any
+  //    string at all as proof of a session.
+  const isAuthenticated =
+    session.state === 'active' || (session.state === 'expired' && hasRefreshToken);
+
+  if (isProtectedRoute(pathname) && !isAuthenticated) {
+    const response = redirectToLogin(hasRefreshToken ? 'session' : undefined);
+
+    // A cookie that did not survive validation is not merely useless, it is
+    // misleading — drop it rather than leave it to fail the same way next time.
+    //
+    // But drop only the broken one. `clearSessionCookies` here also destroyed a
+    // perfectly good refresh token, turning a recoverable state (truncated or
+    // stale access-token cookie, backend token-format change) into a full
+    // re-login and orphaning the backend's refresh-token row. The refresh token
+    // is opaque and backend-validated, so keeping it costs nothing and lets
+    // `/api/auth/refresh` mint a new access token on the next API call.
+    //
+    // The request is still bounced rather than let through: a token that does
+    // not decode carries no `user_type`, so role-based routing below has nothing
+    // to enforce with, and rendering an authenticated shell without it would be
+    // worse than asking for a sign-in.
+    if (token) clearAuthTokenCookie(response);
+    return response;
   }
 
   // 2. Role-based routing (routing/UX only — the backend authorizes every API
-  //    call). Decode user_type from the signed JWT and bounce mismatches home.
-  const kind = token ? readUserKindForRouting(token) : null;
+  //    call). Bounce role mismatches to where they belong.
+  const kind = isAuthenticated ? session.kind : null;
 
-  // Prevent logged-in users from sitting on any login page — send them to the
+  // Prevent signed-in visitors from sitting on any login page — send them to the
   // home route for their actual role, not a hardcoded one.
   if ((pathname === '/login' || pathname.startsWith('/login/')) && kind) {
     return withCsp(NextResponse.redirect(new URL(homeRouteFor(kind), request.url)));
   }
 
-  // Block navigation to routes the user's role may not access.
+  // Block navigation to routes the role may not access.
   if (kind && !canAccess(kind, pathname)) {
     return withCsp(NextResponse.redirect(new URL(homeRouteFor(kind), request.url)));
   }
 
-  return withCsp(NextResponse.next({ request: { headers: requestHeaders } }));
+  const response = withCsp(NextResponse.next({ request: { headers: requestHeaders } }));
+
+  // A page navigation is a person doing something, so it restarts the idle
+  // timer. Background API polling deliberately does not — see the note on
+  // SESSION_ACTIVITY_COOKIE in lib/session.ts.
+  if (isAuthenticated) touchActivityCookie(response);
+
+  return response;
 }
 
 // Builds the Content-Security-Policy for a request.

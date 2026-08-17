@@ -29,7 +29,7 @@ src/features/seller/
 ├── api/
 │   ├── loan-products.service.ts     # list_products, get_product, create_product, update_product, set_product_status
 │   ├── taxonomy.service.ts          # get_categories, get_tags, get_attributes, set_product_{categories,tags,attributes}
-│   ├── team.service.ts              # list_users, invite_user, deactivate_user, update_user_profile
+│   ├── team.service.ts              # list_users, invite_team_member, deactivate_user, update_user_profile
 │   └── onboarding.service.ts        # register_seller, save_org_contacts, upload_kyc_document, get_bank_status, update_bank_status
 ├── store/
 │   ├── loanProductsSlice.ts         # Products, product detail, taxonomy terms, seller dashboard stats
@@ -69,7 +69,7 @@ Portal pages in `src/app/(bank-admin)/` and `src/app/(bank-agent)/` act as thin 
 | `onboarding.get_bank_status` | GET | B | `onboardingService.getBankStatus` | `onboardingSlice` | Bank Admin KYC page & status banner |
 | `onboarding.update_bank_status` | POST | B | `onboardingService.updateBankStatus` | `onboardingSlice` | Triggered when KYC requirements met |
 | `onboarding.list_users` | GET | C | `teamService.listUsers` | `teamSlice` | Bank Admin team management page |
-| `onboarding.invite_user` | POST | C | `teamService.inviteUser` | `teamSlice` | Bank Admin invite modal |
+| `onboarding.invite_team_member` | POST | C | `teamService.inviteTeamMember` | `teamSlice` | Bank Admin invite modal |
 | `onboarding.deactivate_user` | POST | C | `teamService.deactivateUser` | `teamSlice` | Bank Admin team member actions |
 | `onboarding.update_user_profile` | POST | C | `teamService.updateUserProfile` | `teamSlice` | Bank Admin edit team member modal |
 | `dashboard.get_stats` | GET | D | `loanProductsService.getDashboardStats` | `loanProductsSlice` | Both Bank Admin & Bank Agent dashboards |
@@ -301,7 +301,7 @@ import { fetchApi } from '@/lib/api/fetchApi';
 import { validateResponse, teamUserSchema, type TeamUser } from '@/lib/api/api.schemas';
 import type { ApiResponse } from '@/types/api';
 import { z } from 'zod';
-import type { InviteUserPayload, UpdateUserProfilePayload } from '../types/team.types';
+import type { InviteTeamMemberPayload, UpdateUserProfilePayload } from '../types/team.types';
 
 export const teamService = {
   async listUsers(): Promise<ApiResponse<TeamUser[]>> {
@@ -312,8 +312,8 @@ export const teamService = {
     };
   },
 
-  async inviteUser(payload: InviteUserPayload): Promise<ApiResponse<{ message: string }>> {
-    return fetchApi('oan_a2c.api.v1.seller.onboarding.invite_user', {
+  async inviteTeamMember(payload: InviteTeamMemberPayload): Promise<ApiResponse<{ message: string }>> {
+    return fetchApi('oan_a2c.api.v1.seller.onboarding.invite_team_member', {
       method: 'POST',
       body: JSON.stringify(payload),
     }) as Promise<ApiResponse<{ message: string }>>;
@@ -768,7 +768,7 @@ export async function validateAndEncodePdf(file: File): Promise<{ filename: stri
 
 ### Phase C — Bank Admin Team Management
 1. Create new Bank Admin team page at `src/app/(bank-admin)/team/page.tsx`.
-2. Implement `team.service.ts` and `teamSlice.ts` (`listUsers`, `inviteUser`, `deactivateUser`, `updateUserProfile`).
+2. Implement `team.service.ts` and `teamSlice.ts` (`listUsers`, `inviteTeamMember`, `deactivateUser`, `updateUserProfile`).
 3. Build responsive UI components: `TeamListTable`, `InviteUserModal`, `EditUserModal`, `DeactivateUserModal`.
 4. Restrict role select dropdown options strictly to `A2C Bank Admin` and `A2C Bank Agent`.
 

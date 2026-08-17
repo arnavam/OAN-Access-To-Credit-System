@@ -93,11 +93,20 @@ export function DashboardHeader({ onMenuClick, title = 'Dashboard', subtitle }: 
 
   const handleLogout = async () => {
     setIsProfileOpen(false);
+    let clearedServerSide = false;
     try {
-      await logoutUser();
+      clearedServerSide = await logoutUser();
     } finally {
       dispatch(logout());
-      router.push(config.loginPath);
+      // If the server did not clear the cookies, a client-side push would land
+      // on the login route and be bounced straight back by the middleware, which
+      // reads the cookies that are still there. A full load at least re-runs
+      // that decision against real state instead of a stale client shell.
+      if (clearedServerSide) {
+        router.push(config.loginPath);
+      } else {
+        window.location.href = config.loginPath;
+      }
     }
   };
 

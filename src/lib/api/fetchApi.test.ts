@@ -75,9 +75,18 @@ describe('fetchApi', () => {
     }
   });
 
-  it('should throw ApiError with server message if _server_messages is present', async () => {
+  it('should not surface _server_messages contents to the caller', async () => {
+    // Frappe puts raw exception detail in this field — class names, absolute
+    // file paths, SQL fragments. The proxy strips it on the way through; if one
+    // ever slips past, the message shown must still be the generic fallback and
+    // not the backend's internals.
     const errorResponse = {
-      _server_messages: JSON.stringify([JSON.stringify({ message: 'Detailed Server Error' })]),
+      _server_messages: JSON.stringify([
+        JSON.stringify({
+          message:
+            'pymysql.err.ProgrammingError in /home/frappe/apps/oan_a2c/oan_a2c/api/v1/leads.py:212 — SELECT * FROM `tabA2C Lead`',
+        }),
+      ]),
     };
     vi.spyOn(global, 'fetch').mockResolvedValue({
       ok: false,
@@ -91,7 +100,11 @@ describe('fetchApi', () => {
     } catch (error) {
       expect(error).toBeInstanceOf(ApiError);
       const apiError = error as ApiError;
-      expect(apiError.message).toBe('Detailed Server Error');
+      expect(apiError.message).toBe('The server ran into a problem. Please try again shortly.');
+      expect(apiError.message).not.toContain('pymysql');
+      expect(apiError.message).not.toContain('/home/frappe');
+      expect(apiError.message).not.toContain('SELECT');
+      // Still attached for callers that need to inspect it — just not rendered.
       expect(apiError.responseData).toEqual(errorResponse);
     }
   });
