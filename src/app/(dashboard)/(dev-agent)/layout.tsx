@@ -2,7 +2,7 @@
 
 import { DashboardHeader } from '@/components/header/DashboardHeader';
 import Sidebar, { NavSection } from '@/components/Sidebar';
-import { LayoutDashboard, ListChecks, Users } from 'lucide-react';
+import { LayoutDashboard, ListChecks, Users, FileText } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 
@@ -23,6 +23,12 @@ const navigationSections: NavSection[] = [
         activePaths: ['/loan-application-dashboard'],
         label: 'Loans Dashboard',
         icon: LayoutDashboard,
+      },
+      {
+        path: '/agent-application-lists',
+        activePaths: ['/agent-application-lists'],
+        label: 'Applications Lists',
+        icon: FileText,
       },
     ],
   },
