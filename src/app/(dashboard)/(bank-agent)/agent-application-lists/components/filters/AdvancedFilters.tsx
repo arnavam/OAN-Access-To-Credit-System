@@ -381,6 +381,7 @@ export default function AdvancedFiltersDrawer({
           </div>
 
           <div className="pt-2">
+            <h3 className="text-[14px] font-bold text-gray-700 mb-2">Date Range</h3>
             <DateRangeFilter
               dateFrom={filters.dateRange.from}
               dateTo={filters.dateRange.to}
