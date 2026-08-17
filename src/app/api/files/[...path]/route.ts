@@ -6,7 +6,16 @@ type RouteContext = { params: Promise<{ path: string[] }> };
 
 export async function GET(request: NextRequest, { params }: RouteContext) {
   const { path } = await params;
-  const targetUrl = `${env.API_BASE_URL}/files/${path.join('/')}${request.nextUrl.search}`;
+
+  // Prevent path traversal attacks by rejecting relative path indicators
+  if (path.some(segment => segment === '..' || segment === '.')) {
+    return NextResponse.json({ message: 'Invalid file path' }, { status: 400 });
+  }
+  
+  // Safely construct the full URL
+  const targetUrlObj = new URL(`/files/${path.join('/')}`, env.API_BASE_URL);
+  targetUrlObj.search = request.nextUrl.search;
+  const targetUrl = targetUrlObj.toString();
 
   const authToken = request.cookies.get('auth_token')?.value;
   const headers = new Headers();

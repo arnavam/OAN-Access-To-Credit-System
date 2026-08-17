@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 import { logoutUser } from '@/features/auth/api/authApi';
+import { ForgotPasswordModal } from '@/features/auth/components/ForgotPasswordModal';
 import { HavingTroubleModal } from '@/features/auth/components/HavingTroubleModal';
 import { clearAuthError, loginThunk, logout, selectAuthError, selectAuthStatus } from '@/features/auth/store/authSlice';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -41,6 +42,7 @@ export function LoginClient() {
   const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isTroubleModalOpen, setIsTroubleModalOpen] = useState(false);
+  const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const languageMenuRef = useRef<HTMLDivElement>(null);
@@ -283,7 +285,7 @@ export function LoginClient() {
                     <button
                       type="button"
                       className="font-semibold text-[#16335A] hover:underline bg-transparent border-none p-0 cursor-pointer text-left"
-                      onClick={() => setIsTroubleModalOpen(true)}
+                      onClick={() => setIsForgotModalOpen(true)}
                     >
                       Forgot Password?
                     </button>
@@ -338,6 +340,7 @@ export function LoginClient() {
         isOpen={isTroubleModalOpen}
         onClose={() => setIsTroubleModalOpen(false)}
       />
+      <ForgotPasswordModal isOpen={isForgotModalOpen} onClose={() => setIsForgotModalOpen(false)} />
     </div >
   );
 }
