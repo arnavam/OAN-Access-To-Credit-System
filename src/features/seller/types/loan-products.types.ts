@@ -1,5 +1,5 @@
 export interface ListProductsParams {
-  status?: 'Draft' | 'Active' | 'Archived' | 'Pending Approval' | 'Rejected';
+  status?: 'Active' | 'Archived' | 'Pending Approval' | 'Rejected';
   search?: string;
   category?: string;
   tag?: string;
@@ -58,9 +58,15 @@ export interface ArchiveLoanProductInput {
   refetchParams?: ListProductsParams;
 }
 
-export interface SetLoanProductStatusInput {
+// `reason` means something different per status, so the shape is a discriminated
+// union rather than one optional field: an optional approval comment when
+// approving, a required explanation when rejecting, and nothing when moving a
+// product back to Pending Approval.
+export type SetLoanProductStatusInput = {
   productId: string;
-  status: 'Active' | 'Rejected' | 'Pending Approval';
-  reason?: string;
   refetchParams?: ListProductsParams;
-}
+} & (
+  | { status: 'Active'; reason?: string }
+  | { status: 'Rejected'; reason: string }
+  | { status: 'Pending Approval'; reason?: never }
+);

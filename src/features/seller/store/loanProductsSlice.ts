@@ -32,6 +32,8 @@ interface LoanProductsState {
   detailError: string | null;
   mutationError: string | null;
   mutationFieldErrors: Record<string, string> | null;
+  latestDetailRequestId: string | null;
+  latestCommentRequestId: string | null;
 }
 
 const initialState: LoanProductsState = {
@@ -52,6 +54,8 @@ const initialState: LoanProductsState = {
   detailError: null,
   mutationError: null,
   mutationFieldErrors: null,
+  latestDetailRequestId: null,
+  latestCommentRequestId: null,
 };
 
 export const fetchProducts = createAsyncThunk(
@@ -110,6 +114,16 @@ export const fetchTaxonomy = createAsyncThunk(
     } catch (error) {
       logger.error('fetchTaxonomy thunk failed', { error });
       return rejectWithValue(error instanceof Error ? error.message : 'Failed to load taxonomy metadata');
+    }
+  },
+  {
+    condition: (_, { getState }) => {
+      const state = getState() as RootState;
+      const status = state.sellerProducts.taxonomyStatus;
+      if (status === 'succeeded' || status === 'loading') {
+        return false;
+      }
+      return true;
     }
   }
 );
@@ -185,6 +199,20 @@ export const updateProductCompound = createAsyncThunk(
   }
 );
 
+export const setProductStatus = createAsyncThunk(
+  'sellerProducts/setProductStatus',
+  async (input: SetLoanProductStatusInput, { dispatch, rejectWithValue }) => {
+    try {
+      const response = await loanProductsService.setProductStatus(input.productId, input.status, input.reason);
+      await dispatch(fetchProducts(input.refetchParams));
+      return response.data;
+    } catch (error) {
+      logger.error('setProductStatus thunk failed', { input, error });
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to update loan product status');
+    }
+  }
+);
+
 export const archiveProduct = createAsyncThunk(
   'sellerProducts/archiveProduct',
   async (input: string | ArchiveLoanProductInput, { dispatch, rejectWithValue }) => {
@@ -197,20 +225,6 @@ export const archiveProduct = createAsyncThunk(
     } catch (error) {
       logger.error('archiveProduct thunk failed', { input, error });
       return rejectWithValue(error instanceof Error ? error.message : 'Failed to archive loan product');
-    }
-  }
-);
-
-export const setProductStatus = createAsyncThunk(
-  'sellerProducts/setProductStatus',
-  async (input: SetLoanProductStatusInput, { dispatch, rejectWithValue }) => {
-    try {
-      const response = await loanProductsService.setProductStatus(input.productId, input.status, input.reason);
-      await dispatch(fetchProducts(input.refetchParams));
-      return response.data;
-    } catch (error) {
-      logger.error('setProductStatus thunk failed', { input, error });
-      return rejectWithValue(error instanceof Error ? error.message : 'Failed to update loan product status');
     }
   }
 );
@@ -238,12 +252,24 @@ const loanProductsSlice = createSlice({
       .addCase(fetchProducts.pending, (s) => { s.listStatus = 'loading'; s.listError = null; })
       .addCase(fetchProducts.fulfilled, (s, action) => { s.listStatus = 'succeeded'; s.products = action.payload; })
       .addCase(fetchProducts.rejected, (s, action) => { s.listStatus = 'failed'; s.listError = action.payload as string; })
-      .addCase(fetchProductDetail.pending, (s) => { s.detailStatus = 'loading'; s.detailError = null; })
-      .addCase(fetchProductDetail.fulfilled, (s, action) => { s.detailStatus = 'succeeded'; s.selectedProductDetail = action.payload; })
-      .addCase(fetchProductDetail.rejected, (s, action) => { s.detailStatus = 'failed'; s.detailError = action.payload as string; })
-      .addCase(fetchProductComment.pending, (s) => { s.commentStatus = 'loading'; s.productComment = null; })
-      .addCase(fetchProductComment.fulfilled, (s, action) => { s.commentStatus = 'succeeded'; s.productComment = action.payload; })
-      .addCase(fetchProductComment.rejected, (s) => { s.commentStatus = 'failed'; s.productComment = null; })
+      .addCase(fetchProductDetail.pending, (s, action) => { s.latestDetailRequestId = action.meta.requestId; s.detailStatus = 'loading'; s.detailError = null; })
+      .addCase(fetchProductDetail.fulfilled, (s, action) => { 
+        if (s.latestDetailRequestId !== action.meta.requestId) return;
+        s.detailStatus = 'succeeded'; s.selectedProductDetail = action.payload; 
+      })
+      .addCase(fetchProductDetail.rejected, (s, action) => { 
+        if (s.latestDetailRequestId !== action.meta.requestId) return;
+        s.detailStatus = 'failed'; s.detailError = action.payload as string; 
+      })
+      .addCase(fetchProductComment.pending, (s, action) => { s.latestCommentRequestId = action.meta.requestId; s.commentStatus = 'loading'; s.productComment = null; })
+      .addCase(fetchProductComment.fulfilled, (s, action) => { 
+        if (s.latestCommentRequestId !== action.meta.requestId) return;
+        s.commentStatus = 'succeeded'; s.productComment = action.payload; 
+      })
+      .addCase(fetchProductComment.rejected, (s, action) => { 
+        if (s.latestCommentRequestId !== action.meta.requestId) return;
+        s.commentStatus = 'failed'; s.productComment = null; 
+      })
       .addCase(fetchTaxonomy.pending, (s) => { s.taxonomyStatus = 'loading'; })
       .addCase(fetchTaxonomy.fulfilled, (s, action) => {
         s.taxonomyStatus = 'succeeded';

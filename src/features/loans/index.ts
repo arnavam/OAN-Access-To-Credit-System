@@ -1,5 +1,4 @@
 export {
-  loanDashboardSlice,
   setAdvancedFilters,
   clearAdvancedFilters,
   selectAdvancedFilters,

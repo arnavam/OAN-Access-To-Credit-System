@@ -1,5 +1,6 @@
 'use client';
 
+import { PHONE_NUMBER_MAX_LENGTH } from '@/features/seller/constants/field-limits';
 import { ChevronDown } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { FormCard } from './FormCard';
@@ -91,7 +92,7 @@ export function ContactDetailsSection({ fields, onChange, isAgreed, setIsAgreed 
             </div>
             <input
               type="tel"
-              maxLength={10}
+              maxLength={PHONE_NUMBER_MAX_LENGTH}
               placeholder="Enter Phone Number"
               value={fields.registered_phone.startsWith(selectedPhoneCode) ? fields.registered_phone.slice(selectedPhoneCode.length).trimStart() : fields.registered_phone}
               onChange={(e) => {

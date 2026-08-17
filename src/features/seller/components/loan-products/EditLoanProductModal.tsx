@@ -36,6 +36,7 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { Loader2, Save } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { BaseLoanProductModal } from './BaseLoanProductModal';
+import { canEditLoanProduct } from './LoanProductCard';
 
 type EditableProduct = LoanProductSummary | { id?: string; name?: string; title?: string; product_name?: string };
 
@@ -156,9 +157,8 @@ export function EditLoanProductModal({ isOpen, onClose, product }: EditLoanProdu
     readImageFileAsDataUrl(file, setImagePreview);
   };
 
-  const isProductActive =
-    detail?.status === 'Active' ||
-    (Boolean(product) && 'status' in (product as Record<string, unknown>) && (product as Record<string, unknown>).status === 'Active');
+  const productStatus = detail?.status ?? getProductStatus(product as EditableProduct);
+  const canEdit = canEditLoanProduct(productStatus);
 
   const handleSaveData = async () => {
     if (!product) {
@@ -171,8 +171,8 @@ export function EditLoanProductModal({ isOpen, onClose, product }: EditLoanProdu
       return;
     }
 
-    if (isProductActive) {
-      setLocalError('Active loan products cannot be edited.');
+    if (!canEdit) {
+      setLocalError('Active or pending loan products cannot be edited.');
       return;
     }
 
@@ -257,7 +257,7 @@ export function EditLoanProductModal({ isOpen, onClose, product }: EditLoanProdu
       <button
         type="button"
         onClick={handleSaveData}
-        disabled={isSubmitting || isLoadingDetail || isProductActive}
+        disabled={isSubmitting || isLoadingDetail || !canEdit}
         className="flex min-w-[160px] items-center justify-center gap-2 rounded-lg bg-[#16A34A] px-6 py-2.5 text-[14px] font-bold text-white transition-colors hover:bg-[#15803d] disabled:cursor-not-allowed disabled:opacity-80"
       >
         {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}

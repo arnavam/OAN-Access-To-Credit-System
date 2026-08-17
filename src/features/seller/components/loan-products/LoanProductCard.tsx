@@ -74,7 +74,8 @@ export interface LoanProductCardProps {
 
 export function canEditLoanProduct(status: string | null | undefined): boolean {
   if (!status) return false;
-  return status.toLowerCase() !== 'active';
+  const s = status.toLowerCase();
+  return s !== 'active' && s !== 'pending approval';
 }
 
 export function LoanProductCard({ product, variant = 'default' }: LoanProductCardProps) {
@@ -92,6 +93,7 @@ export function LoanProductCard({ product, variant = 'default' }: LoanProductCar
   const CategoryIcon = theme.icon;
 
   const canEdit = canEditLoanProduct(product.status);
+  const isApproval = variant === 'approval';
   const status = getLoanProductStatusPresentation(product.status);
 
   const applicantsCount = product.applications_count ?? 0;
@@ -134,7 +136,7 @@ export function LoanProductCard({ product, variant = 'default' }: LoanProductCar
               <span className="font-semibold text-gray-700">
                 {product.tenure_months}m tenure
               </span>
-              {variant === 'default' && (
+              {!isApproval && (
                 <span className="font-bold text-gray-900">
                   {applicantsCount} applicants
                 </span>
@@ -142,7 +144,7 @@ export function LoanProductCard({ product, variant = 'default' }: LoanProductCar
             </div>
 
             {/* Extra Metadata for Approvals */}
-            {variant === 'approval' && (
+            {isApproval && (
               <div className="flex items-center gap-2 text-[13px] text-[#6B7280]">
                 <CalendarDays size={14} />
                 <span>Created {formatCreationDate(product.creation)}</span>
@@ -155,7 +157,7 @@ export function LoanProductCard({ product, variant = 'default' }: LoanProductCar
 
         {/* Right Actions */}
         <div className="flex items-center gap-2 shrink-0">
-          {variant === 'approval' ? (
+          {isApproval ? (
             <button
               type="button"
               onClick={() => setIsReviewModalOpen(true)}
@@ -197,11 +199,12 @@ export function LoanProductCard({ product, variant = 'default' }: LoanProductCar
         </div>
       </div>
 
-      <EditLoanProductModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} product={product} />
-      <DeleteLoanProductModal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} product={product} />
-      {variant === 'default' ? (
+      {isEditModalOpen && <EditLoanProductModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} product={product} />}
+      {isDeleteModalOpen && <DeleteLoanProductModal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} product={product} />}
+      {!isApproval && isViewModalOpen && (
         <ReviewProductModal isOpen={isViewModalOpen} onClose={() => setIsViewModalOpen(false)} product={product} readOnlyView={true} />
-      ) : (
+      )}
+      {isApproval && isReviewModalOpen && (
         <ReviewProductModal isOpen={isReviewModalOpen} onClose={() => setIsReviewModalOpen(false)} product={product} initialMode={null} />
       )}
     </>

@@ -50,8 +50,6 @@ interface ProductTextFieldProps {
   min?: string;
   max?: string;
   step?: string;
-  /** Strips e/E/+/- as the amount fields do, to keep number inputs from accepting exponent/sign notation. */
-  blockExponentChars?: boolean;
   /** Caps the integer portion to N digits (e.g. 2 → max 99). Renders NumericInput when set. */
   maxIntegerDigits?: number;
   /** Caps the decimal portion to N digits (e.g. 2 → .XX). Renders NumericInput when set. */
@@ -62,7 +60,7 @@ interface ProductTextFieldProps {
 }
 
 export function ProductTextField({
-  mode, label, required, value, onChange, error, type = 'text', placeholder, min, max, step, blockExponentChars,
+  mode, label, required, value, onChange, error, type = 'text', placeholder, min, max, step,
   maxIntegerDigits, maxDecimalDigits, maxDigits, disabled,
 }: ProductTextFieldProps) {
   const style = styleFor(mode);
@@ -97,8 +95,7 @@ export function ProductTextField({
           step={step}
           value={value}
           disabled={disabled}
-          onKeyDown={blockExponentChars ? (e) => { if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault(); } : undefined}
-          onChange={(e) => onChange(blockExponentChars ? e.target.value.replace(/[eE+-]/g, '') : e.target.value)}
+          onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           className={`${error ? styles.inputError : styles.input} ${disabled ? 'bg-gray-50 opacity-70 cursor-not-allowed' : ''}`}
         />

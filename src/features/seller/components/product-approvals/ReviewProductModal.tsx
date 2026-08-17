@@ -7,7 +7,6 @@ import {
   selectAttributes,
   selectCategories,
   selectDetailError,
-  selectDetailStatus,
   selectProductsMutationError,
   selectProductsMutationStatus,
   selectSelectedProductDetail,
@@ -33,7 +32,6 @@ export function ReviewProductModal({ isOpen, onClose, product, initialMode = nul
   const dispatch = useAppDispatch();
   const mutationStatus = useAppSelector(selectProductsMutationStatus);
   const mutationError = useAppSelector(selectProductsMutationError);
-  const detailStatus = useAppSelector(selectDetailStatus);
   const detailError = useAppSelector(selectDetailError);
   const productDetail = useAppSelector(selectSelectedProductDetail);
   const fetchedCategories = useAppSelector(selectCategories);
@@ -64,8 +62,8 @@ export function ReviewProductModal({ isOpen, onClose, product, initialMode = nul
       setProductStatus({
         productId: product.name,
         status: 'Active',
-        reason: reason.trim() || undefined,
-        refetchParams: { status: 'Draft' },
+        ...(reason.trim() ? { reason: reason.trim() } : {}),
+        refetchParams: { status: 'Pending Approval' },
       })
     );
     if (setProductStatus.fulfilled.match(result)) {
@@ -80,7 +78,7 @@ export function ReviewProductModal({ isOpen, onClose, product, initialMode = nul
         productId: product.name,
         status: 'Rejected',
         reason: reason.trim(),
-        refetchParams: { status: 'Draft' },
+        refetchParams: { status: 'Pending Approval' },
       })
     );
     if (setProductStatus.fulfilled.match(result)) {
@@ -91,7 +89,11 @@ export function ReviewProductModal({ isOpen, onClose, product, initialMode = nul
   if (!isOpen || !product) return null;
 
   const isMutating = mutationStatus === 'loading';
-  const isLoadingDetail = detailStatus === 'loading' || detailStatus === 'idle';
+
+  // We explicitly do NOT block the UI or disable buttons while detail is loading.
+  // The form will immediately render using summary fallback data, allowing for instant
+  // approve/reject actions, while the detail fetch silently hydrates the form in the background.
+  const isLoadingDetail = false;
 
   const categoryOptions = mapTermOptions(fetchedCategories);
   const tagOptions = mapTermOptions(fetchedTags);

@@ -77,7 +77,7 @@ export const loanProductsService = {
     }) as Promise<ApiResponse<{ product_id: string }>>;
   },
 
-  async setProductStatus(productId: string, status: 'Draft' | 'Active' | 'Archived' | 'Rejected' | 'Pending Approval', reason?: string): Promise<ApiResponse<null>> {
+  async setProductStatus(productId: string, status: 'Active' | 'Archived' | 'Rejected' | 'Pending Approval', reason?: string): Promise<ApiResponse<null>> {
     return fetchApi('oan_a2c.api.v1.seller.loan_products.set_product_status', {
       method: 'POST',
       body: JSON.stringify({ product_id: productId, status, reason }),

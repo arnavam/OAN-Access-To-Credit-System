@@ -1,9 +1,11 @@
-// The A2C Loan Product status field is a Select with exactly these options
-// (a2c_loan_product.json: "Draft\nActive\nArchived"). Keeping the presentation
-// for all three in one map means a new status can't silently inherit another
-// one's colour — which is what happened when this was a Draft/not-Draft boolean
-// and Archived products rendered in the same green as Active ones.
-export type LoanProductStatus = 'Draft' | 'Active' | 'Archived' | 'Pending Approval' | 'Rejected';
+// The A2C Loan Product approval workflow has three statuses (a2c_loan_product.json:
+// "Pending Approval\nActive\nRejected"). 'Archived' is a soft-delete marker the
+// backend also accepts via set_product_status: archived products are hidden from
+// the loan-products view rather than deleted. There is no 'Draft'. Keeping the
+// presentation for every status in one map means a new status can't silently
+// inherit another one's colour — anything unrecognised falls back to the neutral
+// "Unknown" badge below.
+export type LoanProductStatus = 'Active' | 'Archived' | 'Pending Approval' | 'Rejected';
 
 interface StatusPresentation {
   /** Wording for the bank user, which is not always the raw status value. */
@@ -15,11 +17,6 @@ interface StatusPresentation {
 }
 
 export const LOAN_PRODUCT_STATUS_PRESENTATION: Record<LoanProductStatus, StatusPresentation> = {
-  Draft: {
-    label: 'Draft',
-    badgeClasses: 'bg-orange-50 border-orange-200 text-orange-700',
-    dotClasses: 'bg-orange-500',
-  },
   'Pending Approval': {
     label: 'Pending Approval',
     badgeClasses: 'bg-amber-50 border-amber-200 text-amber-700',
@@ -31,8 +28,8 @@ export const LOAN_PRODUCT_STATUS_PRESENTATION: Record<LoanProductStatus, StatusP
     badgeClasses: 'bg-emerald-50 border-emerald-200 text-emerald-700',
     dotClasses: 'bg-emerald-500',
   },
-  // Withdrawn from the marketplace. Deliberately grey, not green: an archived
-  // product accepts no new applications and must not read as a live one.
+  // Soft-deleted. Deliberately grey, not green: an archived product accepts no
+  // new applications and must not read as a live one.
   Archived: {
     label: 'Archived',
     badgeClasses: 'bg-gray-100 border-gray-200 text-gray-600',

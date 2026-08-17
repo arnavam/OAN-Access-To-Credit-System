@@ -4,7 +4,7 @@ import { fetchProducts, selectProducts, selectProductsListError, selectProductsL
 import type { ListProductsParams } from '@/features/seller/types/loan-products.types';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { Landmark } from 'lucide-react';
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { LoanProductCard } from '../loan-products/LoanProductCard';
 import { BaseProductList } from '../loan-products/BaseProductList';
 
@@ -19,9 +19,13 @@ export function ProductApprovalsList({ listParams }: ProductApprovalsListProps) 
   const listError = useAppSelector(selectProductsListError);
   const bankName = useAppSelector(selectBankName);
 
-  useEffect(() => {
+  const loadProducts = useCallback(() => {
     void dispatch(fetchProducts({ status: 'Pending Approval', ...listParams }));
   }, [dispatch, listParams]);
+
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts]);
 
   const isLoading = listStatus === 'idle' || listStatus === 'loading';
   const pendingProducts = products.filter((product) => product.status === 'Pending Approval');
@@ -50,6 +54,7 @@ export function ProductApprovalsList({ listParams }: ProductApprovalsListProps) 
       products={pendingProducts}
       isLoading={isLoading}
       error={listError}
+      onRetry={loadProducts}
       emptyTitle="No products waiting for approval"
       emptySubtitle="New product submissions will appear here after an agent creates them."
       renderItem={(product) => (

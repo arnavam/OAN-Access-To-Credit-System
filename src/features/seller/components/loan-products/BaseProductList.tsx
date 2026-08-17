@@ -1,5 +1,6 @@
 'use client';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { ConnectionError } from '@/components/ConnectionError';
+import { Loader2 } from 'lucide-react';
 import type { LoanProductSummary } from '@/lib/api/api.schemas';
 import type { ReactNode } from 'react';
 
@@ -8,6 +9,8 @@ interface BaseProductListProps {
   products: LoanProductSummary[];
   isLoading: boolean;
   error?: string | null;
+  /** Re-triggers the failed fetch from the ConnectionError retry button. */
+  onRetry?: () => void;
   emptyTitle: string;
   emptySubtitle: string;
   renderItem: (product: LoanProductSummary) => ReactNode;
@@ -19,6 +22,7 @@ export function BaseProductList({
   products,
   isLoading,
   error,
+  onRetry,
   emptyTitle,
   emptySubtitle,
   renderItem,
@@ -29,16 +33,10 @@ export function BaseProductList({
       {header}
 
       {error ? (
-        <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">
-          <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
-          <div>
-            <p className="text-[14px] font-semibold">Failed to load products</p>
-            <p className="text-[14px]">{error}</p>
-          </div>
-        </div>
-      ) : null}
-
-      {isLoading ? (
+        // Matches the app-wide fetch-failure pattern (ConnectionError with Retry),
+        // rather than a dead-end inline banner.
+        <ConnectionError message={error} {...(onRetry ? { onRetry } : {})} />
+      ) : isLoading ? (
         <div className="flex min-h-[240px] items-center justify-center rounded-xl border border-dashed border-gray-200 bg-white">
           <div className="flex items-center gap-2 text-sm font-medium text-gray-500">
             <Loader2 className="h-4 w-4 animate-spin" />

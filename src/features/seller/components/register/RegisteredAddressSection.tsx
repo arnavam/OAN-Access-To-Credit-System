@@ -1,3 +1,4 @@
+import { POSTAL_CODE_MAX_LENGTH } from '@/features/seller/constants/field-limits';
 import { FormCard } from './FormCard';
 import { InputField } from './InputField';
 
@@ -51,7 +52,7 @@ export function RegisteredAddressSection({ fields, onChange }: RegisteredAddress
           label="Postal code"
           required
           placeholder="Enter Postal code"
-          maxLength={6}
+          maxLength={POSTAL_CODE_MAX_LENGTH}
           value={fields.registered_postal_code}
           onChange={(e) => onChange({ registered_postal_code: e.target.value })}
         />
