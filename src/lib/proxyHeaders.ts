@@ -1,4 +1,5 @@
 import { getClientIp } from '@/lib/clientIp';
+import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
 
 // Header and body sanitization for the two routes that relay traffic between
@@ -77,6 +78,11 @@ export function buildUpstreamHeaders(request: Request, authToken?: string): Head
  * `content-encoding` and `content-length` are also excluded: the body is
  * decoded (and sometimes rewritten) on the way through, so relaying the
  * original values would describe a payload the browser is not receiving.
+ *
+ * `location` is absent here but is NOT dropped — it is handled separately in
+ * `buildClientResponse`, which rewrites it to point back through this proxy.
+ * Relaying it verbatim would publish the bench's URL; dropping it (which is what
+ * this allowlist did on its own) leaves the browser a 3xx with nowhere to go.
  */
 const FORWARDED_RESPONSE_HEADERS: ReadonlySet<string> = new Set([
   'content-type',
@@ -100,6 +106,45 @@ export function sanitizeResponseHeaders(source: Headers): Headers {
     }
   });
   return headers;
+}
+
+/**
+ * Rewrites an upstream `Location` so it points back through this proxy.
+ *
+ * Three cases, in order of how the browser would be harmed without this:
+ *
+ *  - Same-origin as the bench (absolute or relative): re-expressed as a path
+ *    under `proxyPrefix`, so the redirect stays followable and the backend's
+ *    hostname never reaches the browser.
+ *  - Any other origin: dropped. The bench has no business redirecting our users
+ *    off-site, and relaying it unchecked would make this route an open redirect
+ *    for anything that can influence a backend response.
+ *
+ * Returns `null` when the header must not be relayed.
+ */
+export function rewriteLocation(location: string, proxyPrefix: string): string | null {
+  const backend = new URL(env.API_BASE_URL);
+
+  let target: URL;
+  try {
+    // A relative Location resolves against the backend, which is the origin that
+    // issued it — matching how the browser would have resolved it upstream.
+    target = new URL(location, backend);
+  } catch {
+    return null;
+  }
+
+  if (target.origin !== backend.origin) return null;
+
+  // env.API_BASE_URL may itself carry a path prefix; strip it so the result is
+  // `<proxyPrefix>/<same path the route would have built>`.
+  const basePath = backend.pathname.replace(/\/+$/, '');
+  const path =
+    basePath && target.pathname.startsWith(basePath)
+      ? target.pathname.slice(basePath.length)
+      : target.pathname;
+
+  return `${proxyPrefix}${path.startsWith('/') ? '' : '/'}${path}${target.search}${target.hash}`;
 }
 
 // --- Response body ---------------------------------------------------------
@@ -153,6 +198,17 @@ function stripDebugFields(payload: unknown, targetUrl: string): { changed: boole
   return { changed: true, payload: record };
 }
 
+export interface BuildClientResponseOptions {
+  /**
+   * Route prefix a relayed `Location` should be rewritten onto (`/api/proxy`).
+   *
+   * Omit it for routes that follow redirects upstream (`/api/files` uses fetch's
+   * default `redirect: 'follow'`, so no 3xx ever reaches here) — a `Location`
+   * arriving without a prefix to rewrite onto is dropped and logged.
+   */
+  proxyPrefix?: string;
+}
+
 /**
  * Relays the upstream response to the browser with headers allowlisted and, for
  * JSON, debug fields removed.
@@ -162,9 +218,28 @@ function stripDebugFields(payload: unknown, targetUrl: string): { changed: boole
  */
 export async function buildClientResponse(
   response: Response,
-  targetUrl: string
+  targetUrl: string,
+  options: BuildClientResponseOptions = {}
 ): Promise<{ body: BodyInit | null; init: ResponseInit }> {
   const headers = sanitizeResponseHeaders(response.headers);
+
+  // A route using `redirect: 'manual'` hands us the 3xx itself. Without this the
+  // browser received the status with no Location and simply stopped.
+  const location = response.headers.get('location');
+  if (location) {
+    const rewritten = options.proxyPrefix
+      ? rewriteLocation(location, options.proxyPrefix)
+      : null;
+
+    if (rewritten) {
+      headers.set('location', rewritten);
+    } else {
+      logger.security(
+        `Dropped a Location header from ${targetUrl} that did not resolve to the backend origin`
+      );
+    }
+  }
+
   const init: ResponseInit = {
     status: response.status,
     statusText: response.statusText,

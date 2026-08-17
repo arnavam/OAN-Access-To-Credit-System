@@ -1,6 +1,6 @@
 import { AUTH_MESSAGES } from '@/lib/authMessages';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { loginUser, setInitialPassword } from './authApi';
+import { loginUser, logoutUser, setInitialPassword } from './authApi';
 
 const okJson = (body: unknown, ok = true, status = 200) =>
   ({ ok, status, json: async () => body }) as Response;
@@ -103,7 +103,7 @@ describe('setInitialPassword', () => {
     vi.restoreAllMocks();
   });
 
-  it('posts to the proxy and returns the success message', async () => {
+  it('posts to the rate-limited auth route and returns the success message', async () => {
     const fetchSpy = vi
       .spyOn(global, 'fetch')
       .mockResolvedValue(
@@ -117,8 +117,10 @@ describe('setInitialPassword', () => {
     });
 
     expect(message).toBe('Password set successfully.');
+    // Not /api/proxy: that route has no rate limit, and this call verifies the
+    // temporary password, so an unthrottled path is a brute-force oracle.
     expect(fetchSpy).toHaveBeenCalledWith(
-      '/api/proxy/api/method/oan_a2c.api.auth.set_initial_password',
+      '/api/auth/set-initial-password',
       expect.objectContaining({
         method: 'POST',
         body: JSON.stringify({
@@ -128,6 +130,22 @@ describe('setInitialPassword', () => {
         }),
       })
     );
+  });
+
+  it('surfaces the rate-limit message from a route-level rejection', async () => {
+    // The limiter replies with a bare string message rather than the backend
+    // envelope, so the client has to read both shapes.
+    vi.spyOn(global, 'fetch').mockResolvedValue(
+      okJson({ message: 'Too many attempts. Please wait a moment and try again.' }, false, 429)
+    );
+
+    await expect(
+      setInitialPassword({
+        usr: 'agent@bank.com',
+        currentPassword: 'TempIssued1',
+        newPassword: 'AgentChosen9#',
+      })
+    ).rejects.toThrow('Too many attempts. Please wait a moment and try again.');
   });
 
   it('surfaces the server message rather than a sentinel on a 401', async () => {
@@ -162,5 +180,32 @@ describe('setInitialPassword', () => {
         newPassword: 'weak',
       })
     ).rejects.toThrow('Validation failed');
+  });
+});
+
+describe('logoutUser', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('reports success when the server confirms the cookies were cleared', async () => {
+    vi.spyOn(global, 'fetch').mockResolvedValue(okJson({ success: true }));
+
+    await expect(logoutUser()).resolves.toBe(true);
+  });
+
+  it('reports failure on a rejected logout instead of resolving as success', async () => {
+    // Regression: this resolved `void` for every outcome, so a CSRF-rejected
+    // logout looked identical to a successful one. The cookies are httpOnly and
+    // still set, so the middleware puts the person straight back in the app.
+    vi.spyOn(global, 'fetch').mockResolvedValue(okJson({ message: 'Forbidden' }, false, 403));
+
+    await expect(logoutUser()).resolves.toBe(false);
+  });
+
+  it('reports failure when the route is unreachable', async () => {
+    vi.spyOn(global, 'fetch').mockRejectedValue(new Error('network down'));
+
+    await expect(logoutUser()).resolves.toBe(false);
   });
 });

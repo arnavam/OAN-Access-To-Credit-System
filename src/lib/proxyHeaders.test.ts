@@ -1,5 +1,24 @@
-import { describe, expect, it } from 'vitest';
-import { buildClientResponse, buildUpstreamHeaders, sanitizeResponseHeaders } from './proxyHeaders';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import {
+  buildClientResponse,
+  buildUpstreamHeaders,
+  rewriteLocation,
+  sanitizeResponseHeaders,
+} from './proxyHeaders';
+
+const BACKEND = 'http://127.0.0.1:8000';
+const previousApiBaseUrl = process.env.API_BASE_URL;
+
+beforeAll(() => {
+  process.env.API_BASE_URL = BACKEND;
+});
+
+afterAll(() => {
+  process.env.API_BASE_URL = previousApiBaseUrl;
+});
+
+const redirectResponse = (location: string, status = 302) =>
+  new Response(null, { status, headers: { location } });
 
 const jsonResponse = (body: unknown, headers: Record<string, string> = {}) =>
   new Response(JSON.stringify(body), {
@@ -144,5 +163,68 @@ describe('buildClientResponse', () => {
     const { init } = await buildClientResponse(jsonResponse({ message: 'nope' }), 'https://bench/x');
 
     expect(init.status).toBe(500);
+  });
+
+  it('relays a 3xx with a Location the browser can follow', async () => {
+    // Regression: /api/proxy uses `redirect: 'manual'`, so the 3xx arrives here
+    // intact. The response allowlist alone dropped Location and the browser was
+    // left with a redirect and no destination.
+    const response = redirectResponse(`${BACKEND}/api/method/oan_a2c.api.v1.leads.get?name=L-1`);
+
+    const { init } = await buildClientResponse(response, `${BACKEND}/api/method/x`, {
+      proxyPrefix: '/api/proxy',
+    });
+
+    expect(init.status).toBe(302);
+    expect(new Headers(init.headers).get('location')).toBe(
+      '/api/proxy/api/method/oan_a2c.api.v1.leads.get?name=L-1'
+    );
+  });
+
+  it('drops a Location pointing off the backend origin rather than relaying an open redirect', async () => {
+    const response = redirectResponse('https://attacker.example.com/phish');
+
+    const { init } = await buildClientResponse(response, `${BACKEND}/api/method/x`, {
+      proxyPrefix: '/api/proxy',
+    });
+
+    expect(new Headers(init.headers).get('location')).toBeNull();
+  });
+
+  it('drops a Location when the route follows redirects upstream and passes no prefix', async () => {
+    const response = redirectResponse(`${BACKEND}/files/loan.pdf`);
+
+    const { init } = await buildClientResponse(response, `${BACKEND}/files/loan.pdf`);
+
+    expect(new Headers(init.headers).get('location')).toBeNull();
+  });
+});
+
+describe('rewriteLocation', () => {
+  it('rewrites an absolute backend URL onto the proxy prefix', () => {
+    expect(rewriteLocation(`${BACKEND}/api/method/x?a=1`, '/api/proxy')).toBe(
+      '/api/proxy/api/method/x?a=1'
+    );
+  });
+
+  it('resolves a relative Location against the backend origin', () => {
+    expect(rewriteLocation('/api/method/x', '/api/proxy')).toBe('/api/proxy/api/method/x');
+  });
+
+  it('never leaks the backend hostname to the browser', () => {
+    const rewritten = rewriteLocation(`${BACKEND}/api/method/x`, '/api/proxy');
+
+    expect(rewritten).not.toContain('127.0.0.1');
+    expect(rewritten?.startsWith('/api/proxy/')).toBe(true);
+  });
+
+  it('refuses a cross-origin redirect', () => {
+    expect(rewriteLocation('https://attacker.example.com/phish', '/api/proxy')).toBeNull();
+  });
+
+  it('refuses a protocol-relative URL that would escape the origin', () => {
+    // `//attacker.example.com/x` resolves to https://attacker.example.com/x —
+    // the classic open-redirect payload that looks like a path.
+    expect(rewriteLocation('//attacker.example.com/x', '/api/proxy')).toBeNull();
   });
 });

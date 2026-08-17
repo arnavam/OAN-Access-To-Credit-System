@@ -20,8 +20,21 @@ export async function POST(request: NextRequest) {
     RATE_LIMITS.logout.limit,
     RATE_LIMITS.logout.windowMs
   );
+
+  // A tripped limit must never leave someone signed in. What the limiter is
+  // protecting is the backend revocation call below — clearing our own cookies
+  // costs nothing and needs no upstream hop, so it happens either way.
+  //
+  // Returning 429 with the cookies intact (the obvious reading of "rate limited")
+  // meant the browser was told logout succeeded, the cookies survived, and the
+  // middleware sent the person straight back into the dashboard.
   if (!limit.allowed) {
-    return rateLimitedResponse(limit.retryAfterSeconds);
+    logger.security(
+      `Logout rate limit exceeded for ${clientIp}; cookies cleared without revoking upstream`
+    );
+    const limited = rateLimitedResponse(limit.retryAfterSeconds);
+    clearSessionCookies(limited);
+    return limited;
   }
 
   const refreshToken = request.cookies.get(REFRESH_TOKEN_COOKIE)?.value;

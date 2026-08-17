@@ -14,10 +14,15 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
   const headers = buildUpstreamHeaders(request, authToken);
 
   try {
-    // Redirects are followed here rather than relayed: `location` is not in the
-    // response allowlist, so a relayed 302 would reach the browser with nothing
-    // to follow. Following server-side also keeps the backend's URL out of the
-    // browser entirely, which is the point of proxying files in the first place.
+    // Redirects are followed here rather than relayed (fetch's default), so no
+    // 3xx ever reaches the relay below and no Location has to be rewritten.
+    // Following server-side keeps the backend's URL out of the browser
+    // entirely, which is the point of proxying files in the first place.
+    //
+    // /api/proxy takes the other route — `redirect: 'manual'` — and so passes a
+    // `proxyPrefix` to have Location rewritten instead. Either is fine; what is
+    // not fine is manual redirects with no prefix, which drops the header and
+    // hands the browser a redirect with no destination.
     const response = await fetch(targetUrl, { headers });
 
     // Same relay rules as /api/proxy: allowlisted response headers so a

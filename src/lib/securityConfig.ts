@@ -25,6 +25,11 @@ function toRule(name: Exclude<RateLimitName, '_comment'>): RateLimitRule {
 
 export const RATE_LIMITS = {
   login: toRule('login'),
+  /**
+   * Same budget as login: the endpoint verifies the admin-issued temporary
+   * password, so it is a credential-guessing surface in its own right.
+   */
+  setInitialPassword: toRule('setInitialPassword'),
   refresh: toRule('refresh'),
   logout: toRule('logout'),
   heartbeat: toRule('heartbeat'),

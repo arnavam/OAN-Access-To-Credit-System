@@ -60,7 +60,14 @@ async function handleProxy(request: NextRequest, pathArray: string[]) {
 
     // Relay it back with response headers allowlisted (no Set-Cookie, no stack
     // disclosure) and Frappe's debug fields stripped from JSON bodies.
-    const { body, init } = await buildClientResponse(response, targetUrl);
+    //
+    // `redirect: 'manual'` above means a 3xx arrives here intact, so the relay
+    // needs the prefix to rewrite Location onto — otherwise the browser gets a
+    // redirect with no destination. (/api/files follows redirects upstream and
+    // so passes no prefix.)
+    const { body, init } = await buildClientResponse(response, targetUrl, {
+      proxyPrefix: '/api/proxy',
+    });
     return new NextResponse(body, init);
   } catch (error) {
     logger.error(`Proxy error for ${targetUrl}:`, error);
