@@ -208,6 +208,20 @@ export default function AgentApplicationTable() {
     setCurrentPage(1);
   };
 
+  const handleClearAllFilters = () => {
+    setSearchInput('');
+    setAppliedSearchQuery('');
+    setAdvancedFilters({
+      status: [],
+      loanAmount: [],
+      loanType: [],
+      location: '',
+      quickDate: undefined,
+      dateRange: { from: '', to: '' }
+    });
+    setCurrentPage(1);
+  };
+
   // Apply filters
   const filteredData = data.filter(row => {
     if (appliedSearchQuery) {
@@ -358,18 +372,7 @@ export default function AgentApplicationTable() {
             <span className='font-semibold'>Advanced Filters</span>
           </button>
           <button
-            onClick={() => {
-              setSearchInput('');
-              setAppliedSearchQuery('');
-
-              setAdvancedFilters({
-                status: [],
-                loanAmount: [],
-                loanType: [],
-                location: '',
-                dateRange: { from: '', to: '' }
-              });
-            }}
+            onClick={handleClearAllFilters}
             className="text-[14px] font-semibold text-[#16A34A] hover:text-[#15803d] transition-colors"
           >
             <span className='font-semibold'>Clear Filters</span>
