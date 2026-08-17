@@ -40,14 +40,14 @@ export function ReviewProductModal({ isOpen, onClose, product, initialMode = nul
   const fetchedTags = useAppSelector(selectTags);
   const fetchedAttributes = useAppSelector(selectAttributes);
 
-  const [rejectMode, setRejectMode] = useState(false);
+  const [actionMode, setActionMode] = useState<'approve' | 'reject' | null>(null);
   const [reason, setReason] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen) {
       dispatch(clearMutationError());
-      setRejectMode(initialMode === 'reject');
+      setActionMode(initialMode === 'reject' ? 'reject' : initialMode === 'approve' ? 'approve' : null);
       setReason('');
       dispatch(fetchTaxonomy());
       if (product) {
@@ -64,6 +64,7 @@ export function ReviewProductModal({ isOpen, onClose, product, initialMode = nul
       setProductStatus({
         productId: product.name,
         status: 'Active',
+        reason: reason.trim() || undefined,
         refetchParams: { status: 'Draft' },
       })
     );
@@ -113,42 +114,60 @@ export function ReviewProductModal({ isOpen, onClose, product, initialMode = nul
 
   const footerActions = (
     <div className="flex flex-col gap-4 border-t border-[#E5E7EB] p-6 bg-gray-50/50">
-      {rejectMode ? (
+      {actionMode ? (
         <div className="animate-in slide-in-from-top-2 fade-in duration-200 w-full">
-          <label htmlFor="rejectReason" className="mb-1.5 block text-[14px] font-bold text-gray-900">
-            Rejection Reason <span className="text-red-500">*</span>
+          <label htmlFor="reason" className="mb-1.5 block text-[14px] font-bold text-gray-900">
+            {actionMode === 'reject' ? (
+              <>Rejection Reason <span className="text-red-500">*</span></>
+            ) : (
+              'Approval Comment (Optional)'
+            )}
           </label>
           <textarea
-            id="rejectReason"
+            id="reason"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            placeholder="Please provide a reason for rejecting this product..."
-            className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-[14px] focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20"
+            placeholder={actionMode === 'reject' ? "Please provide a reason for rejecting this product..." : "Add an optional comment..."}
+            className={`w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-[14px] focus:outline-none focus:ring-2 ${
+              actionMode === 'reject' ? 'focus:border-red-500 focus:ring-red-500/20' : 'focus:border-[#16A34A] focus:ring-[#16A34A]/20'
+            }`}
             rows={3}
           />
         </div>
       ) : null}
 
       <div className="flex items-center justify-end gap-4">
-        {rejectMode ? (
+        {actionMode ? (
           <>
             <button
               type="button"
-              onClick={() => setRejectMode(false)}
+              onClick={() => setActionMode(null)}
               disabled={isMutating}
               className="rounded-lg border border-[#D1D5DB] bg-white px-6 py-2.5 text-[14px] font-bold text-[#374151] transition-colors hover:bg-gray-50 disabled:opacity-50"
             >
               Cancel
             </button>
-            <button
-              type="button"
-              onClick={handleReject}
-              disabled={isMutating || !reason.trim()}
-              className="flex min-w-[160px] items-center justify-center gap-2 rounded-lg bg-red-600 px-6 py-2.5 text-[14px] font-bold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-80"
-            >
-              {isMutating ? <Loader2 size={18} className="animate-spin" /> : <XCircle size={18} />}
-              <span>Confirm Reject</span>
-            </button>
+            {actionMode === 'reject' ? (
+              <button
+                type="button"
+                onClick={handleReject}
+                disabled={isMutating || !reason.trim()}
+                className="flex min-w-[160px] items-center justify-center gap-2 rounded-lg bg-red-600 px-6 py-2.5 text-[14px] font-bold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-80"
+              >
+                {isMutating ? <Loader2 size={18} className="animate-spin" /> : <XCircle size={18} />}
+                <span>Confirm Reject</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleApprove}
+                disabled={isMutating}
+                className="flex min-w-[160px] items-center justify-center gap-2 rounded-lg bg-[#16A34A] px-6 py-2.5 text-[14px] font-bold text-white transition-colors hover:bg-[#15803d] disabled:cursor-not-allowed disabled:opacity-80"
+              >
+                {isMutating ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle2 size={18} />}
+                <span>Confirm Approve</span>
+              </button>
+            )}
           </>
         ) : readOnlyView ? (
           <button
@@ -162,7 +181,7 @@ export function ReviewProductModal({ isOpen, onClose, product, initialMode = nul
           <>
             <button
               type="button"
-              onClick={() => setRejectMode(true)}
+              onClick={() => setActionMode('reject')}
               disabled={isMutating}
               className="rounded-lg border border-[#D1D5DB] bg-white px-6 py-2.5 text-[14px] font-bold text-[#374151] transition-colors hover:bg-gray-50 disabled:opacity-50"
             >
@@ -170,12 +189,11 @@ export function ReviewProductModal({ isOpen, onClose, product, initialMode = nul
             </button>
             <button
               type="button"
-              onClick={handleApprove}
+              onClick={() => setActionMode('approve')}
               disabled={isMutating || isLoadingDetail}
               className="flex min-w-[160px] items-center justify-center gap-2 rounded-lg bg-[#16A34A] px-6 py-2.5 text-[14px] font-bold text-white transition-colors hover:bg-[#15803d] disabled:cursor-not-allowed disabled:opacity-80"
             >
-              {isMutating ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle2 size={18} />}
-              <span>Approve Product</span>
+              Approve...
             </button>
           </>
         )}

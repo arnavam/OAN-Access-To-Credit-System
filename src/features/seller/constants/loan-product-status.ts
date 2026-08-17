@@ -3,7 +3,7 @@
 // for all three in one map means a new status can't silently inherit another
 // one's colour — which is what happened when this was a Draft/not-Draft boolean
 // and Archived products rendered in the same green as Active ones.
-export type LoanProductStatus = 'Draft' | 'Active' | 'Archived';
+export type LoanProductStatus = 'Draft' | 'Active' | 'Archived' | 'Pending Approval' | 'Rejected';
 
 interface StatusPresentation {
   /** Wording for the bank user, which is not always the raw status value. */
@@ -15,9 +15,12 @@ interface StatusPresentation {
 }
 
 export const LOAN_PRODUCT_STATUS_PRESENTATION: Record<LoanProductStatus, StatusPresentation> = {
-  // Draft is "submitted, waiting for a Bank Admin to approve it" — amber reads
-  // as "needs attention" rather than "finished".
   Draft: {
+    label: 'Draft',
+    badgeClasses: 'bg-orange-50 border-orange-200 text-orange-700',
+    dotClasses: 'bg-orange-500',
+  },
+  'Pending Approval': {
     label: 'Pending Approval',
     badgeClasses: 'bg-amber-50 border-amber-200 text-amber-700',
     dotClasses: 'bg-amber-500',
@@ -34,6 +37,11 @@ export const LOAN_PRODUCT_STATUS_PRESENTATION: Record<LoanProductStatus, StatusP
     label: 'Archived',
     badgeClasses: 'bg-gray-100 border-gray-200 text-gray-600',
     dotClasses: 'bg-gray-400',
+  },
+  Rejected: {
+    label: 'Rejected',
+    badgeClasses: 'bg-red-50 border-red-200 text-red-700',
+    dotClasses: 'bg-red-500',
   },
 };
 

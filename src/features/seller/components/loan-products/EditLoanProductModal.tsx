@@ -1,9 +1,12 @@
 'use client';
 import {
     clearMutationError,
+    clearProductComment,
+    fetchProductComment,
     fetchProductDetail,
     fetchTaxonomy,
     selectAttributes,
+    selectProductComment,
     selectCategories,
     selectDetailError,
     selectDetailStatus,
@@ -42,6 +45,13 @@ interface EditLoanProductModalProps {
   product: EditableProduct | null;
 }
 
+function getProductStatus(product: EditableProduct): string | undefined {
+  if ('status' in product && typeof product.status === 'string') {
+    return product.status;
+  }
+  return undefined;
+}
+
 function getProductId(product: EditableProduct): string {
   if ('name' in product && typeof product.name === 'string' && product.name) {
     return product.name;
@@ -58,6 +68,7 @@ export function EditLoanProductModal({ isOpen, onClose, product }: EditLoanProdu
   const mutationError = useAppSelector(selectProductsMutationError);
   const detail = useAppSelector(selectSelectedProductDetail);
   const detailStatus = useAppSelector(selectDetailStatus);
+  const productComment = useAppSelector(selectProductComment);
   const detailError = useAppSelector(selectDetailError);
   const fetchedCategories = useAppSelector(selectCategories);
   const fetchedTags = useAppSelector(selectTags);
@@ -85,9 +96,15 @@ export function EditLoanProductModal({ isOpen, onClose, product }: EditLoanProdu
       setFieldErrors({});
       setImagePreview(null);
       dispatch(clearMutationError());
+      dispatch(clearProductComment());
       const pId = getProductId(product);
       if (pId) {
         dispatch(fetchProductDetail(pId));
+        // The rejection comment only exists for rejected products, so only that
+        // case is worth a round trip; everything else stays without a banner.
+        if (getProductStatus(product) === 'Rejected') {
+          dispatch(fetchProductComment(pId));
+        }
       }
     }
   }, [dispatch, isOpen, product]);
@@ -274,6 +291,7 @@ export function EditLoanProductModal({ isOpen, onClose, product }: EditLoanProdu
       globalError={localError ?? mutationError}
       isLoadingDetail={isLoadingDetail}
       detailError={detailError}
+      rejectionComment={productComment}
       footerActions={footerActions}
       isSuccess={isSuccess}
       onSuccessDone={() => {

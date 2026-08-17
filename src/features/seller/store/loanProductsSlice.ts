@@ -17,6 +17,8 @@ type AsyncStatus = 'idle' | 'loading' | 'succeeded' | 'failed';
 interface LoanProductsState {
   products: LoanProductSummary[];
   selectedProductDetail: LoanProductDetail | null;
+  productComment: string | null;
+  commentStatus: AsyncStatus;
   categories: TaxonomyCategory[];
   tags: TaxonomyTag[];
   attributes: TaxonomyAttribute[];
@@ -35,6 +37,8 @@ interface LoanProductsState {
 const initialState: LoanProductsState = {
   products: [],
   selectedProductDetail: null,
+  productComment: null,
+  commentStatus: 'idle',
   categories: [],
   tags: [],
   attributes: [],
@@ -72,6 +76,19 @@ export const fetchProductDetail = createAsyncThunk(
     } catch (error) {
       logger.error('fetchProductDetail thunk failed', { productId, error });
       return rejectWithValue(error instanceof Error ? error.message : 'Failed to load product details');
+    }
+  }
+);
+
+export const fetchProductComment = createAsyncThunk(
+  'sellerProducts/fetchProductComment',
+  async (productId: string, { rejectWithValue }) => {
+    try {
+      const response = await loanProductsService.getProductComment(productId);
+      return response.data;
+    } catch (error) {
+      logger.error('fetchProductComment thunk failed', { productId, error });
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to load product comment');
     }
   }
 );
@@ -211,6 +228,10 @@ const loanProductsSlice = createSlice({
       state.selectedProductDetail = null;
       state.detailStatus = 'idle';
     },
+    clearProductComment(state) {
+      state.productComment = null;
+      state.commentStatus = 'idle';
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -220,6 +241,9 @@ const loanProductsSlice = createSlice({
       .addCase(fetchProductDetail.pending, (s) => { s.detailStatus = 'loading'; s.detailError = null; })
       .addCase(fetchProductDetail.fulfilled, (s, action) => { s.detailStatus = 'succeeded'; s.selectedProductDetail = action.payload; })
       .addCase(fetchProductDetail.rejected, (s, action) => { s.detailStatus = 'failed'; s.detailError = action.payload as string; })
+      .addCase(fetchProductComment.pending, (s) => { s.commentStatus = 'loading'; s.productComment = null; })
+      .addCase(fetchProductComment.fulfilled, (s, action) => { s.commentStatus = 'succeeded'; s.productComment = action.payload; })
+      .addCase(fetchProductComment.rejected, (s) => { s.commentStatus = 'failed'; s.productComment = null; })
       .addCase(fetchTaxonomy.pending, (s) => { s.taxonomyStatus = 'loading'; })
       .addCase(fetchTaxonomy.fulfilled, (s, action) => {
         s.taxonomyStatus = 'succeeded';
@@ -253,7 +277,7 @@ const loanProductsSlice = createSlice({
   },
 });
 
-export const { clearMutationError, clearSelectedProductDetail } = loanProductsSlice.actions;
+export const { clearMutationError, clearSelectedProductDetail, clearProductComment } = loanProductsSlice.actions;
 export const sellerProductsReducer = loanProductsSlice.reducer;
 export default loanProductsSlice.reducer;
 
@@ -270,3 +294,5 @@ export const selectProductsMutationError = (state: RootState) => state.sellerPro
 export const selectDetailStatus = (state: RootState) => state.sellerProducts.detailStatus;
 export const selectDetailError = (state: RootState) => state.sellerProducts.detailError;
 export const selectMutationFieldErrors = (state: RootState) => state.sellerProducts.mutationFieldErrors;
+export const selectProductComment = (state: RootState) => state.sellerProducts.productComment;
+export const selectProductCommentStatus = (state: RootState) => state.sellerProducts.commentStatus;

@@ -8,7 +8,8 @@ export { default as ProductApprovalsPage } from './pages/ProductApprovalsPage';
 // Store — loan products
 export {
     archiveProduct, clearMutationError,
-    clearSelectedProductDetail, createProductCompound, fetchDashboardStats, fetchProductDetail, fetchProducts, fetchTaxonomy, selectAttributes, selectCategories, selectProducts, selectProductsListError, selectProductsListStatus, selectProductsMutationError, selectProductsMutationStatus, selectSelectedProductDetail, selectSellerStats, selectTags, sellerProductsReducer, setProductStatus, updateProductCompound
+    clearProductComment,
+    clearSelectedProductDetail, createProductCompound, fetchDashboardStats, fetchProductComment, fetchProductDetail, fetchProducts, fetchTaxonomy, selectAttributes, selectCategories, selectProductComment, selectProductCommentStatus, selectProducts, selectProductsListError, selectProductsListStatus, selectProductsMutationError, selectProductsMutationStatus, selectSelectedProductDetail, selectSellerStats, selectTags, sellerProductsReducer, setProductStatus, updateProductCompound
 } from './store/loanProductsSlice';
 // Store — onboarding
 export {

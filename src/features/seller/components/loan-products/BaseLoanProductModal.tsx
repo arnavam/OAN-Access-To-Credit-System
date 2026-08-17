@@ -5,7 +5,7 @@ import { LoanTypeDropdown } from '@/features/seller/components/dashboard/LoanTyp
 import { ProductAttributesGrid, ProductImageDropzone, ProductTextField, type ProductFieldMode } from '@/features/seller/components/loan-products/ProductFormFields';
 import { useModalA11y } from '@/hooks/useModalA11y';
 import type { ProductFormState } from '@/features/seller/utils/loan-product-form.utils';
-import { Loader2, Package, X } from 'lucide-react';
+import { AlertCircle, Loader2, Package, X } from 'lucide-react';
 import { useId } from 'react';
 import type { ReactNode } from 'react';
 import type { TaxonomyAttribute } from '@/lib/api/api.schemas';
@@ -53,6 +53,9 @@ interface BaseLoanProductModalProps {
   globalError?: string | null;
   isLoadingDetail?: boolean;
   detailError?: string | null;
+  // Bank Admin's reason for rejecting the product; shown as a banner so the
+  // seller knows what to fix before resubmitting. Absent for non-rejected ones.
+  rejectionComment?: string | null;
   
   // Actions
   footerActions: ReactNode;
@@ -79,6 +82,7 @@ export function BaseLoanProductModal({
   selectedAttributeTermIds, onToggleAttribute,
   fieldErrors = {}, onClearFieldError, globalError,
   isLoadingDetail = false, detailError,
+  rejectionComment,
   footerActions,
   isSuccess, onSuccessDone,
 }: BaseLoanProductModalProps) {
@@ -146,6 +150,16 @@ export function BaseLoanProductModal({
                 </div>
               ) : (
                 <div className="flex-1 space-y-6 overflow-y-auto p-6">
+                  {rejectionComment ? (
+                    <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+                      <AlertCircle size={18} className="mt-0.5 shrink-0 text-red-500" />
+                      <div>
+                        <p className="text-[13px] font-bold text-red-700">Rejection reason</p>
+                        <p className="mt-0.5 whitespace-pre-line text-[14px] text-red-700">{rejectionComment}</p>
+                      </div>
+                    </div>
+                  ) : null}
+
                   <ProductImageDropzone
                     mode={mode}
                     imagePreview={imagePreview}

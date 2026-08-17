@@ -49,6 +49,20 @@ export const loanProductsService = {
     };
   },
 
+  // Review comment left by the Bank Admin when a product was rejected. Only
+  // meaningful for Rejected products; other statuses generally have none.
+  async getProductComment(productId: string): Promise<ApiResponse<string | null>> {
+    const raw = (await fetchApi('oan_a2c.api.v1.seller.loan_products.get_product_comment', {
+      method: 'POST',
+      body: JSON.stringify({ product_id: productId }),
+    })) as ApiResponse<unknown>;
+
+    return {
+      ...raw,
+      data: extractProductComment(raw.data),
+    };
+  },
+
   async createProduct(payload: CreateLoanProductPayload): Promise<ApiResponse<{ product_ids: string[] }>> {
     return fetchApi('oan_a2c.api.v1.seller.loan_products.create_product', {
       method: 'POST',
@@ -88,3 +102,38 @@ export const loanProductsService = {
     };
   },
 };
+
+// The backend returns an audit log under `data.comment`: one entry per status
+// change, each with a `reason` (and a fuller `event_description`). The seller
+// cares about why the product was rejected, so surface the reason from the most
+// recent "-> Rejected" transition, falling back to the newest entry that has
+// any reason at all. Returns null when there's nothing to show.
+interface ProductCommentEntry {
+  reason?: string | null;
+  event_description?: string | null;
+  to_status?: string | null;
+  creation?: string | null;
+}
+
+function extractProductComment(data: unknown): string | null {
+  const record = data && typeof data === 'object' ? (data as Record<string, unknown>) : null;
+  const list = record?.comment ?? record?.comments;
+  const entries: ProductCommentEntry[] = Array.isArray(list) ? (list as ProductCommentEntry[]) : [];
+
+  // Newest first — the audit log isn't guaranteed to be ordered.
+  const byNewest = [...entries].sort((a, b) => (b.creation ?? '').localeCompare(a.creation ?? ''));
+
+  const entryText = (entry: ProductCommentEntry): string | null =>
+    cleanText(entry.reason) ?? cleanText(entry.event_description);
+
+  const rejected = byNewest.find((e) => e.to_status === 'Rejected' && entryText(e));
+  const chosen = rejected ?? byNewest.find((e) => entryText(e));
+
+  return chosen ? entryText(chosen) : cleanText(data);
+}
+
+function cleanText(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
