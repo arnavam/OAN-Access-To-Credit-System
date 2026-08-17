@@ -197,9 +197,7 @@ export function AddLoanProductModal({ isOpen, onClose }: AddLoanProductModalProp
     <BaseLoanProductModal
       isOpen={isOpen}
       onClose={onClose}
-      title="New Loan Product"
-      subtitle="Products you create are published immediately as Active."
-      variant="add"
+      mode="add"
       form={form}
       onFormChange={handleFormChange}
       imagePreview={imagePreview}

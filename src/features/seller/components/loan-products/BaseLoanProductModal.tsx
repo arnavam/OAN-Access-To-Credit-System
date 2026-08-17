@@ -2,7 +2,7 @@
 import { Portal } from '@/components/Portal';
 import { LoanProductCreatedSuccess } from '@/features/seller/components/dashboard/LoanProductCreatedSuccess';
 import { LoanTypeDropdown } from '@/features/seller/components/dashboard/LoanTypeDropdown';
-import { ProductAttributesGrid, ProductImageDropzone, ProductTextField } from '@/features/seller/components/loan-products/ProductFormFields';
+import { ProductAttributesGrid, ProductImageDropzone, ProductTextField, type ProductFieldMode } from '@/features/seller/components/loan-products/ProductFormFields';
 import { useModalA11y } from '@/hooks/useModalA11y';
 import type { ProductFormState } from '@/features/seller/utils/loan-product-form.utils';
 import { Loader2, Package, X } from 'lucide-react';
@@ -13,10 +13,15 @@ import type { TaxonomyAttribute } from '@/lib/api/api.schemas';
 interface BaseLoanProductModalProps {
   isOpen: boolean;
   onClose: () => void;
-  title: string;
-  subtitle: string;
-  variant?: 'add' | 'edit';
-  
+  // The single source of truth for this modal's behaviour and styling:
+  //   add  → compact create form
+  //   edit → roomier update form
+  //   view → edit layout, rendered read-only
+  mode: ProductFieldMode;
+  // Optional header overrides; each mode has a sensible default (see MODE_HEADER).
+  title?: string;
+  subtitle?: string;
+
   // Data / State
   form: ProductFormState;
   onFormChange: (updates: Partial<ProductFormState>) => void;
@@ -55,13 +60,17 @@ interface BaseLoanProductModalProps {
   // Success Flow
   isSuccess: boolean;
   onSuccessDone: () => void;
-  
-  // Read Only Mode
-  readOnly?: boolean;
 }
 
+// Default header copy per mode; callers may still override via title/subtitle.
+const MODE_HEADER: Record<ProductFieldMode, { title: string; subtitle: string }> = {
+  add: { title: 'New Loan Product', subtitle: 'Products you create are published immediately as Active.' },
+  edit: { title: 'Edit Loan Product', subtitle: 'Changes are saved to the bank product catalog.' },
+  view: { title: 'View Loan Product', subtitle: 'Viewing product details.' },
+};
+
 export function BaseLoanProductModal({
-  isOpen, onClose, title, subtitle, variant = 'add',
+  isOpen, onClose, mode, title, subtitle,
   form, onFormChange,
   imagePreview, onImageSelect, onImageRemove, fileInputRef,
   categoryOptions, tagOptions, realAttributes,
@@ -72,15 +81,18 @@ export function BaseLoanProductModal({
   isLoadingDetail = false, detailError,
   footerActions,
   isSuccess, onSuccessDone,
-  readOnly = false
 }: BaseLoanProductModalProps) {
   const dialogRef = useModalA11y<HTMLDivElement>(isOpen, onClose);
   const titleId = useId();
 
   if (!isOpen) return null;
 
-  const labelClass = variant === 'add' ? 'text-xs text-gray-900' : 'text-[14px] text-[#1F2937]';
-  const textareaClass = variant === 'add'
+  const readOnly = mode === 'view';
+  const resolvedTitle = title ?? MODE_HEADER[mode].title;
+  const resolvedSubtitle = subtitle ?? MODE_HEADER[mode].subtitle;
+
+  const labelClass = mode === 'add' ? 'text-xs text-gray-900' : 'text-[14px] text-[#1F2937]';
+  const textareaClass = mode === 'add'
     ? 'border-gray-300 px-3.5 py-2 text-xs text-gray-900 focus:border-[#16A34A] focus:ring-[#16A34A]/20'
     : 'border-[#D1D5DB] px-4 py-2.5 text-[14px] focus:border-[#00C48C] focus:ring-[#00C48C]';
 
@@ -108,8 +120,8 @@ export function BaseLoanProductModal({
                     <Package className="h-6 w-6 text-[#00C48C]" />
                   </div>
                   <div>
-                    <h2 id={titleId} className="text-[18px] font-bold text-[#1F2937]">{title}</h2>
-                    <p className="text-[14px] text-[#6B7280]">{subtitle}</p>
+                    <h2 id={titleId} className="text-[18px] font-bold text-[#1F2937]">{resolvedTitle}</h2>
+                    <p className="text-[14px] text-[#6B7280]">{resolvedSubtitle}</p>
                   </div>
                 </div>
                 <button
@@ -135,7 +147,7 @@ export function BaseLoanProductModal({
               ) : (
                 <div className="flex-1 space-y-6 overflow-y-auto p-6">
                   <ProductImageDropzone
-                    variant={variant}
+                    mode={mode}
                     imagePreview={imagePreview}
                     onPick={() => fileInputRef.current?.click()}
                     onRemove={onImageRemove}
@@ -148,7 +160,7 @@ export function BaseLoanProductModal({
                   />
 
                   <ProductTextField
-                    variant={variant}
+                    mode={mode}
                     label="Product Name"
                     required={!readOnly}
                     value={form.productName}
@@ -189,7 +201,7 @@ export function BaseLoanProductModal({
 
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <ProductTextField
-                      variant={variant}
+                      mode={mode}
                       label="Interest rate (% p.a.)"
                       required={!readOnly}
                       type="number"
@@ -205,7 +217,7 @@ export function BaseLoanProductModal({
                       disabled={readOnly}
                     />
                     <ProductTextField
-                      variant={variant}
+                      mode={mode}
                       label="Max interest rate (% p.a.)"
                       type="number"
                       min="0"
@@ -223,7 +235,7 @@ export function BaseLoanProductModal({
 
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <ProductTextField
-                      variant={variant}
+                      mode={mode}
                       label="Min amount (ETB)"
                       type="number"
                       min="0"
@@ -237,7 +249,7 @@ export function BaseLoanProductModal({
                       disabled={readOnly}
                     />
                     <ProductTextField
-                      variant={variant}
+                      mode={mode}
                       label="Max amount (ETB)"
                       required={!readOnly}
                       type="number"
@@ -254,7 +266,7 @@ export function BaseLoanProductModal({
                   </div>
 
                   <ProductTextField
-                    variant={variant}
+                    mode={mode}
                     label="Tenure (months)"
                     required={!readOnly}
                     type="number"
@@ -268,7 +280,7 @@ export function BaseLoanProductModal({
                   />
 
                   <ProductAttributesGrid
-                    variant={variant}
+                    mode={mode}
                     heading="Eligibility Attributes"
                     attributes={realAttributes}
                     selectedAttributeTermIds={selectedAttributeTermIds}

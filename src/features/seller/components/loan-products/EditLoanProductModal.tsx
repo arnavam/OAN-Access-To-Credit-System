@@ -253,9 +253,7 @@ export function EditLoanProductModal({ isOpen, onClose, product }: EditLoanProdu
     <BaseLoanProductModal
       isOpen={isOpen}
       onClose={onClose}
-      title="Edit Loan Product"
-      subtitle="Changes are saved to the bank product catalog."
-      variant="edit"
+      mode="edit"
       form={form}
       onFormChange={handleFormChange}
       imagePreview={imagePreview}

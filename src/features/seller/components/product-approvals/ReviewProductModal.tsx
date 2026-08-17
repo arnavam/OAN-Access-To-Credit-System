@@ -187,10 +187,9 @@ export function ReviewProductModal({ isOpen, onClose, product, initialMode = nul
     <BaseLoanProductModal
       isOpen={isOpen}
       onClose={onClose}
+      mode="view"
       title={readOnlyView ? "View Loan Product" : "Review Loan Product"}
       subtitle={readOnlyView ? "Viewing product details." : "Review product details submitted by the agent."}
-      variant="edit"
-      readOnly={true}
       form={formValues}
       onFormChange={() => {}}
       imagePreview={productDetail?.image ?? null}
