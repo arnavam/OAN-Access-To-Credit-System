@@ -361,8 +361,7 @@ export default function AgentApplicationTable() {
             onClick={() => {
               setSearchInput('');
               setAppliedSearchQuery('');
-              setSelectedLoanTypes([]);
-              setSelectedLoanAmounts([]);
+
               setAdvancedFilters({
                 status: [],
                 loanAmount: [],
