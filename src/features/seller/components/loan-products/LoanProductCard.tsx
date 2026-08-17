@@ -1,5 +1,6 @@
 'use client';
 
+import { getLoanProductStatusPresentation } from '@/features/seller/constants/loan-product-status';
 import type { LoanProductSummary } from '@/lib/api/api.schemas';
 import { BarChart3, Box, CalendarDays, LucideIcon, Package, Pencil, Sprout, Trash2, Eye } from 'lucide-react';
 import { useState } from 'react';
@@ -66,14 +67,6 @@ function formatCreationDate(value: string | null | undefined): string {
   return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-const statusStyles = {
-  Draft: { text: 'text-orange-700', border: 'border-orange-200', dot: 'bg-orange-500', bg: 'bg-orange-100', label: 'Pending Approved' },
-  'Pending Approval': { text: 'text-amber-700', border: 'border-amber-200', dot: 'bg-amber-500', bg: 'bg-amber-50', label: 'Pending Approval' },
-  Active: { text: 'text-emerald-700', border: 'border-emerald-200', dot: 'bg-emerald-500', bg: 'bg-emerald-50', label: 'Active' },
-  Archived: { text: 'text-gray-700', border: 'border-gray-200', dot: 'bg-gray-500', bg: 'bg-gray-100', label: 'Archived' },
-  Rejected: { text: 'text-red-700', border: 'border-red-200', dot: 'bg-red-500', bg: 'bg-red-100', label: 'Rejected' },
-} as const;
-
 export interface LoanProductCardProps {
   product: LoanProductSummary;
   variant?: 'default' | 'approval';
@@ -99,11 +92,7 @@ export function LoanProductCard({ product, variant = 'default' }: LoanProductCar
   const CategoryIcon = theme.icon;
 
   const canEdit = canEditLoanProduct(product.status);
-  
-  // Use status styles from mapping, fallback to Draft if unknown
-  const statusStyle = statusStyles[product.status as keyof typeof statusStyles] || statusStyles.Draft;
-  const statusLabel = variant === 'default' && product.status === 'Draft' ? 'Pending Approved' : statusStyle.label;
-  const statusBadgeBg = `${statusStyle.bg} ${statusStyle.border} ${statusStyle.text}`;
+  const status = getLoanProductStatusPresentation(product.status);
 
   const applicantsCount = product.applications_count ?? 0;
 
@@ -128,9 +117,9 @@ export function LoanProductCard({ product, variant = 'default' }: LoanProductCar
                 </span>
               ) : null}
 
-              <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[12px] font-bold ${statusBadgeBg}`}>
-                <span className={`h-1.5 w-1.5 rounded-full ${statusStyle.dot}`} />
-                {statusLabel}
+              <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[12px] font-bold ${status.badgeClasses}`}>
+                <span className={`h-1.5 w-1.5 rounded-full ${status.dotClasses}`} />
+                {status.label}
               </span>
             </div>
 

@@ -18,6 +18,17 @@ export type User =
   | { kind: 'marketplace'; email: string; name: string; userImage?: string | null }
   | { kind: 'farmer'; email: string; name: string; userImage?: string | null };
 
+/**
+ * The two ways a correct username/password pair can end.
+ *
+ * `password_change_required` carries no `user` on purpose: the backend issued no
+ * token, so there is no session and nothing to classify. The only thing the UI
+ * needs is the login id to hand back to `set_initial_password`.
+ */
+export type LoginOutcome =
+  | { outcome: 'authenticated'; user: User }
+  | { outcome: 'password_change_required'; usr: string };
+
 export type AuthStatus = 'idle' | 'loading' | 'succeeded' | 'failed';
 
 export interface AuthState {

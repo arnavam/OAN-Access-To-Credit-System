@@ -844,35 +844,40 @@ Updates the onboarding status of a specified bank. Restricted to Bank Admins.
 
 ---
 
-### 6.8 `POST /api/method/oan_a2c.api.v1.seller.onboarding.invite_user`
-Invites a new team member to the caller's bank. Creates the User account if it doesn't exist and binds them to the caller's bank in `User Permission`.
+### 6.8 `POST /api/method/oan_a2c.api.v1.seller.onboarding.invite_team_member`
+Adds a Bank Agent to the caller's bank. Creates the User account if it doesn't exist and binds them to the caller's bank in `User Permission`.
 
-**Authentication & Permissions:** Requires JWT Bearer token. Caller must have an assigned bank binding.
+> Renamed from `invite_user`. The old path no longer exists.
+
+The password is admin-chosen, so the new account is flagged must-change: it authenticates but `auth.login` returns `403 PASSWORD_CHANGE_REQUIRED` and issues no token until the agent sets their own password via `auth.set_initial_password`.
+
+**Authentication & Permissions:** Requires JWT Bearer token and the `A2C Bank Admin` role. Caller must have an assigned bank binding.
 **Parameters (JSON Body):**
 | Param | Type | Required | Default | Notes |
 | :--- | :--- | :--- | :--- | :--- |
 | **`email`** | string | Yes | — | Valid email address format |
 | **`full_name`** | string | Yes | — | Min length 2 characters |
-| **`role`** | string | Yes | — | Exactly one of: `A2C Bank Admin`, `A2C Bank Agent` |
-| **`password`** | string | Yes | — | Min length 6 characters. Used when creating a new user account |
+| `role` | string | No | `A2C Bank Agent` | Only `A2C Bank Agent` is accepted. A Bank Admin cannot create another Bank Admin |
+| **`password`** | string | Yes | — | Temporary password. 8–64 chars, at least one letter and one digit |
 
 **Success Response (HTTP 200):**
 ```json
 {
   "status": "success",
-  "message": "User invited successfully.",
+  "message": "Success",
   "data": {
-    "message": "User invited successfully."
+    "message": "Team member invited successfully."
   }
 }
 ```
-*(Note: Returns "User has already joined." if user is already in this bank. Silently returns "User invited successfully." if user belongs to another bank to prevent enumeration).*
+*(Note: Returns "Team member has already joined." if they are already in this bank. Silently returns "Team member invited successfully." if they belong to another bank, to prevent enumeration).*
 
 **Error Cases:**
-- **400 `VALIDATION_ERROR`**: `role` not in `{A2C Bank Admin, A2C Bank Agent}` (`Invalid role.`), password fewer than 6 characters, or invalid email format.
+- **400 `VALIDATION_ERROR`**: `role` is anything other than `A2C Bank Agent` (`Invalid role.`), password shorter than 8 chars or missing a letter/digit, or invalid email format.
 - **400 `VALIDATION_ERROR` / `BANK_NOT_ONBOARDED`**: Caller has no bank binding (`No bank associated with the current user.`).
 - **401 `AUTHENTICATION_ERROR`**: Called by unauthenticated user.
-- **500 `INTERNAL_ERROR`**: Database transaction failure (`Failed to invite user: ...`).
+- **403 `PERMISSION_DENIED`**: Caller is not a Bank Admin.
+- **500 `INTERNAL_ERROR`**: Database transaction failure (`Failed to invite team member: ...`).
 
 ---
 

@@ -62,6 +62,26 @@ export function canAccess(kind: UserKind, pathname: string): boolean {
   return match[1].includes(kind);
 }
 
+// Routes that require a session but belong to no single role — every signed-in
+// kind may reach them. Kept separate from ROUTE_ACCESS, which answers "which
+// roles?", because the answer here is "any, as long as they are signed in".
+const SHARED_AUTHENTICATED_PREFIXES: ReadonlyArray<string> = ['/profile'];
+
+// True when `pathname` requires a session.
+//
+// Derived from the policy above rather than restated as its own list. The guard
+// previously hardcoded four prefixes, which meant /dashboard, /farmer-dashboard,
+// /agent-dashboard, /my-applications, /discover-loans, /loan-products,
+// /product-approvals and /kyc-compliance rendered their shell to anonymous
+// visitors — every new route was opt-in to being protected, and easy to forget.
+// Now a route is protected the moment it appears in the access policy.
+export function isProtectedRoute(pathname: string): boolean {
+  return (
+    ROUTE_ACCESS.some(([prefix]) => pathname.startsWith(prefix)) ||
+    SHARED_AUTHENTICATED_PREFIXES.some((prefix) => pathname.startsWith(prefix))
+  );
+}
+
 // Decodes (does NOT verify) the JWT payload segment. Verification is
 // intentionally omitted: the frontend has no signing secret/JWKS, and these
 // values are used only for routing. The backend verifies the signature.
@@ -95,16 +115,63 @@ function toUserKind(userType: string | undefined): UserKind | null {
   return null;
 }
 
+/**
+ * What the access-token cookie says about the session, for routing purposes.
+ *
+ *  - `none`    — no cookie, or its contents are not a usable JWT. Not signed in.
+ *  - `active`  — decodes, carries the claims we need, and has not expired.
+ *  - `expired` — decodes, but `exp` has passed. NOT the same as signed out: the
+ *                access token lives 15 minutes while the session lives for days
+ *                behind the refresh token, so this is the normal steady state
+ *                between refreshes.
+ */
+export type SessionState = 'none' | 'active' | 'expired';
+
+export interface RoutingSession {
+  state: SessionState;
+  /** The role, when one could be read. Available for `expired` too. */
+  kind: UserKind | null;
+}
+
+const NO_SESSION: RoutingSession = { state: 'none', kind: null };
+
+/**
+ * Reads the session signal from the access-token cookie.
+ *
+ * This is routing/UX, NOT authorization — the signature is not verified here
+ * (the frontend holds no signing secret) and the backend re-verifies every API
+ * call regardless. What it does buy is that an arbitrary non-empty cookie value
+ * no longer counts as a session: the guard used to accept `auth_token=x`, so
+ * anyone could hand themselves the authenticated shell of any role by typing a
+ * cookie into devtools. A structurally invalid or claim-less token now reads as
+ * `none`, and expiry is surfaced instead of ignored.
+ */
+export function readRoutingSession(token: string | undefined): RoutingSession {
+  if (!token) return NO_SESSION;
+
+  // A JWT is exactly three dot-separated segments. Checking first keeps a
+  // stray cookie value from being probed as base64.
+  if (token.split('.').length !== 3) return NO_SESSION;
+
+  const claims = decodeJwtClaims(token);
+  if (!claims) return NO_SESSION;
+
+  const kind = toUserKind(claims.user_type);
+
+  // Tokens this app issues always carry both claims. Missing either means the
+  // value did not come from our backend, whatever else it may decode to.
+  if (!kind || typeof claims.exp !== 'number') return NO_SESSION;
+
+  const isExpired = claims.exp * 1000 <= Date.now();
+  return { state: isExpired ? 'expired' : 'active', kind };
+}
+
 // Reads the user_type claim for routing, REGARDLESS of token expiry.
 //
 // The access token's 15-min `exp` governs API-call validity, not login state —
 // the session stays alive via the refresh token for days. For routing (e.g.
-// bouncing a logged-in user off /login) we only need the role, and an expired
-// JWT is still parseable. The `auth_token` cookie is cleared on logout and on
-// refresh failure, so its mere presence is a safe signal that a session is
-// intended to be alive. This must never be used for authorization.
+// bouncing a signed-in visitor off /login) we only need the role, and an expired
+// JWT is still parseable. This must never be used for authorization.
 export function readUserKindForRouting(token: string): UserKind | null {
-  const claims = decodeJwtClaims(token);
-  if (!claims) return null;
-  return toUserKind(claims.user_type);
+  return readRoutingSession(token).kind;
 }

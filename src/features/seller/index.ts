@@ -18,12 +18,12 @@ export {
 // Store — team
 export {
     clearTeamMutationError, deactivateUser, fetchTeamUsers,
-    inviteUser, selectTeamListError, selectTeamListStatus, selectTeamMutationError, selectTeamMutationStatus, selectTeamUsers, sellerTeamReducer, updateUser
+    inviteTeamMember, resetMemberPassword, selectTeamListError, selectTeamListStatus, selectTeamMutationError, selectTeamMutationStatus, selectTeamUsers, sellerTeamReducer, updateUser
 } from './store/teamSlice';
 // Types — safe to import from server and client contexts
 export type { ArchiveLoanProductInput, CreateLoanProductCompoundInput, CreateLoanProductPayload, ListProductsParams, SetLoanProductStatusInput, UpdateLoanProductCompoundInput, UpdateLoanProductPayload } from './types/loan-products.types';
 export type { RegisterSellerPayload, SaveOrgContactsPayload, UpdateBankStatusPayload, UploadKycDocumentPayload } from './types/onboarding.types';
-export type { InviteUserPayload, UpdateUserPayload, UpdateUserProfilePayload } from './types/team.types';
+export type { InviteTeamMemberPayload, ResetMemberPasswordPayload, UpdateUserPayload, UpdateUserProfilePayload } from './types/team.types';
 
 
 

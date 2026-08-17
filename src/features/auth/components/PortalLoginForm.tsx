@@ -2,14 +2,16 @@
 
 import { logoutUser } from '@/features/auth/api/authApi';
 import { ForgotPasswordModal } from '@/features/auth/components/ForgotPasswordModal';
+import { SetInitialPasswordForm } from '@/features/auth/components/SetInitialPasswordForm';
 import type { UserKind } from '@/features/auth/rbac';
 import { clearAuthError, loginThunk, logout } from '@/features/auth/store/authSlice';
 import type { User as AuthUser } from '@/features/auth/types/auth.types';
+import { AUTH_MESSAGES } from '@/lib/authMessages';
 import { useAppDispatch } from '@/store/hooks';
-import { ArrowRight, Eye, EyeOff, Lock, ShieldCheck, User } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Clock, Eye, EyeOff, Lock, User } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 
 interface PortalLoginFormProps {
   /** Title shown below the heading */
@@ -38,40 +40,94 @@ export function PortalLoginForm({
 }: PortalLoginFormProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  // Set by IdleSessionWatcher and by the middleware's idle check, so the sign-out
+  // is explained on arrival rather than looking like a session that just vanished.
+  const wasSignedOutForIdling = useSearchParams().get('reason') === 'idle';
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  // Sent to /api/auth/login, which uses it to pick the session lifetime (30 days
+  // vs 24 hours). Until it was wired up the box rendered but was never read, so
+  // every session got the same treatment whatever the person chose.
+  const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isForgotOpen, setIsForgotOpen] = useState(false);
+  // Set when the backend accepts the credentials but refuses to open a session
+  // because the password was issued by an admin. Held in component state only —
+  // a temporary password must never reach Redux, sessionStorage or a cookie.
+  const [pendingPasswordChange, setPendingPasswordChange] = useState<{
+    usr: string;
+    temporaryPassword: string;
+  } | null>(null);
+  // Confirmation carried back from the set-password step. Rendered on the form
+  // itself rather than as a toast: the user has to type their new password here,
+  // so the instruction needs to still be on screen while they do it.
+  const [notice, setNotice] = useState<string | null>(null);
+  const passwordInputRef = useRef<HTMLInputElement>(null);
+
+  // Put the cursor where the user's next action is — the username is already
+  // filled in, so the only thing left to type is the password they just chose.
+  useEffect(() => {
+    if (notice) passwordInputRef.current?.focus();
+  }, [notice]);
+
+  const returnToSignIn = () => {
+    setPendingPasswordChange(null);
+    setPassword('');
+    setErrorMessage(null);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setErrorMessage(null);
+    setNotice(null);
     dispatch(clearAuthError());
 
     try {
-      const result = await dispatch(loginThunk({ usr: username, pwd: password }));
+      const result = await dispatch(loginThunk({ usr: username, pwd: password, rememberMe }));
       if (loginThunk.fulfilled.match(result)) {
-        const user = result.payload;
+        if (result.payload.outcome === 'password_change_required') {
+          setPendingPasswordChange({ usr: result.payload.usr, temporaryPassword: password });
+          return;
+        }
+        const user = result.payload.user;
         if (allowedKinds.includes(user.kind)) {
           router.push(redirectTo(user));
         } else {
           await logoutUser();
           dispatch(logout());
-          setErrorMessage('These credentials are not valid for this portal. Please use your designated login page.');
+          setErrorMessage(AUTH_MESSAGES.wrongPortal);
         }
       } else {
-        setErrorMessage((result.payload as string) || 'Incorrect email/phone number or password.');
+        setErrorMessage((result.payload as string) || AUTH_MESSAGES.invalidCredentials);
       }
     } catch {
-      setErrorMessage('An unexpected error occurred. Please try again.');
+      setErrorMessage(AUTH_MESSAGES.unexpected);
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (pendingPasswordChange) {
+    return (
+      <SetInitialPasswordForm
+        usr={pendingPasswordChange.usr}
+        temporaryPassword={pendingPasswordChange.temporaryPassword}
+        onDone={async (successMessage) => {
+          // No session was ever created, but clear any stale cookie/state anyway
+          // so the user lands on a genuinely clean sign-in.
+          await logoutUser();
+          dispatch(logout());
+          returnToSignIn();
+          setNotice(successMessage);
+        }}
+        onCancel={returnToSignIn}
+      />
+    );
+  }
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center h-full px-0 sm:px-0 max-w-lg mx-auto w-full">
@@ -81,6 +137,34 @@ export function PortalLoginForm({
         </h2>
         <p className="text-[#6B7280] text-[15px] font-medium max-w-[280px]">{subtitle}</p>
       </div>
+
+      {notice && (
+        <div
+          role="status"
+          className="w-full mb-6 p-4 bg-brand-green-surface border border-brand-green-border rounded-xl flex items-start gap-3 animate-fade-in-down"
+        >
+          <CheckCircle2 className="mt-0.5 shrink-0 text-brand-green" size={18} strokeWidth={2.5} />
+          <div>
+            <p className="text-sm font-bold text-brand-green-strong">Password updated</p>
+            <p className="mt-0.5 text-sm font-medium text-brand-green-strong/90">{notice}</p>
+          </div>
+        </div>
+      )}
+
+      {wasSignedOutForIdling && !errorMessage && !notice && (
+        <div
+          role="status"
+          className="w-full mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3"
+        >
+          <Clock className="mt-0.5 shrink-0 text-amber-600" size={18} strokeWidth={2.5} />
+          <div>
+            <p className="text-sm font-bold text-amber-900">Signed out for inactivity</p>
+            <p className="mt-0.5 text-sm font-medium text-amber-900/90">
+              Your session ended because it was left idle. Please sign in again to continue.
+            </p>
+          </div>
+        </div>
+      )}
 
       {errorMessage && (
         <div className="w-full mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">
@@ -115,6 +199,7 @@ export function PortalLoginForm({
                 <Lock size={18} strokeWidth={2} />
               </div>
               <input
+                ref={passwordInputRef}
                 type={showPassword ? 'text' : 'password'}
                 autoComplete="new-password"
                 value={password}
@@ -139,6 +224,8 @@ export function PortalLoginForm({
             <div className="relative flex items-center justify-center w-5 h-5">
               <input
                 type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
                 className="peer appearance-none w-5 h-5 border-2 border-[#D1D5DB] rounded-[6px] bg-white checked:bg-[#16A34A] checked:border-[#16A34A] focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20 transition-all duration-300 cursor-pointer hover:border-[#16A34A]/50 active:scale-90 checked:scale-110"
               />
               <svg
@@ -179,14 +266,6 @@ export function PortalLoginForm({
           </div>
         )}
       </form>
-
-      <div className="mt-6 w-full bg-[#F0FDF4] border border-[#DCFCE7] rounded-xl p-3 flex items-start space-x-3">
-        <ShieldCheck className="text-[#16A34A] mt-0.5 shrink-0" size={18} strokeWidth={2.5} />
-        <p className="text-[14px] font-medium text-[#166534] leading-relaxed">
-          <strong className="font-bold">Secured by FaydaPass — </strong>
-          All sessions authenticated via Ethiopia National ID (Fayda Auth API)
-        </p>
-      </div>
 
       {showPartnerBanks && (
         <div className="mt-8 w-full flex flex-col items-center">
