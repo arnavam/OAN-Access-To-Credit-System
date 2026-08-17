@@ -14,11 +14,11 @@ import {
   selectTags,
   setProductStatus,
 } from '@/features/seller/store/loanProductsSlice';
-import type { LoanProductSummary } from '@/lib/api/api.schemas';
 import { filterEligibilityAttributes, mapTermOptions } from '@/features/seller/utils/loan-product-form.utils';
+import type { LoanProductSummary } from '@/lib/api/api.schemas';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { CheckCircle2, Loader2, XCircle } from 'lucide-react';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { BaseLoanProductModal } from '../loan-products/BaseLoanProductModal';
 
 interface ReviewProductModalProps {
@@ -120,7 +120,7 @@ export function ReviewProductModal({ isOpen, onClose, product, initialMode = nul
             {actionMode === 'reject' ? (
               <>Rejection Reason <span className="text-red-500">*</span></>
             ) : (
-              'Approval Comment (Optional)'
+              'Approval Comment'
             )}
           </label>
           <textarea
@@ -128,9 +128,8 @@ export function ReviewProductModal({ isOpen, onClose, product, initialMode = nul
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder={actionMode === 'reject' ? "Please provide a reason for rejecting this product..." : "Add an optional comment..."}
-            className={`w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-[14px] focus:outline-none focus:ring-2 ${
-              actionMode === 'reject' ? 'focus:border-red-500 focus:ring-red-500/20' : 'focus:border-[#16A34A] focus:ring-[#16A34A]/20'
-            }`}
+            className={`w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-[14px] focus:outline-none focus:ring-2 ${actionMode === 'reject' ? 'focus:border-red-500 focus:ring-red-500/20' : 'focus:border-[#16A34A] focus:ring-[#16A34A]/20'
+              }`}
             rows={3}
           />
         </div>
@@ -209,27 +208,27 @@ export function ReviewProductModal({ isOpen, onClose, product, initialMode = nul
       title={readOnlyView ? "View Loan Product" : "Review Loan Product"}
       subtitle={readOnlyView ? "Viewing product details." : "Review product details submitted by the agent."}
       form={formValues}
-      onFormChange={() => {}}
+      onFormChange={() => { }}
       imagePreview={productDetail?.image ?? null}
-      onImageSelect={() => {}}
-      onImageRemove={() => {}}
+      onImageSelect={() => { }}
+      onImageRemove={() => { }}
       fileInputRef={fileInputRef}
       categoryOptions={categoryOptions}
       tagOptions={tagOptions}
       realAttributes={realAttributes}
       selectedCategoryTermIds={selectedCategoryTermIds}
-      onChangeCategories={() => {}}
+      onChangeCategories={() => { }}
       selectedTagTermIds={selectedTagTermIds}
-      onChangeTags={() => {}}
+      onChangeTags={() => { }}
       selectedAttributeTermIds={selectedAttributeTermIds}
-      onToggleAttribute={() => {}}
-      onClearFieldError={() => {}}
+      onToggleAttribute={() => { }}
+      onClearFieldError={() => { }}
       globalError={mutationError}
       isLoadingDetail={isLoadingDetail}
       detailError={detailError}
       footerActions={footerActions}
       isSuccess={false}
-      onSuccessDone={() => {}}
+      onSuccessDone={() => { }}
     />
   );
 }
