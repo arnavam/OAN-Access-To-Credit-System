@@ -1,5 +1,5 @@
 'use client';
-import { LayoutDashboard, Package } from 'lucide-react';
+import { LayoutDashboard, Package, FileText } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -38,6 +38,12 @@ export default function BankAgentSidebar({ isExpanded, setIsExpanded: _setIsExpa
         <Link href="/agent-loan-products" className={`flex items-center ${isExpanded ? 'gap-4 px-4' : 'justify-center px-0'} py-3 rounded-xl font-medium text-[15px] transition-all group ${pathname === '/agent-loan-products' ? 'bg-white/15 text-white' : 'text-white/80 hover:bg-white/5 hover:text-white'}`}>
           <Package className="w-5 h-5 shrink-0" />
           <span className={`transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0 hidden'}`}>Loan Products</span>
+        </Link>
+
+        {/* Applications Lists */}
+        <Link href="/agent-application-lists" className={`flex items-center ${isExpanded ? 'gap-4 px-4' : 'justify-center px-0'} py-3 rounded-xl font-medium text-[15px] transition-all group ${pathname === '/agent-application-lists' ? 'bg-white/15 text-white' : 'text-white/80 hover:bg-white/5 hover:text-white'}`}>
+          <FileText className="w-5 h-5 shrink-0" />
+          <span className={`transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0 hidden'}`}>Application Lists</span>
         </Link>
 
       </nav>

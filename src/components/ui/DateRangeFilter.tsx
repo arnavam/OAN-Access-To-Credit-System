@@ -1,94 +1,135 @@
 'use client';
 
-import { useState } from 'react';
+
 import { DatePickerField } from './DatePickerField';
 
-const QUICK_DATE_OPTS = [
-  { label: 'Today', days: 0 },
-  { label: 'Yesterday', days: 1 },
-  { label: 'Last 7 Days', days: 7 },
-  { label: 'Last 30 Days', days: 30 },
-] as const;
-
-interface DateRangeFilterProps {
-  dateFrom: string;
-  dateTo: string;
-  quickDate: string;
-  onDateFromChange: (v: string) => void;
-  onDateToChange: (v: string) => void;
-  onQuickDateChange: (label: string, from: string, to: string) => void;
+export interface DateRangeFilterProps {
+  // Original interface used by AdvancedFilters components
+  dateFrom?: string;
+  dateTo?: string;
+  quickDate?: string;
+  onDateFromChange?: (v: string) => void;
+  onDateToChange?: (v: string) => void;
+  onQuickDateChange?: (label: string, from: string, to: string) => void;
+  
+  // Fallback interface
+  fromValue?: string;
+  toValue?: string;
+  onFromChange?: (val: string) => void;
+  onToChange?: (val: string) => void;
+  
+  fromLabel?: string;
+  toLabel?: string;
 }
 
-export function DateRangeFilter({
-  dateFrom,
-  dateTo,
-  quickDate,
-  onDateFromChange,
-  onDateToChange,
-  onQuickDateChange,
-}: DateRangeFilterProps) {
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+export function DateRangeFilter(props: DateRangeFilterProps) {
+  const {
+    dateFrom,
+    dateTo,
+    quickDate,
+    onDateFromChange,
+    onDateToChange,
+    onQuickDateChange,
+    fromValue,
+    toValue,
+    onFromChange,
+    onToChange,
+    fromLabel = 'From',
+    toLabel = 'To'
+  } = props;
+
+  const actualFrom = dateFrom ?? fromValue ?? '';
+  const actualTo = dateTo ?? toValue ?? '';
+  
+  const handleFromChange = (val: string) => {
+    onDateFromChange?.(val);
+    onFromChange?.(val);
+  };
+
+  const handleToChange = (val: string) => {
+    onDateToChange?.(val);
+    onToChange?.(val);
+  };
+
+  const formatDate = (date: Date) => {
+    const offset = date.getTimezoneOffset();
+    const localDate = new Date(date.getTime() - (offset*60*1000));
+    return localDate.toISOString().split('T')[0] || '';
+  };
+
+  const handleQuickSelect = (label: string) => {
+    const today = new Date();
+    let fromDate = new Date();
+    let toDate = new Date();
+
+    if (label === 'Today') {
+      // both are today
+    } else if (label === 'Yesterday') {
+      fromDate.setDate(today.getDate() - 1);
+      toDate.setDate(today.getDate() - 1);
+    } else if (label === 'Last 7 Days') {
+      fromDate.setDate(today.getDate() - 6);
+    } else if (label === 'Last 30 Days') {
+      fromDate.setDate(today.getDate() - 29);
+    }
+
+    const fromStr = formatDate(fromDate);
+    const toStr = formatDate(toDate);
+
+    if (onQuickDateChange) {
+      onQuickDateChange(label, fromStr, toStr);
+    } else {
+      handleFromChange(fromStr);
+      handleToChange(toStr);
+    }
+  };
+
+  const quickOptions = ['Today', 'Yesterday', 'Last 7 Days', 'Last 30 Days'];
 
   return (
-    <section className={isDatePickerOpen ? 'pb-[280px]' : ''}>
-      <p className="mb-3 text-base font-semibold text-[#232F34]">Date Range</p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="relative">
-          <p className="mb-1 text-sm text-gray-500">From</p>
-          <DatePickerField
-            value={dateFrom}
-            onChange={(v) => onDateFromChange(v)}
-            usePortal={false}
-            align="left"
-            {...(dateTo ? { maxDate: new Date(dateTo + 'T00:00:00') } : {})}
-            onOpenChange={(isOpen) => setIsDatePickerOpen(isOpen)}
+    <div className="flex flex-col gap-4 w-full">
+      <div className="grid grid-cols-2 gap-4">
+        <div className="flex flex-col gap-1.5">
+          {fromLabel && (
+            <label className="text-sm font-medium text-gray-700">
+              {fromLabel}
+            </label>
+          )}
+          <DatePickerField 
+            value={actualFrom}
+            onChange={handleFromChange}
           />
         </div>
-        <div className="relative">
-          <p className="mb-1 text-sm text-gray-500">To</p>
-          <DatePickerField
-            value={dateTo}
-            onChange={(v) => onDateToChange(v)}
-            usePortal={false}
-            align="right"
-            {...(dateFrom ? { minDate: new Date(dateFrom + 'T00:00:00') } : {})}
-            onOpenChange={(isOpen) => setIsDatePickerOpen(isOpen)}
+        
+        <div className="flex flex-col gap-1.5">
+          {toLabel && (
+            <label className="text-sm font-medium text-gray-700">
+              {toLabel}
+            </label>
+          )}
+          <DatePickerField 
+            value={actualTo}
+            onChange={handleToChange}
+            {...(actualFrom ? { minDate: new Date(actualFrom) } : {})}
           />
         </div>
       </div>
-      <div className="mt-3 flex flex-wrap gap-2 font-semibold">
-        {QUICK_DATE_OPTS.map((o) => {
-          const isActive = quickDate === o.label;
-          return (
-            <button
-              key={o.label}
-              type="button"
-              onClick={() => {
-                const to = new Date();
-                const from = new Date();
-                if (o.days === 1) {
-                  from.setDate(from.getDate() - 1);
-                  to.setDate(to.getDate() - 1);
-                } else {
-                  from.setDate(from.getDate() - o.days);
-                }
-                onQuickDateChange(
-                  o.label,
-                  from.toISOString().split('T')[0] ?? '',
-                  to.toISOString().split('T')[0] ?? '',
-                );
-              }}
-              className={`rounded-md border px-3 py-1.5 text-sm font-medium transition ${
-                isActive
-                  ? 'border-green-600 bg-green-50 text-green-700'
-                  : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:text-gray-700'
-              }`}
-            >
-              {o.label}
-            </button>
-          );
-        })}
+
+      <div className="flex items-center gap-2 overflow-x-auto pb-1">
+        {quickOptions.map(option => (
+          <button
+            key={option}
+            onClick={() => handleQuickSelect(option)}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors border ${
+              quickDate === option
+                ? 'bg-emerald-50 text-[#16A34A] border-[#16A34A]'
+                : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50 hover:text-gray-700'
+            }`}
+          >
+            {option}
+          </button>
+        ))}
       </div>
-    </section>
+    </div>
   );
 }

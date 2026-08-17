@@ -201,7 +201,7 @@ export function DatePickerField({ id, label, value, onChange, required, error, d
                   className={`mx-auto flex h-8 w-8 items-center justify-center rounded-sm text-sm transition-all
                     ${selected ? 'font-medium bg-[#16A34A] text-white'
                       : disabled ? 'cursor-not-allowed text-gray-300'
-                        : isTodayCell ? 'font-medium text-gray-900 border hover:bg-gray-50'
+                        : isTodayCell ? 'font-bold text-[#16A34A] border border-[#16A34A] hover:bg-green-50'
                           : 'text-gray-900 hover:bg-gray-100'}`}>
                   {cell.day}
                 </button>
