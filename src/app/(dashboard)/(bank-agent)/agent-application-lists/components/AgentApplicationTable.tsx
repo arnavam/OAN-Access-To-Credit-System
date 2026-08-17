@@ -179,9 +179,9 @@ export default function AgentApplicationTable() {
   // Extending mock data to allow testing of pagination
   const extendedData = [
     ...initialMockData,
-    ...initialMockData.map(item => ({ ...item, id: item.id.replace('00', '01') })),
-    ...initialMockData.map(item => ({ ...item, id: item.id.replace('00', '02') })),
-    ...initialMockData.map(item => ({ ...item, id: item.id.replace('00', '03') })),
+    ...initialMockData.map(item => ({ ...item, id: `${item.id}-01` })),
+    ...initialMockData.map(item => ({ ...item, id: `${item.id}-02` })),
+    ...initialMockData.map(item => ({ ...item, id: `${item.id}-03` })),
   ];
 
   const [data, setData] = useState(extendedData);
@@ -189,8 +189,7 @@ export default function AgentApplicationTable() {
   const [addedRowIds, setAddedRowIds] = useState<Set<string>>(new Set());
 
   // Filter states
-  const [selectedLoanTypes, setSelectedLoanTypes] = useState<string[]>([]);
-  const [selectedLoanAmounts, setSelectedLoanAmounts] = useState<string[]>([]);
+  // We use advancedFilters.loanType and advancedFilters.loanAmount directly
 
   // Advanced Filters state
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
@@ -202,19 +201,11 @@ export default function AgentApplicationTable() {
     dateRange: { from: '', to: '' }
   });
 
-  // Sync column filters to advanced filters automatically
-  useEffect(() => {
-    setAdvancedFilters(prev => ({
-      ...prev,
-      loanType: selectedLoanTypes,
-      loanAmount: selectedLoanAmounts
-    }));
-  }, [selectedLoanTypes, selectedLoanAmounts]);
+
 
   const handleApplyAdvancedFilters = (filters: AdvancedFiltersState) => {
     setAdvancedFilters(filters);
-    setSelectedLoanTypes(filters.loanType);
-    setSelectedLoanAmounts(filters.loanAmount);
+    setCurrentPage(1);
   };
 
   // Apply filters
@@ -233,11 +224,11 @@ export default function AgentApplicationTable() {
       if (!matchesSearch) return false;
     }
 
-    if (selectedLoanTypes.length > 0 && !selectedLoanTypes.includes(row.type)) return false;
+    if (advancedFilters.loanType.length > 0 && !advancedFilters.loanType.includes(row.type)) return false;
 
-    if (selectedLoanAmounts.length > 0) {
+    if (advancedFilters.loanAmount.length > 0) {
       const amountValue = parseInt(row.amount.replace(/[^0-9]/g, ''));
-      const matchesAmount = selectedLoanAmounts.some(range => {
+      const matchesAmount = advancedFilters.loanAmount.some(range => {
         if (range === '0 - 25,000') return amountValue >= 0 && amountValue <= 25000;
         if (range === '25,001 - 50,000') return amountValue > 25000 && amountValue <= 50000;
         if (range === '50,001 - 1,00,000') return amountValue > 50000 && amountValue <= 100000;
@@ -276,15 +267,14 @@ export default function AgentApplicationTable() {
   const [currentPage, setCurrentPage] = useState(1);
   const [entriesPerPage, setEntriesPerPage] = useState(10);
 
-  const totalEntries = 151; // Hardcoded to match the KPI card
-  const totalPages = Math.ceil(totalEntries / entriesPerPage);
+  const totalEntries = filteredData.length;
+  const totalPages = Math.max(1, Math.ceil(totalEntries / entriesPerPage));
 
   // Standard dropdown options
   const displayOptions = [10, 20, 50, 100];
 
-  // Wrap-around slicing so mock data never appears empty on high pages
-  const offset = filteredData.length > 0 ? ((currentPage - 1) * entriesPerPage) % filteredData.length : 0;
-  const paginatedData = filteredData.length > 0 ? [...filteredData, ...filteredData].slice(offset, offset + entriesPerPage) : [];
+  const offset = (currentPage - 1) * entriesPerPage;
+  const paginatedData = filteredData.slice(offset, offset + entriesPerPage);
 
   const getPageNumbers = () => {
     if (totalPages <= 5) return Array.from({ length: totalPages }, (_, i) => i + 1);
@@ -338,13 +328,21 @@ export default function AgentApplicationTable() {
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && setAppliedSearchQuery(searchInput)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setAppliedSearchQuery(searchInput);
+                  setCurrentPage(1);
+                }
+              }}
               placeholder="Search applications..."
               className="w-full pl-10 pr-4 py-2.5 text-[14px] bg-[#F8FAFC] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] text-gray-800 placeholder-gray-400 transition-all"
             />
           </div>
           <button
-            onClick={() => setAppliedSearchQuery(searchInput)}
+            onClick={() => {
+              setAppliedSearchQuery(searchInput);
+              setCurrentPage(1);
+            }}
             className="bg-[#16A34A] hover:bg-[#15803d] text-white px-6 py-2.5 rounded-lg text-[14px]  transition-colors shadow-sm shrink-0"
           >
             <span className='font-semibold'>Search</span>
@@ -397,14 +395,14 @@ export default function AgentApplicationTable() {
               <th className="px-6 py-4 font-semibold">
                 <LoanTypeFilter
                   options={loanTypeOptions}
-                  selectedValues={selectedLoanTypes}
-                  onChange={setSelectedLoanTypes}
+                  selectedValues={advancedFilters.loanType}
+                  onChange={(types) => setAdvancedFilters(prev => ({ ...prev, loanType: types }))}
                 />
               </th>
-              <th className="px-6 py-4 font-semibold">
+              <th className="px-6 py-4 font-bold text-gray-500 uppercase tracking-wider min-w-[200px]">
                 <LoanAmountFilter
-                  selectedValues={selectedLoanAmounts}
-                  onChange={setSelectedLoanAmounts}
+                  selectedValues={advancedFilters.loanAmount}
+                  onChange={(amounts) => setAdvancedFilters(prev => ({ ...prev, loanAmount: amounts }))}
                 />
               </th>
               <th className="px-6 py-4 font-semibold text-center">Applied On</th>
