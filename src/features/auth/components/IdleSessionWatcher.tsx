@@ -3,6 +3,7 @@
 import { logoutUser } from '@/features/auth/api/authApi';
 import { useIdleSession } from '@/features/auth/hooks/useIdleSession';
 import { logout, selectIsAuthenticated } from '@/features/auth/store/authSlice';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { Clock } from 'lucide-react';
 import { useCallback, useRef } from 'react';
@@ -40,10 +41,24 @@ export function IdleSessionWatcher() {
     handleExpire
   );
 
-  if (!isAuthenticated || !isWarning) return null;
+  const isOpen = isAuthenticated && isWarning;
+  const staySignedInRef = useRef<HTMLButtonElement>(null);
+
+  // Same dialog behavior as every other modal: Tab is trapped inside, the page
+  // behind stops scrolling, and focus returns where it came from on close.
+  //
+  // Escape maps to "stay signed in" rather than a bare dismiss. Closing this
+  // dialog without answering it would leave the countdown running behind an
+  // invisible warning, and a keypress *is* the activity the warning is asking
+  // for — so the safe reading and the accessible one agree here.
+  const dialogRef = useModalA11y<HTMLDivElement>(isOpen, staySignedIn, staySignedInRef);
+
+  if (!isOpen) return null;
 
   return (
     <div
+      ref={dialogRef}
+      tabIndex={-1}
       role="alertdialog"
       aria-modal="true"
       aria-labelledby="idle-warning-title"
@@ -77,7 +92,7 @@ export function IdleSessionWatcher() {
           </button>
           <button
             type="button"
-            autoFocus
+            ref={staySignedInRef}
             onClick={staySignedIn}
             className="rounded-xl bg-[#16A34A] px-5 py-2.5 text-[14px] font-bold text-white transition-colors hover:bg-[#15803d]"
           >

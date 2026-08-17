@@ -1,5 +1,6 @@
 'use client';
 
+import { logger } from '@/lib/logger';
 import { SESSION_POLICY } from '@/lib/securityConfig';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -70,10 +71,22 @@ export function useIdleSession(enabled: boolean, onExpire: () => void): IdleSess
     // individual keystroke.
     if (now - lastPingRef.current >= PING_INTERVAL_MS) {
       lastPingRef.current = now;
-      void fetch('/api/auth/heartbeat', { method: 'POST', credentials: 'include' }).catch(() => {
-        // Offline or mid-deploy. The local countdown carries on regardless —
-        // failing to reach the server is not a reason to extend a session.
-      });
+      void fetch('/api/auth/heartbeat', { method: 'POST', credentials: 'include' })
+        .then((response) => {
+          // A 401 is the server saying the session is already over — it refuses
+          // to revive one past the timeout. Nothing to log; the countdown here
+          // will reach the same conclusion and sign out on its own.
+          if (!response.ok && response.status !== 401) {
+            logger.warn(`Session heartbeat returned ${response.status}`);
+          }
+        })
+        .catch((error) => {
+          // Offline or mid-deploy. The local countdown carries on regardless —
+          // failing to reach the server is not a reason to extend a session — but
+          // a heartbeat that stops landing means the server-side timer is no
+          // longer being fed, so it is worth seeing rather than swallowing.
+          logger.warn('Session heartbeat failed', error);
+        });
     }
 
     if (broadcast) channelRef.current?.postMessage('active');

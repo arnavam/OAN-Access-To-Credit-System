@@ -63,6 +63,36 @@ describe('buildUpstreamHeaders', () => {
 
     expect(buildUpstreamHeaders(request, 'real-jwt').get('authorization')).toBe('Bearer real-jwt');
   });
+
+  it('forwards the range headers a resumable download depends on', () => {
+    // accept-ranges/content-range were already relayed back, so dropping these
+    // advertised resumable downloads and then ignored the request to resume.
+    const request = new Request('https://a2c.example.com/api/files/loan.pdf', {
+      headers: {
+        range: 'bytes=200-1023',
+        'if-range': '"etag-abc"',
+      },
+    });
+
+    const headers = buildUpstreamHeaders(request);
+
+    expect(headers.get('range')).toBe('bytes=200-1023');
+    expect(headers.get('if-range')).toBe('"etag-abc"');
+  });
+
+  it('forwards the conditional headers that make a relayed ETag useful', () => {
+    const request = new Request('https://a2c.example.com/api/files/loan.pdf', {
+      headers: {
+        'if-none-match': '"etag-abc"',
+        'if-modified-since': 'Wed, 21 Oct 2026 07:28:00 GMT',
+      },
+    });
+
+    const headers = buildUpstreamHeaders(request);
+
+    expect(headers.get('if-none-match')).toBe('"etag-abc"');
+    expect(headers.get('if-modified-since')).toBe('Wed, 21 Oct 2026 07:28:00 GMT');
+  });
 });
 
 describe('sanitizeResponseHeaders', () => {
@@ -163,6 +193,46 @@ describe('buildClientResponse', () => {
     const { init } = await buildClientResponse(jsonResponse({ message: 'nope' }), 'https://bench/x');
 
     expect(init.status).toBe(500);
+  });
+
+  it('returns a clean 2xx payload without re-serializing it', async () => {
+    const payload = { message: { status: 'success', data: { name: 'LEAD-0001' } } };
+    const response = new Response(JSON.stringify(payload), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+
+    const { body } = await buildClientResponse(response, 'https://bench/x');
+
+    expect(body).toBe(JSON.stringify(payload));
+  });
+
+  it('still strips debug fields from a 2xx that carries them', async () => {
+    // The fast path is a substring pre-check, not a status check — a 200 with
+    // _server_messages on it is parsed and sanitized like any other.
+    const response = new Response(
+      JSON.stringify({ _server_messages: '["SELECT * FROM `tabA2C Lead`"]', message: 'ok' }),
+      { status: 200, headers: { 'content-type': 'application/json' } }
+    );
+
+    const { body } = await buildClientResponse(response, 'https://bench/x');
+
+    expect(JSON.parse(String(body))._server_messages).toBeUndefined();
+    expect(JSON.parse(String(body)).message).toBe('ok');
+  });
+
+  it('keeps replacing an unparseable error body even though it has no debug field in it', async () => {
+    // The fast path must not swallow this case: an HTML stack-trace page served
+    // with a JSON content type contains none of the debug field names, so a
+    // substring scan alone would have relayed it verbatim.
+    const response = new Response('<html><body>Traceback: /home/frappe/apps/...</body></html>', {
+      status: 500,
+      headers: { 'content-type': 'application/json' },
+    });
+
+    const { body } = await buildClientResponse(response, 'https://bench/x');
+
+    expect(String(body)).not.toContain('/home/frappe');
   });
 
   it('relays a 3xx with a Location the browser can follow', async () => {

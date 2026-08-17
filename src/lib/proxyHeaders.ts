@@ -22,6 +22,13 @@ import { logger } from '@/lib/logger';
  *
  * `cookie` is absent deliberately — the browser's cookies are ours, not the
  * bench's, and the JWT is attached as an `Authorization` header instead.
+ *
+ * The range and conditional headers are the inbound half of pairs whose outbound
+ * half is already relayed. Allowing `accept-ranges`/`content-range` back but
+ * dropping `range` on the way in advertises resumable downloads and then serves
+ * the whole file anyway, which breaks seek and resume on the large loan
+ * documents this proxy exists to serve; the same applies to relaying `etag` and
+ * `last-modified` while discarding the `if-*` headers that make them useful.
  */
 const FORWARDED_REQUEST_HEADERS: ReadonlySet<string> = new Set([
   'accept',
@@ -29,6 +36,10 @@ const FORWARDED_REQUEST_HEADERS: ReadonlySet<string> = new Set([
   'content-type',
   'user-agent',
   'x-request-id',
+  'range',
+  'if-range',
+  'if-none-match',
+  'if-modified-since',
 ]);
 
 /**
@@ -169,6 +180,23 @@ function isJsonContentType(contentType: string | null): boolean {
 }
 
 /**
+ * Cheap pre-check for whether a JSON body is worth parsing.
+ *
+ * Every one of the debug fields has to appear literally, as a quoted key, for
+ * `stripDebugFields` to find anything — so a handful of substring scans decide
+ * it without building an object graph. The overwhelming majority of responses
+ * are clean, and those now skip both `JSON.parse` and the re-serialization.
+ *
+ * False positives are harmless (the string appears somewhere in a value, we
+ * parse, nothing is stripped, `raw` is returned unchanged). False negatives are
+ * impossible, which is the property that matters: if the key is there, the
+ * substring is there.
+ */
+function mayContainDebugFields(raw: string): boolean {
+  return FRAPPE_DEBUG_FIELDS.some((field) => raw.includes(`"${field}"`));
+}
+
+/**
  * Strips Frappe's debug fields from a JSON payload, logging what was removed so
  * the detail stays available to operators without being shipped to the browser.
  *
@@ -214,7 +242,9 @@ export interface BuildClientResponseOptions {
  * JSON, debug fields removed.
  *
  * Only JSON is buffered. Anything else — file downloads above all — is streamed
- * straight through, so a large document never has to fit in memory.
+ * straight through, so a large document never has to fit in memory. JSON cannot
+ * be streamed and inspected at the same time, so it is read in full; what a
+ * clean 2xx avoids is the parse and re-serialization, not the read.
  */
 export async function buildClientResponse(
   response: Response,
@@ -252,6 +282,17 @@ export async function buildClientResponse(
 
   const raw = await response.text();
   if (!raw) return { body: raw, init };
+
+  // Fast path: a successful response with no debug field in it is handed back as
+  // the string it arrived as, with no parse and no re-serialization. This is
+  // what almost every API call takes.
+  //
+  // Gated on `response.ok` deliberately. The parse below is not only there to
+  // strip fields — an unparseable body claiming to be JSON is replaced wholesale
+  // because that is what a bench stack-trace page looks like, and a substring
+  // scan would not recognize one. Error responses therefore keep the full
+  // treatment; only the successful ones skip it.
+  if (response.ok && !mayContainDebugFields(raw)) return { body: raw, init };
 
   let parsed: unknown;
   try {

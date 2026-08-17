@@ -2,7 +2,7 @@ import { checkCsrf } from '@/lib/csrf';
 import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import { buildClientResponse, buildUpstreamHeaders } from '@/lib/proxyHeaders';
-import { AUTH_TOKEN_COOKIE } from '@/lib/session';
+import { AUTH_TOKEN_COOKIE, idleSessionResponse, isIdleExpired } from '@/lib/session';
 import { NextRequest, NextResponse } from 'next/server';
 
 type RouteContext = { params: Promise<{ path: string[] }> };
@@ -29,6 +29,14 @@ async function handleProxy(request: NextRequest, pathArray: string[]) {
   if (isMutating) {
     const csrfError = checkCsrf(request);
     if (csrfError) return csrfError;
+  }
+
+  // Idle timeout. The middleware's matcher excludes /api, so without this an
+  // idle tab sitting on an already-rendered page kept reaching the backend until
+  // its next navigation — up to a full timeout window past the cut-off.
+  if (isIdleExpired(request)) {
+    logger.security('Rejected a proxied request from an idle session');
+    return idleSessionResponse();
   }
 
   // Construct the target URL

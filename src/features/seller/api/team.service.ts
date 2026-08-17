@@ -24,10 +24,14 @@ export const teamService = {
     }) as Promise<ApiResponse<{ message: string }>>;
   },
 
-  async resetMemberPassword(payload: ResetMemberPasswordPayload): Promise<ApiResponse<null>> {
+  async resetMemberPassword(
+    payload: ResetMemberPasswordPayload,
+    signal?: AbortSignal
+  ): Promise<ApiResponse<null>> {
     return fetchApi('oan_a2c.api.v1.seller.onboarding.reset_member_password', {
       method: 'POST',
       body: JSON.stringify(payload),
+      ...(signal ? { signal } : {}),
     }) as Promise<ApiResponse<null>>;
   },
 

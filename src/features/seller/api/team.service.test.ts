@@ -72,4 +72,17 @@ describe('teamService.resetMemberPassword', () => {
       teamService.resetMemberPassword({ email: 'other@bank.com', password: 'ReIssued99' })
     ).rejects.toThrow('Not permitted to manage a user from another bank.');
   });
+
+  it('forwards the abort signal so the thunk can cancel on unmount', async () => {
+    vi.mocked(fetchApi).mockResolvedValue({ status: 'success', data: null });
+
+    const controller = new AbortController();
+    const payload = { email: 'agent@bank.com', password: 'ReIssued99' };
+    await teamService.resetMemberPassword(payload, controller.signal);
+
+    expect(fetchApi).toHaveBeenCalledWith(
+      'oan_a2c.api.v1.seller.onboarding.reset_member_password',
+      { method: 'POST', body: JSON.stringify(payload), signal: controller.signal }
+    );
+  });
 });

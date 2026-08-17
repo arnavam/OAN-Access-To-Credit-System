@@ -1,13 +1,21 @@
 import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import { buildClientResponse, buildUpstreamHeaders } from '@/lib/proxyHeaders';
-import { AUTH_TOKEN_COOKIE } from '@/lib/session';
+import { AUTH_TOKEN_COOKIE, idleSessionResponse, isIdleExpired } from '@/lib/session';
 import { NextRequest, NextResponse } from 'next/server';
 
 type RouteContext = { params: Promise<{ path: string[] }> };
 
 export async function GET(request: NextRequest, { params }: RouteContext) {
   const { path } = await params;
+
+  // Same idle enforcement as /api/proxy — the middleware never sees /api, so a
+  // route that reaches the backend has to check the timeout itself.
+  if (isIdleExpired(request)) {
+    logger.security('Rejected a file request from an idle session');
+    return idleSessionResponse();
+  }
+
   const targetUrl = `${env.API_BASE_URL}/files/${path.join('/')}${request.nextUrl.search}`;
 
   const authToken = request.cookies.get(AUTH_TOKEN_COOKIE)?.value;

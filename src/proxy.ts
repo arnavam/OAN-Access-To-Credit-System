@@ -1,6 +1,7 @@
 import { canAccess, homeRouteFor, isProtectedRoute, readRoutingSession } from '@/features/auth/rbac';
 import {
     AUTH_TOKEN_COOKIE,
+    clearAuthTokenCookie,
     clearSessionCookies,
     isIdleExpired,
     REFRESH_TOKEN_COOKIE,
@@ -61,10 +62,23 @@ export function proxy(request: NextRequest) {
     session.state === 'active' || (session.state === 'expired' && hasRefreshToken);
 
   if (isProtectedRoute(pathname) && !isAuthenticated) {
-    const response = redirectToLogin();
+    const response = redirectToLogin(hasRefreshToken ? 'session' : undefined);
+
     // A cookie that did not survive validation is not merely useless, it is
     // misleading — drop it rather than leave it to fail the same way next time.
-    if (token) clearSessionCookies(response);
+    //
+    // But drop only the broken one. `clearSessionCookies` here also destroyed a
+    // perfectly good refresh token, turning a recoverable state (truncated or
+    // stale access-token cookie, backend token-format change) into a full
+    // re-login and orphaning the backend's refresh-token row. The refresh token
+    // is opaque and backend-validated, so keeping it costs nothing and lets
+    // `/api/auth/refresh` mint a new access token on the next API call.
+    //
+    // The request is still bounced rather than let through: a token that does
+    // not decode carries no `user_type`, so role-based routing below has nothing
+    // to enforce with, and rendering an authenticated shell without it would be
+    // worse than asking for a sign-in.
+    if (token) clearAuthTokenCookie(response);
     return response;
   }
 

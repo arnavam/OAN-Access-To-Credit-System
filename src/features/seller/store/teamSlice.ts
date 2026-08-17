@@ -56,13 +56,20 @@ export const inviteTeamMember = createAsyncThunk(
 
 export const resetMemberPassword = createAsyncThunk(
   'sellerTeam/resetMemberPassword',
-  async (payload: ResetMemberPasswordPayload, { dispatch, rejectWithValue }) => {
+  async (payload: ResetMemberPasswordPayload, { dispatch, signal, rejectWithValue }) => {
     try {
-      const response = await teamService.resetMemberPassword(payload);
+      const response = await teamService.resetMemberPassword(payload, signal);
       // Refetch so the member's "pending password setup" flag reappears in the list.
       await dispatch(fetchTeamUsers());
       return response.data;
     } catch (error) {
+      // An abort is the component unmounting, not a failure. Re-thrown so RTK
+      // records it as `aborted` — routing it through `rejectWithValue` would
+      // leave "Failed to reset the team member password" on screen after the
+      // modal that asked for it has already gone.
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw error;
+      }
       logger.error('resetMemberPassword thunk failed', { email: payload.email, error });
       return rejectWithValue(
         error instanceof Error ? error.message : 'Failed to reset the team member password'

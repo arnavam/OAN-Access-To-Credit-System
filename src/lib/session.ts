@@ -1,5 +1,6 @@
+import { AUTH_MESSAGES } from '@/lib/authMessages';
 import { SESSION_POLICY } from '@/lib/securityConfig';
-import type { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
 // Single source of truth for the session cookies. Every route that opens,
 // renews or ends a session goes through the helpers below, so a cookie can
@@ -118,6 +119,41 @@ export function isIdleExpired(request: CookieReader): boolean {
     !!request.cookies.get(AUTH_TOKEN_COOKIE)?.value ||
     !!request.cookies.get(REFRESH_TOKEN_COOKIE)?.value;
   return hasSession && !request.cookies.get(SESSION_ACTIVITY_COOKIE)?.value;
+}
+
+/**
+ * Expires only the access-token cookie, leaving the refresh token in place.
+ *
+ * For the case where the access token is unusable but the session behind it is
+ * not over: the refresh token is opaque and validated by the backend, so a
+ * malformed or stale `auth_token` says nothing about whether it is still good.
+ * Clearing both would discard a live session and orphan its backend row.
+ */
+export function clearAuthTokenCookie(response: NextResponse): void {
+  response.cookies.set(AUTH_TOKEN_COOKIE, '', { ...sessionCookieOptions, maxAge: 0 });
+}
+
+/**
+ * The 401 an API route returns when the session has gone idle.
+ *
+ * Every route that reaches the backend has to enforce this, not just the
+ * middleware: the middleware only sees page navigations (its matcher excludes
+ * `/api`), so an idle tab left open on a rendered page could keep calling the
+ * API — for as long as the access token stayed valid — with nothing re-checking
+ * the timeout until the next navigation.
+ *
+ * Cookies are cleared here so the next request is unambiguously signed out.
+ * `fetchApi` retries a 401 once through `/api/auth/refresh`, which enforces the
+ * same timeout and will refuse, so the client converges on a sign-out rather
+ * than looping.
+ */
+export function idleSessionResponse(): NextResponse {
+  const response = NextResponse.json(
+    { message: AUTH_MESSAGES.sessionExpired, code: 'SESSION_IDLE' },
+    { status: 401 }
+  );
+  clearSessionCookies(response);
+  return response;
 }
 
 /**
