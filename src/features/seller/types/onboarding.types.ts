@@ -21,6 +21,7 @@ export interface RegisterBankPayload {
   bank_name: string;
   brand_name: string;
   entity_type: string;
+  bank_code: string;
   registered_street: string;
   registered_zone: string;
   registered_region: string;
@@ -28,7 +29,7 @@ export interface RegisterBankPayload {
   registered_postal_code: string;
   registered_email: string;
   registered_phone: string;
-  website: string;
+  website: string | null;
 }
 
 export interface UpdateBankStatusPayload {

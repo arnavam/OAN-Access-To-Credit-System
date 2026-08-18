@@ -42,6 +42,7 @@ export default function RegisterPage() {
     bank_name: '',
     brand_name: '',
     entity_type: '',
+    bank_code: '',
   });
 
   const [addressFields, setAddressFields] = useState<RegisteredAddressFields>({
@@ -66,6 +67,7 @@ export default function RegisterPage() {
       ...orgFields,
       ...addressFields,
       ...contactFields,
+      website: addressFields.website || null,
     }));
     if (registerBank.fulfilled.match(result)) {
       const message = (result.payload as { message?: string } | undefined)?.message;
