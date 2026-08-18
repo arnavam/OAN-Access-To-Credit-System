@@ -99,14 +99,18 @@ export function ReviewProductModal({ isOpen, onClose, product, initialMode = nul
   const tagOptions = mapTermOptions(fetchedTags);
   const realAttributes = filterEligibilityAttributes(fetchedAttributes);
 
-  // Fallback to summary data while detail is loading
+  // Show summary data only until the detail response arrives; once it does, trust
+  // the detail verbatim. A per-field `?? summary` fallback would make a value the
+  // seller legitimately cleared (e.g. min amount) silently show the stale summary
+  // number instead of empty — which an approver could then act on.
+  const source = productDetail ?? product;
   const formValues = {
-    productName: productDetail?.product_name ?? product.product_name ?? '',
-    minInterestRate: productDetail?.min_interest_rate?.toString() ?? product.min_interest_rate?.toString() ?? '',
-    maxInterestRate: productDetail?.max_interest_rate?.toString() ?? product.max_interest_rate?.toString() ?? '',
-    minAmount: productDetail?.min_amount?.toString() ?? product.min_amount?.toString() ?? '',
-    maxAmount: productDetail?.max_amount?.toString() ?? product.max_amount?.toString() ?? '',
-    tenureMonths: productDetail?.tenure_months?.toString() ?? product.tenure_months?.toString() ?? '',
+    productName: source.product_name ?? '',
+    minInterestRate: source.min_interest_rate?.toString() ?? '',
+    maxInterestRate: source.max_interest_rate?.toString() ?? '',
+    minAmount: source.min_amount?.toString() ?? '',
+    maxAmount: source.max_amount?.toString() ?? '',
+    tenureMonths: source.tenure_months?.toString() ?? '',
     description: productDetail?.description ?? '',
   };
 
@@ -210,27 +214,18 @@ export function ReviewProductModal({ isOpen, onClose, product, initialMode = nul
       title={readOnlyView ? "View Loan Product" : "Review Loan Product"}
       subtitle={readOnlyView ? "Viewing product details." : "Review product details submitted by the agent."}
       form={formValues}
-      onFormChange={() => { }}
       imagePreview={productDetail?.image ?? null}
-      onImageSelect={() => { }}
-      onImageRemove={() => { }}
       fileInputRef={fileInputRef}
       categoryOptions={categoryOptions}
       tagOptions={tagOptions}
       realAttributes={realAttributes}
       selectedCategoryTermIds={selectedCategoryTermIds}
-      onChangeCategories={() => { }}
       selectedTagTermIds={selectedTagTermIds}
-      onChangeTags={() => { }}
       selectedAttributeTermIds={selectedAttributeTermIds}
-      onToggleAttribute={() => { }}
-      onClearFieldError={() => { }}
       globalError={mutationError}
       isLoadingDetail={isLoadingDetail}
       detailError={detailError}
       footerActions={footerActions}
-      isSuccess={false}
-      onSuccessDone={() => { }}
     />
   );
 }

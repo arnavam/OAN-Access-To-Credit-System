@@ -10,6 +10,7 @@ import {
     selectProductsMutationStatus,
     selectTags
 } from '@/features/seller/store/loanProductsSlice';
+import { logger } from '@/lib/logger';
 import { toast } from '@/lib/toast';
 import type { CreateLoanProductCompoundInput, CreateLoanProductPayload } from '@/features/seller/types/loan-products.types';
 import {
@@ -120,7 +121,8 @@ export function AddLoanProductModal({ isOpen, onClose }: AddLoanProductModalProp
     let imageUrl: string | undefined;
     try {
       imageUrl = await resolveProductImageUrl(imagePreview);
-    } catch {
+    } catch (error) {
+      logger.error('Loan product image upload failed (create)', { error });
       setLocalError('Failed to upload product image. Please try again.');
       return;
     }

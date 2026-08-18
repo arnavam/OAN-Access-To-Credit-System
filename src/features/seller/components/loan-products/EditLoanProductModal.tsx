@@ -16,6 +16,7 @@ import {
     selectTags,
     updateProductCompound
 } from '@/features/seller/store/loanProductsSlice';
+import { logger } from '@/lib/logger';
 import { toast } from '@/lib/toast';
 import type { UpdateLoanProductCompoundInput, UpdateLoanProductPayload } from '@/features/seller/types/loan-products.types';
 import type { LoanProductSummary } from '@/lib/api/api.schemas';
@@ -194,7 +195,8 @@ export function EditLoanProductModal({ isOpen, onClose, product }: EditLoanProdu
     let imageUrl: string | undefined;
     try {
       imageUrl = await resolveProductImageUrl(imagePreview);
-    } catch {
+    } catch (error) {
+      logger.error('Loan product image upload failed (update)', { error });
       setLocalError('Failed to upload product image. Please try again.');
       return;
     }

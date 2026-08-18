@@ -24,45 +24,48 @@ interface BaseLoanProductModalProps {
 
   // Data / State
   form: ProductFormState;
-  onFormChange: (updates: Partial<ProductFormState>) => void;
-  
+  // The interaction callbacks below are optional: in read-only ('view') mode every
+  // input is disabled, so a read-only caller can omit them instead of passing no-op
+  // stubs. They default to no-ops inside the component.
+  onFormChange?: (updates: Partial<ProductFormState>) => void;
+
   // Image
   imagePreview: string | null;
-  onImageSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onImageRemove: () => void;
+  onImageSelect?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onImageRemove?: () => void;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
-  
+
   // Taxonomy Options
   categoryOptions: { term_id: string; term_name: string }[] | undefined;
   tagOptions: { term_id: string; term_name: string }[] | undefined;
   realAttributes: TaxonomyAttribute[] | undefined;
-  
+
   // Taxonomy Selections
   selectedCategoryTermIds: string[];
-  onChangeCategories: (ids: string[]) => void;
-  
+  onChangeCategories?: (ids: string[]) => void;
+
   selectedTagTermIds: string[];
-  onChangeTags: (ids: string[]) => void;
-  
+  onChangeTags?: (ids: string[]) => void;
+
   selectedAttributeTermIds: string[];
-  onToggleAttribute: (id: string) => void;
-  
+  onToggleAttribute?: (id: string) => void;
+
   // Errors / Loading
   fieldErrors?: Record<string, string>;
-  onClearFieldError: (key: string) => void;
+  onClearFieldError?: (key: string) => void;
   globalError?: string | null;
   isLoadingDetail?: boolean;
   detailError?: string | null;
   // Bank Admin's reason for rejecting the product; shown as a banner so the
   // seller knows what to fix before resubmitting. Absent for non-rejected ones.
   rejectionComment?: string | null;
-  
+
   // Actions
   footerActions: ReactNode;
-  
-  // Success Flow
-  isSuccess: boolean;
-  onSuccessDone: () => void;
+
+  // Success Flow — only the create/edit flows reach success; view omits both.
+  isSuccess?: boolean;
+  onSuccessDone?: () => void;
 }
 
 // Default header copy per mode; callers may still override via title/subtitle.
@@ -74,17 +77,17 @@ const MODE_HEADER: Record<ProductFieldMode, { title: string; subtitle: string }>
 
 export function BaseLoanProductModal({
   isOpen, onClose, mode, title, subtitle,
-  form, onFormChange,
-  imagePreview, onImageSelect, onImageRemove, fileInputRef,
+  form, onFormChange = () => {},
+  imagePreview, onImageSelect = () => {}, onImageRemove = () => {}, fileInputRef,
   categoryOptions, tagOptions, realAttributes,
-  selectedCategoryTermIds, onChangeCategories,
-  selectedTagTermIds, onChangeTags,
-  selectedAttributeTermIds, onToggleAttribute,
-  fieldErrors = {}, onClearFieldError, globalError,
+  selectedCategoryTermIds, onChangeCategories = () => {},
+  selectedTagTermIds, onChangeTags = () => {},
+  selectedAttributeTermIds, onToggleAttribute = () => {},
+  fieldErrors = {}, onClearFieldError = () => {}, globalError,
   isLoadingDetail = false, detailError,
   rejectionComment,
   footerActions,
-  isSuccess, onSuccessDone,
+  isSuccess = false, onSuccessDone = () => {},
 }: BaseLoanProductModalProps) {
   const dialogRef = useModalA11y<HTMLDivElement>(isOpen, onClose);
   const titleId = useId();
@@ -170,7 +173,6 @@ export function BaseLoanProductModal({
                     altText="Product"
                     placeholderText={readOnly ? "No product image" : "Click to upload product image"}
                     disabled={readOnly}
-                    required={!readOnly}
                   />
 
                   <ProductTextField
@@ -201,7 +203,7 @@ export function BaseLoanProductModal({
                     </div>
                     <div className="space-y-1.5">
                       <label className={`block font-bold mb-1.5 ${labelClass}`}>
-                        Loan Tags {!readOnly && <span className="text-red-500">*</span>}
+                        Loan Tags
                       </label>
                       <LoanTypeDropdown
                         selectedTypes={selectedTagTermIds}
