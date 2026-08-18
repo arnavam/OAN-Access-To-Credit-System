@@ -1,6 +1,7 @@
 'use client';
 
 import type { TaxonomyAttribute } from '@/lib/api/api.schemas';
+import { NumericInput } from '@/components/ui/NumericInput';
 import { CheckCircle2, Image as ImageIcon, X } from 'lucide-react';
 import type { RefObject } from 'react';
 
@@ -10,9 +11,14 @@ import type { RefObject } from 'react';
 // one component trying to reproduce two different layouts — this only collapses
 // the repeated label+input+error boilerplate and the two copies of the image
 // dropzone / attributes grid that were duplicated near-verbatim.
-export type ProductFieldVariant = 'add' | 'edit';
+export type ProductFieldMode = 'add' | 'edit' | 'view';
 
-const TEXT_FIELD_STYLES: Record<ProductFieldVariant, { label: string; input: string; inputError: string; error: string }> = {
+// View is Edit rendered read-only, so it shares Edit's visual styling — the two
+// style buckets below stay keyed 'add' | 'edit', and `styleFor` collapses mode → bucket.
+type ProductFieldStyle = 'add' | 'edit';
+const styleFor = (mode: ProductFieldMode): ProductFieldStyle => (mode === 'add' ? 'add' : 'edit');
+
+const TEXT_FIELD_STYLES: Record<ProductFieldStyle, { label: string; input: string; inputError: string; error: string }> = {
   add: {
     label: 'block text-xs font-bold text-gray-900 mb-1.5',
     input: 'w-full rounded-xl border px-3.5 py-2 text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20 border-gray-300 focus:border-[#16A34A]',
@@ -27,13 +33,13 @@ const TEXT_FIELD_STYLES: Record<ProductFieldVariant, { label: string; input: str
   },
 };
 
-const FIELD_WRAPPER: Record<ProductFieldVariant, string> = {
+const FIELD_WRAPPER: Record<ProductFieldStyle, string> = {
   add: '',
   edit: 'space-y-1.5',
 };
 
 interface ProductTextFieldProps {
-  variant: ProductFieldVariant;
+  mode: ProductFieldMode;
   label: string;
   required?: boolean;
   value: string;
@@ -44,42 +50,68 @@ interface ProductTextFieldProps {
   min?: string;
   max?: string;
   step?: string;
-  /** Strips e/E/+/- as the amount fields do, to keep number inputs from accepting exponent/sign notation. */
-  blockExponentChars?: boolean;
+  /** Caps the integer portion to N digits (e.g. 2 → max 99). Renders NumericInput when set. */
+  maxIntegerDigits?: number;
+  /** Caps the decimal portion to N digits (e.g. 2 → .XX). Renders NumericInput when set. */
+  maxDecimalDigits?: number;
+  /** Caps total digits (integer-only, strips decimals). Renders NumericInput when set. */
+  maxDigits?: number;
+  disabled?: boolean;
 }
 
 export function ProductTextField({
-  variant, label, required, value, onChange, error, type = 'text', placeholder, min, max, step, blockExponentChars,
+  mode, label, required, value, onChange, error, type = 'text', placeholder, min, max, step,
+  maxIntegerDigits, maxDecimalDigits, maxDigits, disabled,
 }: ProductTextFieldProps) {
-  const styles = TEXT_FIELD_STYLES[variant];
+  const style = styleFor(mode);
+  const styles = TEXT_FIELD_STYLES[style];
+  const hasDigitRestrictions = maxIntegerDigits !== undefined || maxDecimalDigits !== undefined || maxDigits !== undefined;
+
   return (
-    <div className={FIELD_WRAPPER[variant]}>
+    <div className={FIELD_WRAPPER[style]}>
       <label className={styles.label}>
         {label} {required && <span className="text-red-500">*</span>}
       </label>
-      <input
-        type={type}
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onKeyDown={blockExponentChars ? (e) => { if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault(); } : undefined}
-        onChange={(e) => onChange(blockExponentChars ? e.target.value.replace(/[eE+-]/g, '') : e.target.value)}
-        placeholder={placeholder}
-        className={error ? styles.inputError : styles.input}
-      />
+      {hasDigitRestrictions ? (
+        <NumericInput
+          type={type}
+          min={min}
+          max={max}
+          step={step}
+          {...(maxIntegerDigits !== undefined && { maxIntegerDigits })}
+          {...(maxDecimalDigits !== undefined && { maxDecimalDigits })}
+          {...(maxDigits !== undefined && { maxDigits })}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          disabled={disabled}
+          className={`${error ? styles.inputError : styles.input} ${disabled ? 'bg-gray-50 opacity-70 cursor-not-allowed' : ''}`}
+        />
+      ) : (
+        <input
+          type={type}
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          disabled={disabled}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className={`${error ? styles.inputError : styles.input} ${disabled ? 'bg-gray-50 opacity-70 cursor-not-allowed' : ''}`}
+        />
+      )}
       {error && <p className={styles.error}>{error}</p>}
     </div>
   );
 }
 
-const DROPZONE_STYLES: Record<ProductFieldVariant, { wrapper: string; label: string }> = {
+const DROPZONE_STYLES: Record<ProductFieldStyle, { wrapper: string; label: string }> = {
   add: { wrapper: '', label: 'block text-xs font-bold text-gray-900 mb-1.5' },
   edit: { wrapper: 'space-y-1.5', label: 'text-[14px] font-bold text-[#1F2937]' },
 };
 
 interface ProductImageDropzoneProps {
-  variant: ProductFieldVariant;
+  mode: ProductFieldMode;
   required?: boolean;
   imagePreview: string | null;
   onPick: () => void;
@@ -88,41 +120,44 @@ interface ProductImageDropzoneProps {
   onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
   altText: string;
   placeholderText: string;
+  disabled?: boolean;
 }
 
 export function ProductImageDropzone({
-  variant, required, imagePreview, onPick, onRemove, fileInputRef, onFileSelect, altText, placeholderText,
+  mode, required, imagePreview, onPick, onRemove, fileInputRef, onFileSelect, altText, placeholderText, disabled,
 }: ProductImageDropzoneProps) {
-  const styles = DROPZONE_STYLES[variant];
+  const styles = DROPZONE_STYLES[styleFor(mode)];
   return (
     <div className={styles.wrapper}>
       <label className={styles.label}>
         Product Image {required && <span className="text-red-500">*</span>}
       </label>
-      <input type="file" ref={fileInputRef} accept="image/png,image/jpeg,image/jpg" className="hidden" onChange={onFileSelect} />
+      <input type="file" ref={fileInputRef} accept="image/png,image/jpeg,image/jpg" className="hidden" onChange={onFileSelect} disabled={disabled} />
       <div
-        role="button"
-        tabIndex={0}
-        onClick={onPick}
-        onKeyDown={(e) => {
+        role={disabled ? undefined : "button"}
+        tabIndex={disabled ? -1 : 0}
+        onClick={disabled ? undefined : onPick}
+        onKeyDown={disabled ? undefined : (e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             onPick();
           }
         }}
-        className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50/50 p-6 text-center transition-colors hover:bg-gray-50 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A] focus-visible:ring-offset-2"
+        className={`flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50/50 p-6 text-center transition-colors ${disabled ? 'opacity-70 cursor-not-allowed' : 'hover:bg-gray-50 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A] focus-visible:ring-offset-2'}`}
       >
         {imagePreview ? (
           <div className="relative w-full h-32 rounded-xl overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element -- imagePreview can be a data: URL (fresh selection, needs `unoptimized` on next/image, unverified without a browser here) or an already-hosted URL */}
             <img src={imagePreview} alt={altText} className="w-full h-full object-cover" />
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onRemove(); }}
-              className="absolute top-2 right-2 p-1 bg-black/60 text-white rounded-full hover:bg-black/80"
-            >
-              <X size={14} />
-            </button>
+            {!disabled && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onRemove(); }}
+                className="absolute top-2 right-2 p-1 bg-black/60 text-white rounded-full hover:bg-black/80"
+              >
+                <X size={14} />
+              </button>
+            )}
           </div>
         ) : (
           <>
@@ -138,7 +173,7 @@ export function ProductImageDropzone({
   );
 }
 
-const ATTRIBUTE_STYLES: Record<ProductFieldVariant, {
+const ATTRIBUTE_STYLES: Record<ProductFieldStyle, {
   heading: string;
   grid: string;
   empty: string;
@@ -176,18 +211,19 @@ const ADD_THEMES = [
 ];
 
 interface ProductAttributesGridProps {
-  variant: ProductFieldVariant;
+  mode: ProductFieldMode;
   heading: string;
   attributes: TaxonomyAttribute[] | undefined;
   selectedAttributeTermIds: string[];
   onToggle: (termId: string) => void;
   emptyMessage: string;
+  disabled?: boolean;
 }
 
-export function ProductAttributesGrid({ variant, heading, attributes, selectedAttributeTermIds, onToggle, emptyMessage }: ProductAttributesGridProps) {
-  const styles = ATTRIBUTE_STYLES[variant];
+export function ProductAttributesGrid({ mode, heading, attributes, selectedAttributeTermIds, onToggle, emptyMessage, disabled }: ProductAttributesGridProps) {
+  const styles = ATTRIBUTE_STYLES[styleFor(mode)];
   return (
-    <div className={variant === 'add' ? 'pt-2' : 'space-y-3 pt-2'}>
+    <div className={mode === 'add' ? 'pt-2' : 'space-y-3 pt-2'}>
       <h3 className={styles.heading}>{heading}</h3>
       {attributes && attributes.length > 0 ? (
         <div className={styles.grid}>
@@ -197,19 +233,19 @@ export function ProductAttributesGrid({ variant, heading, attributes, selectedAt
             return (
               <div
                 key={attr.term_id}
-                role="button"
-                tabIndex={0}
+                role={disabled ? undefined : "button"}
+                tabIndex={disabled ? -1 : 0}
                 aria-pressed={isSelected}
-                onClick={() => onToggle(attr.term_id)}
-                onKeyDown={(e) => {
+                onClick={disabled ? undefined : () => onToggle(attr.term_id)}
+                onKeyDown={disabled ? undefined : (e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
                     onToggle(attr.term_id);
                   }
                 }}
-                className={`${styles.card(isSelected, addTheme.card)} focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A] focus-visible:ring-offset-2`}
+                className={`${styles.card(isSelected, addTheme.card)} ${disabled ? 'opacity-70 cursor-not-allowed' : 'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A] focus-visible:ring-offset-2'}`}
               >
-                {variant === 'add' ? (
+                {mode === 'add' ? (
                   <div className="flex items-center justify-between">
                     <p className={styles.name(isSelected, addTheme.name)}>{attr.term_name}</p>
                     {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-[#16A34A]" />}

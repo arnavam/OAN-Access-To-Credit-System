@@ -5,6 +5,7 @@ import {
     selectOnboardingRegistrationError,
     selectOnboardingRegistrationStatus
 } from '@/features/seller/store/onboardingSlice';
+import { PHONE_NUMBER_MAX_LENGTH } from '@/features/seller/constants/field-limits';
 import { registerSellerSchema } from '@/lib/api/api.schemas';
 import { toast } from '@/lib/toast';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -118,6 +119,7 @@ export function CreateAccountForm() {
             </div>
             <input
               type="tel"
+              maxLength={PHONE_NUMBER_MAX_LENGTH}
               value={phoneNumber}
               onChange={(e) => setPhoneNumber(e.target.value)}
               placeholder="Enter mobile Number"

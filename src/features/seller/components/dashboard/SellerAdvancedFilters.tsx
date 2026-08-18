@@ -4,7 +4,7 @@ import { useModalA11y } from '@/hooks/useModalA11y';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { Check, ChevronDown, SlidersHorizontal, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { clearAdvancedFilters, selectAdvancedFilters, setAdvancedFilters } from '@/features/loans/store/loanDashboardSlice';
+import { clearAdvancedFilters, selectAdvancedFilters, setAdvancedFilters } from '@/features/loans';
 
 interface LoanAdvancedFiltersProps {
   isOpen: boolean;

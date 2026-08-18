@@ -17,6 +17,8 @@ type AsyncStatus = 'idle' | 'loading' | 'succeeded' | 'failed';
 interface LoanProductsState {
   products: LoanProductSummary[];
   selectedProductDetail: LoanProductDetail | null;
+  productComment: string | null;
+  commentStatus: AsyncStatus;
   categories: TaxonomyCategory[];
   tags: TaxonomyTag[];
   attributes: TaxonomyAttribute[];
@@ -30,11 +32,15 @@ interface LoanProductsState {
   detailError: string | null;
   mutationError: string | null;
   mutationFieldErrors: Record<string, string> | null;
+  latestDetailRequestId: string | null;
+  latestCommentRequestId: string | null;
 }
 
 const initialState: LoanProductsState = {
   products: [],
   selectedProductDetail: null,
+  productComment: null,
+  commentStatus: 'idle',
   categories: [],
   tags: [],
   attributes: [],
@@ -48,6 +54,8 @@ const initialState: LoanProductsState = {
   detailError: null,
   mutationError: null,
   mutationFieldErrors: null,
+  latestDetailRequestId: null,
+  latestCommentRequestId: null,
 };
 
 export const fetchProducts = createAsyncThunk(
@@ -76,6 +84,19 @@ export const fetchProductDetail = createAsyncThunk(
   }
 );
 
+export const fetchProductComment = createAsyncThunk(
+  'sellerProducts/fetchProductComment',
+  async (productId: string, { rejectWithValue }) => {
+    try {
+      const response = await loanProductsService.getProductComment(productId);
+      return response.data;
+    } catch (error) {
+      logger.error('fetchProductComment thunk failed', { productId, error });
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to load product comment');
+    }
+  }
+);
+
 export const fetchTaxonomy = createAsyncThunk(
   'sellerProducts/fetchTaxonomy',
   async (_, { rejectWithValue }) => {
@@ -93,6 +114,16 @@ export const fetchTaxonomy = createAsyncThunk(
     } catch (error) {
       logger.error('fetchTaxonomy thunk failed', { error });
       return rejectWithValue(error instanceof Error ? error.message : 'Failed to load taxonomy metadata');
+    }
+  },
+  {
+    condition: (_, { getState }) => {
+      const state = getState() as RootState;
+      const status = state.sellerProducts.taxonomyStatus;
+      if (status === 'succeeded' || status === 'loading') {
+        return false;
+      }
+      return true;
     }
   }
 );
@@ -115,7 +146,11 @@ export const createProductCompound = createAsyncThunk(
   async (input: CreateLoanProductCompoundInput, { dispatch, rejectWithValue }) => {
     try {
       const created = await loanProductsService.createProduct(input.payload);
-      const productId = created.data.product_id;
+      const productId = created.data.product_ids?.[0];
+
+      if (!productId) {
+        throw new Error('No product ID returned from creation');
+      }
 
       if (input.categoryTermIds && input.categoryTermIds.length > 0) {
         await taxonomyService.setProductCategories(productId, input.categoryTermIds);
@@ -164,6 +199,20 @@ export const updateProductCompound = createAsyncThunk(
   }
 );
 
+export const setProductStatus = createAsyncThunk(
+  'sellerProducts/setProductStatus',
+  async (input: SetLoanProductStatusInput, { dispatch, rejectWithValue }) => {
+    try {
+      const response = await loanProductsService.setProductStatus(input.productId, input.status, input.reason);
+      await dispatch(fetchProducts(input.refetchParams));
+      return response.data;
+    } catch (error) {
+      logger.error('setProductStatus thunk failed', { input, error });
+      return rejectWithValue(error instanceof Error ? error.message : 'Failed to update loan product status');
+    }
+  }
+);
+
 export const archiveProduct = createAsyncThunk(
   'sellerProducts/archiveProduct',
   async (input: string | ArchiveLoanProductInput, { dispatch, rejectWithValue }) => {
@@ -176,20 +225,6 @@ export const archiveProduct = createAsyncThunk(
     } catch (error) {
       logger.error('archiveProduct thunk failed', { input, error });
       return rejectWithValue(error instanceof Error ? error.message : 'Failed to archive loan product');
-    }
-  }
-);
-
-export const setProductStatus = createAsyncThunk(
-  'sellerProducts/setProductStatus',
-  async (input: SetLoanProductStatusInput, { dispatch, rejectWithValue }) => {
-    try {
-      const response = await loanProductsService.setProductStatus(input.productId, input.status);
-      await dispatch(fetchProducts(input.refetchParams));
-      return response.data;
-    } catch (error) {
-      logger.error('setProductStatus thunk failed', { input, error });
-      return rejectWithValue(error instanceof Error ? error.message : 'Failed to update loan product status');
     }
   }
 );
@@ -207,15 +242,34 @@ const loanProductsSlice = createSlice({
       state.selectedProductDetail = null;
       state.detailStatus = 'idle';
     },
+    clearProductComment(state) {
+      state.productComment = null;
+      state.commentStatus = 'idle';
+    },
   },
   extraReducers: (builder) => {
     builder
       .addCase(fetchProducts.pending, (s) => { s.listStatus = 'loading'; s.listError = null; })
       .addCase(fetchProducts.fulfilled, (s, action) => { s.listStatus = 'succeeded'; s.products = action.payload; })
       .addCase(fetchProducts.rejected, (s, action) => { s.listStatus = 'failed'; s.listError = action.payload as string; })
-      .addCase(fetchProductDetail.pending, (s) => { s.detailStatus = 'loading'; s.detailError = null; })
-      .addCase(fetchProductDetail.fulfilled, (s, action) => { s.detailStatus = 'succeeded'; s.selectedProductDetail = action.payload; })
-      .addCase(fetchProductDetail.rejected, (s, action) => { s.detailStatus = 'failed'; s.detailError = action.payload as string; })
+      .addCase(fetchProductDetail.pending, (s, action) => { s.latestDetailRequestId = action.meta.requestId; s.detailStatus = 'loading'; s.detailError = null; })
+      .addCase(fetchProductDetail.fulfilled, (s, action) => { 
+        if (s.latestDetailRequestId !== action.meta.requestId) return;
+        s.detailStatus = 'succeeded'; s.selectedProductDetail = action.payload; 
+      })
+      .addCase(fetchProductDetail.rejected, (s, action) => { 
+        if (s.latestDetailRequestId !== action.meta.requestId) return;
+        s.detailStatus = 'failed'; s.detailError = action.payload as string; 
+      })
+      .addCase(fetchProductComment.pending, (s, action) => { s.latestCommentRequestId = action.meta.requestId; s.commentStatus = 'loading'; s.productComment = null; })
+      .addCase(fetchProductComment.fulfilled, (s, action) => { 
+        if (s.latestCommentRequestId !== action.meta.requestId) return;
+        s.commentStatus = 'succeeded'; s.productComment = action.payload; 
+      })
+      .addCase(fetchProductComment.rejected, (s, action) => { 
+        if (s.latestCommentRequestId !== action.meta.requestId) return;
+        s.commentStatus = 'failed'; s.productComment = null; 
+      })
       .addCase(fetchTaxonomy.pending, (s) => { s.taxonomyStatus = 'loading'; })
       .addCase(fetchTaxonomy.fulfilled, (s, action) => {
         s.taxonomyStatus = 'succeeded';
@@ -249,7 +303,7 @@ const loanProductsSlice = createSlice({
   },
 });
 
-export const { clearMutationError, clearSelectedProductDetail } = loanProductsSlice.actions;
+export const { clearMutationError, clearSelectedProductDetail, clearProductComment } = loanProductsSlice.actions;
 export const sellerProductsReducer = loanProductsSlice.reducer;
 export default loanProductsSlice.reducer;
 
@@ -266,3 +320,5 @@ export const selectProductsMutationError = (state: RootState) => state.sellerPro
 export const selectDetailStatus = (state: RootState) => state.sellerProducts.detailStatus;
 export const selectDetailError = (state: RootState) => state.sellerProducts.detailError;
 export const selectMutationFieldErrors = (state: RootState) => state.sellerProducts.mutationFieldErrors;
+export const selectProductComment = (state: RootState) => state.sellerProducts.productComment;
+export const selectProductCommentStatus = (state: RootState) => state.sellerProducts.commentStatus;

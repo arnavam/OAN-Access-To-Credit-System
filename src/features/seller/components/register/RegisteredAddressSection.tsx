@@ -1,11 +1,13 @@
+import { POSTAL_CODE_MAX_LENGTH } from '@/features/seller/constants/field-limits';
 import { FormCard } from './FormCard';
 import { InputField } from './InputField';
 
 export interface RegisteredAddressFields {
   registered_street: string;
-  registered_city: string;
-  registered_country: string;
+  registered_zone: string;
+  registered_region: string;
   registered_postal_code: string;
+  website: string;
 }
 
 interface RegisteredAddressSectionProps {
@@ -33,30 +35,34 @@ export function RegisteredAddressSection({ fields, onChange }: RegisteredAddress
           placeholder="Enter Woreda / District"
         />
         <InputField
-          label="City"
+          label="Zone"
           required
-          placeholder="Enter City"
-          value={fields.registered_city}
-          onChange={(e) => onChange({ registered_city: e.target.value })}
+          placeholder="Enter Zone"
+          value={fields.registered_zone}
+          onChange={(e) => onChange({ registered_zone: e.target.value })}
         />
         <InputField
-          label="Country"
+          label="Region"
           required
-          placeholder="Enter Country"
-          value={fields.registered_country}
-          onChange={(e) => onChange({ registered_country: e.target.value })}
+          placeholder="Enter Region"
+          value={fields.registered_region}
+          onChange={(e) => onChange({ registered_region: e.target.value })}
         />
         <InputField
           label="Postal code"
           required
           placeholder="Enter Postal code"
+          maxLength={POSTAL_CODE_MAX_LENGTH}
           value={fields.registered_postal_code}
           onChange={(e) => onChange({ registered_postal_code: e.target.value })}
         />
         <InputField
           label="Website"
+          type="url"
           placeholder="Enter Website"
           hint="Your website - used as your network address - can be added later"
+          value={fields.website}
+          onChange={(e) => onChange({ website: e.target.value })}
         />
       </div>
     </FormCard>

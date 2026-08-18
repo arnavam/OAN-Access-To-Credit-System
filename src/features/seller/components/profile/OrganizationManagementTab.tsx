@@ -1,6 +1,7 @@
 'use client';
 
 import { onboardingService, type BankProfile } from '@/features/seller/api/onboarding.service';
+import { POSTAL_CODE_MAX_LENGTH } from '@/features/seller/constants/field-limits';
 import { toast } from '@/lib/toast';
 import { toProxiedFileUrl } from '@/lib/utils';
 import { ArrowRight, Camera } from 'lucide-react';
@@ -42,8 +43,8 @@ export default function OrganizationManagementTab({ readOnly = false }: { readOn
         registered_street: profile.registered_street,
         ...(profile.registered_kebele_village !== undefined && { registered_kebele_village: profile.registered_kebele_village }),
         ...(profile.registered_woreda_district !== undefined && { registered_woreda_district: profile.registered_woreda_district }),
-        registered_city: profile.registered_city,
-        registered_country: profile.registered_country,
+        registered_zone: profile.registered_zone,
+        registered_region: profile.registered_region,
         registered_postal_code: profile.registered_postal_code,
         registered_email: profile.registered_email,
         registered_phone: profile.registered_phone,
@@ -108,12 +109,12 @@ export default function OrganizationManagementTab({ readOnly = false }: { readOn
             { label: 'Street address', name: 'registered_street', placeholder: 'Enter Street address', required: true },
             { label: 'Kebele / Village', name: 'registered_kebele_village', placeholder: 'Enter Kebele / Village' },
             { label: 'Woreda / District', name: 'registered_woreda_district', placeholder: 'Enter Woreda / District' },
-            { label: 'City', name: 'registered_city', placeholder: 'Enter City', required: true },
-            { label: 'Country', name: 'registered_country', placeholder: 'Enter Country', required: true },
-            { label: 'Postal code', name: 'registered_postal_code', placeholder: 'Enter Postal code', required: true },
+            { label: 'Zone', name: 'registered_zone', placeholder: 'Enter Zone', required: true },
+            { label: 'Region', name: 'registered_region', placeholder: 'Enter Region', required: true },
+            { label: 'Postal code', name: 'registered_postal_code', placeholder: 'Enter Postal code', required: true, maxLength: POSTAL_CODE_MAX_LENGTH },
             { label: 'Organization Type', name: 'entity_type', placeholder: 'e.g. Bank, Microfinance Institution', required: true },
             { label: 'Website URL', name: 'website', placeholder: 'https://www.example.com', type: 'url' },
-          ].map(({ label, name, placeholder, required, type }) => (
+          ].map(({ label, name, placeholder, required, type, maxLength }) => (
             <div key={name}>
               <label className="block text-xs font-bold text-gray-900 mb-1.5">
                 {label} {required && <span className="text-red-500">*</span>}
@@ -125,6 +126,7 @@ export default function OrganizationManagementTab({ readOnly = false }: { readOn
                 onChange={handleChange}
                 disabled={readOnly}
                 placeholder={placeholder}
+                maxLength={maxLength}
                 className={inputClass(readOnly)}
               />
             </div>
