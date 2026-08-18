@@ -48,6 +48,7 @@ export function LeadInfoSection({ isEditable = false, phoneNumber: propPhoneNumb
             value={displayPhone}
             onChange={(e) => isEditable && onPhoneNumberChange && onPhoneNumberChange(e.target.value)}
             readOnly={!isEditable}
+            maxLength={10}
             placeholder={isEditable ? "Enter Phone Number" : ""}
             className={`w-full h-[42px] rounded-md border px-4 text-[15px] text-[#232F34] focus:outline-none transition-colors ${!isEditable ? 'bg-gray-50 border-gray-200' : phoneError ? 'bg-white border-red-500 focus:ring-2 focus:ring-red-500/20' : 'bg-white border-gray-200 focus:ring-2 focus:ring-[#16335A]/20'}`}
           />

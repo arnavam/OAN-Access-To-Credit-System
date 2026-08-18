@@ -41,12 +41,14 @@ export default function RegisterPage() {
   const [orgFields, setOrgFields] = useState<OrganisationFields>({
     bank_name: '',
     brand_name: '',
+    entity_type: '',
   });
 
   const [addressFields, setAddressFields] = useState<RegisteredAddressFields>({
     registered_street: '',
     registered_zone: '',
     registered_region: '',
+    registered_country: 'Ethiopia',
     registered_postal_code: '',
     website: '',
   });

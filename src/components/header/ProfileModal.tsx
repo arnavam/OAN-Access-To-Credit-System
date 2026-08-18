@@ -166,8 +166,8 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
   if (!isOpen || typeof document === 'undefined') return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="bg-[#FAFAFA] rounded-xl shadow-xl w-full max-w-4xl flex flex-col relative my-8 animate-in fade-in zoom-in duration-200">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="bg-[#FAFAFA] rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col relative animate-in fade-in zoom-in duration-200">
         
         {/* Header */}
         <div className="px-8 py-6 border-b border-gray-200 bg-white rounded-t-xl flex justify-between items-start">
@@ -186,7 +186,7 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
         </div>
 
         {/* Content */}
-        <div className="p-8 space-y-6">
+        <div className="p-8 space-y-6 overflow-y-auto">
           
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-12">

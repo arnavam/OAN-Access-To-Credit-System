@@ -3,12 +3,12 @@ import { Portal } from '@/components/Portal';
 import { LoanProductCreatedSuccess } from '@/features/seller/components/dashboard/LoanProductCreatedSuccess';
 import { LoanTypeDropdown } from '@/features/seller/components/dashboard/LoanTypeDropdown';
 import { ProductAttributesGrid, ProductImageDropzone, ProductTextField, type ProductFieldMode } from '@/features/seller/components/loan-products/ProductFormFields';
-import { useModalA11y } from '@/hooks/useModalA11y';
 import type { ProductFormState } from '@/features/seller/utils/loan-product-form.utils';
-import { AlertCircle, Loader2, Package, X } from 'lucide-react';
-import { useId } from 'react';
-import type { ReactNode } from 'react';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import type { TaxonomyAttribute } from '@/lib/api/api.schemas';
+import { AlertCircle, Loader2, Package, X } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { useId } from 'react';
 
 interface BaseLoanProductModalProps {
   isOpen: boolean;
@@ -77,17 +77,17 @@ const MODE_HEADER: Record<ProductFieldMode, { title: string; subtitle: string }>
 
 export function BaseLoanProductModal({
   isOpen, onClose, mode, title, subtitle,
-  form, onFormChange = () => {},
-  imagePreview, onImageSelect = () => {}, onImageRemove = () => {}, fileInputRef,
+  form, onFormChange = () => { },
+  imagePreview, onImageSelect = () => { }, onImageRemove = () => { }, fileInputRef,
   categoryOptions, tagOptions, realAttributes,
-  selectedCategoryTermIds, onChangeCategories = () => {},
-  selectedTagTermIds, onChangeTags = () => {},
-  selectedAttributeTermIds, onToggleAttribute = () => {},
-  fieldErrors = {}, onClearFieldError = () => {}, globalError,
+  selectedCategoryTermIds, onChangeCategories = () => { },
+  selectedTagTermIds, onChangeTags = () => { },
+  selectedAttributeTermIds, onToggleAttribute = () => { },
+  fieldErrors = {}, onClearFieldError = () => { }, globalError,
   isLoadingDetail = false, detailError,
   rejectionComment,
   footerActions,
-  isSuccess = false, onSuccessDone = () => {},
+  isSuccess = false, onSuccessDone = () => { },
 }: BaseLoanProductModalProps) {
   const dialogRef = useModalA11y<HTMLDivElement>(isOpen, onClose);
   const titleId = useId();
@@ -112,9 +112,8 @@ export function BaseLoanProductModal({
           aria-modal="true"
           aria-labelledby={titleId}
           tabIndex={-1}
-          className={`flex max-h-[92vh] w-full flex-col overflow-hidden rounded-2xl bg-white shadow-2xl animate-in zoom-in-95 duration-200 ${
-            isSuccess ? 'max-w-[520px]' : 'max-w-[700px]'
-          }`}
+          className={`flex max-h-[92vh] w-full flex-col overflow-hidden rounded-2xl bg-white shadow-2xl animate-in zoom-in-95 duration-200 ${isSuccess ? 'max-w-[520px]' : 'max-w-[700px]'
+            }`}
         >
           {isSuccess ? (
             <LoanProductCreatedSuccess onDone={onSuccessDone} />
@@ -218,7 +217,7 @@ export function BaseLoanProductModal({
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <ProductTextField
                       mode={mode}
-                      label="Interest rate (% p.a.)"
+                      label="Min Interest rate (% p.a.)"
                       required={!readOnly}
                       type="number"
                       min="0"

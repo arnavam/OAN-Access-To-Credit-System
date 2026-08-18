@@ -6,6 +6,7 @@ export interface RegisteredAddressFields {
   registered_street: string;
   registered_zone: string;
   registered_region: string;
+  registered_country: string;
   registered_postal_code: string;
   website: string;
 }
@@ -47,6 +48,13 @@ export function RegisteredAddressSection({ fields, onChange }: RegisteredAddress
           placeholder="Enter Region"
           value={fields.registered_region}
           onChange={(e) => onChange({ registered_region: e.target.value })}
+        />
+        <InputField
+          label="Country"
+          required
+          placeholder="Enter Country"
+          value={fields.registered_country}
+          onChange={(e) => onChange({ registered_country: e.target.value })}
         />
         <InputField
           label="Postal code"

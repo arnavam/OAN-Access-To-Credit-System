@@ -70,6 +70,7 @@ function formatCreationDate(value: string | null | undefined): string {
 export interface LoanProductCardProps {
   product: LoanProductSummary;
   variant?: 'default' | 'approval';
+  canDelete?: boolean;
 }
 
 export function canEditLoanProduct(status: string | null | undefined): boolean {
@@ -78,7 +79,7 @@ export function canEditLoanProduct(status: string | null | undefined): boolean {
   return s !== 'active' && s !== 'pending approval';
 }
 
-export function LoanProductCard({ product, variant = 'default' }: LoanProductCardProps) {
+export function LoanProductCard({ product, variant = 'default', canDelete = true }: LoanProductCardProps) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -186,14 +187,16 @@ export function LoanProductCard({ product, variant = 'default' }: LoanProductCar
                   <Eye size={15} />
                 </button>
               )}
-              <button
-                type="button"
-                onClick={() => setIsDeleteModalOpen(true)}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-red-50 text-red-500 transition-colors hover:bg-red-100 active:scale-95"
-                aria-label={`Archive ${product.product_name}`}
-              >
-                <Trash2 size={15} />
-              </button>
+              {canDelete && (
+                <button
+                  type="button"
+                  onClick={() => setIsDeleteModalOpen(true)}
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-red-50 text-red-500 transition-colors hover:bg-red-100 active:scale-95"
+                  aria-label={`Archive ${product.product_name}`}
+                >
+                  <Trash2 size={15} />
+                </button>
+              )}
             </>
           )}
         </div>

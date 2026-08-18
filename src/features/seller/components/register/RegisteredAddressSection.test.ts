@@ -6,9 +6,11 @@ describe('Registration payload - Zone and Region replacement & constraints', () 
     const payload: RegisterBankPayload = {
       bank_name: 'Commercial Bank of Ethiopia S.C.',
       brand_name: 'CBE AgriCredit',
+      entity_type: 'Bank',
       registered_street: 'Bole Road, Tower 2',
       registered_zone: 'Bole Zone',
       registered_region: 'Addis Ababa',
+      registered_country: 'Ethiopia',
       registered_postal_code: '100000',
       registered_email: 'support@cbe.com.et',
       registered_phone: '+251911223344',

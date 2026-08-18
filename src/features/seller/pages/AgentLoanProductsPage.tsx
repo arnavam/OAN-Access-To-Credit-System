@@ -13,7 +13,7 @@ export default function AgentLoanProductsPage() {
       <div className="flex-1 flex flex-col min-w-0">
         <DashboardHeader onMenuClick={() => setIsSidebarExpanded(!isSidebarExpanded)} title="Loan Products" />
         <main id="main-content" className="flex-1 p-8 overflow-y-auto">
-          <LoanProductsList portalLabel="Bank Agent Portal - Loan Product Management" />
+          <LoanProductsList portalLabel="Bank Agent Portal - Loan Product Management" canDelete={false} />
         </main>
       </div>
     </div>
