@@ -15,9 +15,10 @@ import { BaseProductList } from './BaseProductList';
 interface LoanProductsListProps {
   portalLabel?: string;
   listParams?: ListProductsParams;
+  canDelete?: boolean;
 }
 
-export function LoanProductsList({ portalLabel, listParams }: LoanProductsListProps) {
+export function LoanProductsList({ portalLabel, listParams, canDelete }: LoanProductsListProps) {
   const dispatch = useAppDispatch();
   const products = useAppSelector(selectProducts);
   const listStatus = useAppSelector(selectProductsListStatus);
@@ -46,7 +47,7 @@ export function LoanProductsList({ portalLabel, listParams }: LoanProductsListPr
       emptyTitle="No loan products found"
       emptySubtitle="Create a loan product to publish it to the marketplace."
       renderItem={(product) => (
-        <LoanProductCard key={product.name} product={product} />
+        <LoanProductCard key={product.name} product={product} canDelete={canDelete ?? true} />
       )}
     />
   );
