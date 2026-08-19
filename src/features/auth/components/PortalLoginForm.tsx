@@ -6,7 +6,6 @@ import { SetInitialPasswordForm } from '@/features/auth/components/SetInitialPas
 import type { UserKind } from '@/features/auth/rbac';
 import { clearAuthError, loginThunk, logout } from '@/features/auth/store/authSlice';
 import type { User as AuthUser } from '@/features/auth/types/auth.types';
-import { useAutofillGuard } from '@/hooks/useAutofillGuard';
 import { AUTH_MESSAGES } from '@/lib/authMessages';
 import { useAppDispatch } from '@/store/hooks';
 import { ArrowRight, CheckCircle2, Clock, Eye, EyeOff, Lock, User } from 'lucide-react';
@@ -47,8 +46,6 @@ export function PortalLoginForm({
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [usernameReadOnly, unlockUsername] = useAutofillGuard();
-  const [passwordReadOnly, unlockPassword] = useAutofillGuard();
   // Sent to /api/auth/login, which uses it to pick the session lifetime (30 days
   // vs 24 hours). Until it was wired up the box rendered but was never read, so
   // every session got the same treatment whatever the person chose.
@@ -186,8 +183,6 @@ export function PortalLoginForm({
               <input
                 type="text"
                 autoComplete="off"
-                readOnly={usernameReadOnly}
-                onFocus={unlockUsername}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder={usernamePlaceholder}
@@ -207,8 +202,6 @@ export function PortalLoginForm({
                 ref={passwordInputRef}
                 type={showPassword ? 'text' : 'password'}
                 autoComplete="new-password"
-                readOnly={passwordReadOnly}
-                onFocus={unlockPassword}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
@@ -251,7 +244,7 @@ export function PortalLoginForm({
             onClick={() => setIsForgotOpen(true)}
             className="text-[14px] font-bold text-[#1F2937] hover:text-[#16A34A] transition-colors bg-transparent border-none p-0 cursor-pointer"
           >
-            Forgot Password?
+            <span className='text-[#16A34A] font-bold text-[14px]'>Forgot Password?</span>
           </button>
         </div>
 
@@ -260,7 +253,7 @@ export function PortalLoginForm({
           disabled={isLoading}
           className="w-full bg-[#16A34A] hover:bg-[#15803d] text-white py-4 rounded-xl font-bold text-[14px] flex items-center justify-center space-x-2 transition-all active:scale-[0.98] shadow-sm disabled:opacity-70"
         >
-          <span>{isLoading ? 'Signing in…' : 'Continue to Sign In'}</span>
+          <span className='font-semibold'>{isLoading ? 'Signing in…' : 'Continue to Sign In'}</span>
           {!isLoading && <ArrowRight size={18} strokeWidth={2.5} />}
         </button>
 
@@ -268,7 +261,7 @@ export function PortalLoginForm({
           <div className="text-center text-[14px] font-medium text-[#6B7280]">
             New to OAN?{' '}
             <Link href="/create-account" className="text-[#16A34A] font-bold hover:underline">
-              Register account
+              <span className='text-[#16A34A]'>Register account</span>
             </Link>
           </div>
         )}
