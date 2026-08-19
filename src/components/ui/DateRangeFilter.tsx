@@ -59,8 +59,10 @@ export function DateRangeFilter(props: DateRangeFilterProps) {
 
   const handleQuickSelect = (label: string) => {
     const today = new Date();
-    let fromDate = new Date();
-    let toDate = new Date();
+    // `const` despite being adjusted below: `setDate` mutates the Date in place,
+    // it never rebinds the variable.
+    const fromDate = new Date();
+    const toDate = new Date();
 
     if (label === 'Today') {
       // both are today

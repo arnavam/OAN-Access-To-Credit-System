@@ -53,14 +53,23 @@ export default function AdvancedFiltersDrawer({
   const amountDropdownRef = useRef<HTMLDivElement>(null);
   const typeDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Sync state when drawer opens
-  useEffect(() => {
+  // Reset the draft each time the drawer opens.
+  //
+  // Adjusted during render rather than in an effect. `isOpen` is owned by the
+  // parent, so there is no local handler to hang this on — and the effect version
+  // listed `initialFilters` as a dependency, which meant any new object identity
+  // from the parent reset the form *while it was open*, discarding whatever the
+  // person had just typed. Comparing against the previous `isOpen` fires only on
+  // the closed → open edge, which is what "when the drawer opens" actually means.
+  const [wasOpen, setWasOpen] = useState(isOpen);
+  if (isOpen !== wasOpen) {
+    setWasOpen(isOpen);
     if (isOpen) {
       setFilters(initialFilters);
       setIsAmountOpen(false);
       setIsTypeOpen(false);
     }
-  }, [isOpen, initialFilters]);
+  }
 
   // Handle clicking outside to close dropdowns
   useEffect(() => {

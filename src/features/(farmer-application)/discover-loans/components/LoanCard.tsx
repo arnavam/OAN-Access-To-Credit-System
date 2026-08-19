@@ -1,30 +1,36 @@
 "use client";
-import { ArrowRight, Bookmark, Landmark, Star } from 'lucide-react';
-import Image from 'next/image';
+import { ArrowRight, Star, Landmark } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
-import type { Loan } from '../data/mockLoans';
+import { toast } from '@/lib/toast';
+import type { FarmerLoanProduct } from '../../types';
 
 interface LoanCardProps {
-  loan: Loan;
+  loan: FarmerLoanProduct;
+  /** Rejects if the write failed, so the card can undo its optimistic update. */
+  onBookmarkToggle?: (loan: FarmerLoanProduct, currentlyBookmarked: boolean) => Promise<void>;
 }
 
-export default function LoanCard({ loan }: LoanCardProps) {
-  const [isBookmarked, setIsBookmarked] = useState(loan.isBookmarked || false);
-  const [isStarred, setIsStarred] = useState(false);
+export default function LoanCard({ loan, onBookmarkToggle }: LoanCardProps) {
+  const [isBookmarked, setIsBookmarked] = useState(loan.is_saved ?? false);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const getMatchColor = (type: string) => {
-    switch (type) {
-      case 'High Match':
-        return 'bg-green-100 text-green-700';
-      case 'Partial Match':
-        return 'bg-orange-100 text-orange-700';
-      case 'Farm Match':
-        return 'bg-orange-100 text-orange-700';
-      case 'Live Match':
-        return 'bg-gray-100 text-gray-700';
-      default:
-        return 'bg-gray-100 text-gray-700';
+  // No prop-sync effect needed: the grid keys each card by loan.name, so a
+  // different product arrives as a fresh mount and re-seeds this from is_saved.
+  const handleBookmark = async () => {
+    if (!onBookmarkToggle || isSaving) return;
+    const previous = isBookmarked;
+    setIsBookmarked(!previous);
+    setIsSaving(true);
+    try {
+      await onBookmarkToggle(loan, previous);
+    } catch (err: any) {
+      // The write failed; showing it as saved would be a lie the next reload
+      // silently corrects.
+      toast.error(err.message || 'Failed to save product');
+      setIsBookmarked(previous);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -34,36 +40,24 @@ export default function LoanCard({ loan }: LoanCardProps) {
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center border border-gray-100 overflow-hidden shrink-0 relative">
-            {loan.bankLogo ? (
-              <Image
-                src={loan.bankLogo}
-                alt={`${loan.bankName} logo`}
-                fill
-                sizes="40px"
-                className="object-cover z-10 bg-white"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                }}
-              />
-            ) : null}
             <div className="absolute inset-0 bg-blue-50 text-blue-400 flex items-center justify-center z-0">
               <Landmark className="w-5 h-5" />
             </div>
           </div>
           <div>
-            <div className="text-xs text-gray-500 font-medium">{loan.bankName}</div>
-            <h3 className="text-base font-bold text-gray-900">{loan.title}</h3>
+            <div className="text-xs text-gray-500 font-medium">{loan.bank}</div>
+            <h3 className="text-base font-bold text-gray-900">{loan.product_name}</h3>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${getMatchColor(loan.matchType)}`}>
-            {loan.matchPercentage}% {loan.matchType}
-          </span>
-          <button 
-            onClick={() => setIsBookmarked(!isBookmarked)}
-            className={`transition-colors ${isBookmarked ? 'text-[#16A34A]' : 'text-gray-400 hover:text-gray-600'}`}
+          <button
+            onClick={handleBookmark}
+            disabled={isSaving}
+            aria-pressed={isBookmarked}
+            aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark this loan'}
+            className={`transition-colors disabled:opacity-60 ${isBookmarked ? 'text-yellow-500' : 'text-gray-400 hover:text-gray-600'}`}
           >
-            <Bookmark className="w-5 h-5" fill={isBookmarked ? 'currentColor' : 'none'} />
+            <Star className="w-5 h-5" fill={isBookmarked ? 'currentColor' : 'none'} />
           </button>
         </div>
       </div>
@@ -71,39 +65,31 @@ export default function LoanCard({ loan }: LoanCardProps) {
       {/* Details */}
       <div className="grid grid-cols-3 gap-4 pt-2">
         <div>
-          <div className="text-lg font-bold text-gray-900">ETB {loan.amount.toLocaleString('en-US')}</div>
+          <div className="text-lg font-bold text-gray-900">ETB {loan.max_amount ? loan.max_amount.toLocaleString('en-US') : 'N/A'}</div>
           <div className="text-xs text-gray-400 font-medium">Max Amount</div>
         </div>
         <div className="text-center border-l border-r border-gray-100">
-          <div className="text-lg font-bold text-gray-900">{loan.interestRate}%</div>
+          <div className="text-lg font-bold text-gray-900">{loan.min_interest_rate || 0}%</div>
           <div className="text-xs text-gray-400 font-medium">Interest</div>
         </div>
         <div className="text-right">
-          <div className="text-lg font-bold text-gray-900">{loan.tenureMonths} mo</div>
+          <div className="text-lg font-bold text-gray-900">{loan.tenure_months || 0} mo</div>
           <div className="text-xs text-gray-400 font-medium">Tenure</div>
         </div>
       </div>
 
       {/* Tags */}
       <div className="flex flex-wrap gap-2">
-        {loan.tags.map((tag, idx) => (
-          <span key={idx} className="bg-gray-50 text-gray-600 text-xs font-medium px-3 py-1.5 rounded-full border border-gray-100">
-            {tag}
-          </span>
-        ))}
+        <span className="bg-gray-50 text-gray-600 text-xs font-medium px-3 py-1.5 rounded-full border border-gray-100">
+          {loan.bank}
+        </span>
       </div>
 
       {/* Action */}
-      <div className="flex items-center gap-2 pt-1 mt-auto">
-        <Link href={`/discover-loans/apply/${loan.id}`} className="flex-1 bg-[#16A34A] hover:bg-green-700 text-white font-bold py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2">
+      <div className="flex items-center pt-1 mt-auto">
+        <Link href={`/discover-loans/apply/${loan.name}`} className="flex-1 bg-[#16A34A] hover:bg-green-700 text-white font-bold py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2">
           Apply Now <ArrowRight className="w-4 h-4" />
         </Link>
-        <button 
-          onClick={() => setIsStarred(!isStarred)}
-          className={`w-11 h-11 border rounded-xl flex items-center justify-center transition-colors shrink-0 ${isStarred ? 'bg-yellow-50 border-yellow-200 text-yellow-500' : 'border-gray-200 text-gray-400 hover:bg-gray-50 hover:text-yellow-500'}`}
-        >
-          <Star className="w-5 h-5" fill={isStarred ? 'currentColor' : 'none'} />
-        </button>
       </div>
     </div>
   );

@@ -78,6 +78,40 @@ const config: Config = {
           '0%, 100%': { transform: 'translateY(0px)' },
           '50%':      { transform: 'translateY(-10px)' },
         },
+        // ── Global loader / progress bar ──────────────────────────────────
+        // Kept here rather than as one-off inline styles so every loading
+        // surface in the app (route boundaries, the top bar, the sign-out
+        // overlay) animates on exactly the same curves.
+        'loader-spin': {
+          '0%':   { transform: 'rotate(0deg)' },
+          '100%': { transform: 'rotate(360deg)' },
+        },
+        'loader-spin-reverse': {
+          '0%':   { transform: 'rotate(0deg)' },
+          '100%': { transform: 'rotate(-360deg)' },
+        },
+        'loader-halo': {
+          '0%, 100%': { opacity: '0.35', transform: 'scale(0.86)' },
+          '50%':      { opacity: '0.9',  transform: 'scale(1.06)' },
+        },
+        // Travels across the viewport and back without ever claiming a
+        // percentage it can't know — an honest indeterminate bar.
+        'progress-sweep': {
+          '0%':   { transform: 'translateX(-100%) scaleX(0.35)' },
+          '55%':  { transform: 'translateX(30%) scaleX(0.7)' },
+          '100%': { transform: 'translateX(100%) scaleX(0.4)' },
+        },
+        'progress-out': {
+          '0%':   { opacity: '1' },
+          '100%': { opacity: '0' },
+        },
+        // Route transition for the dashboard content region. Small on purpose:
+        // this fires on every navigation, so anything larger stops reading as
+        // responsiveness and starts reading as latency.
+        'page-enter': {
+          '0%':   { opacity: '0', transform: 'translateY(8px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
       },
       animation: {
         'fade-in-down': 'fade-in-down 0.5s cubic-bezier(0.22,1,0.36,1) both',
@@ -87,6 +121,12 @@ const config: Config = {
         'badge-pop':    'badge-pop 0.35s cubic-bezier(0.22,1,0.36,1) both',
         'card-rise':    'card-rise 0.35s cubic-bezier(0.22,0.68,0,1.2) both',
         float:          'float 3.2s ease-in-out infinite',
+        'loader-spin':         'loader-spin 0.85s linear infinite',
+        'loader-spin-reverse': 'loader-spin-reverse 1.4s linear infinite',
+        'loader-halo':         'loader-halo 1.6s ease-in-out infinite',
+        'progress-sweep':      'progress-sweep 1.15s cubic-bezier(0.65,0,0.35,1) infinite',
+        'progress-out':        'progress-out 0.4s ease-out forwards',
+        'page-enter':          'page-enter 0.32s cubic-bezier(0.22,1,0.36,1) both',
       },
     },
   },

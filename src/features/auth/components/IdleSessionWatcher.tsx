@@ -1,8 +1,8 @@
 'use client';
 
-import { logoutUser } from '@/features/auth/api/authApi';
 import { useIdleSession } from '@/features/auth/hooks/useIdleSession';
-import { logout, selectIsAuthenticated } from '@/features/auth/store/authSlice';
+import { performGlobalLogout } from '@/features/auth/logout';
+import { selectIsAuthenticated } from '@/features/auth/store/authSlice';
 import { useModalA11y } from '@/hooks/useModalA11y';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { Clock } from 'lucide-react';
@@ -20,21 +20,15 @@ import { useCallback, useRef } from 'react';
 export function IdleSessionWatcher() {
   const dispatch = useAppDispatch();
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
-  // Guards against a double sign-out if the interval fires again while the
-  // network round trip is still in flight.
-  const isExpiringRef = useRef(false);
 
-  const handleExpire = useCallback(async () => {
-    if (isExpiringRef.current) return;
-    isExpiringRef.current = true;
-
-    // Revoke server-side first so the refresh token cannot be redeemed, then
-    // clear local state. `logoutUser` swallows network errors by design — the
-    // redirect below has to happen either way.
-    await logoutUser();
-    dispatch(logout());
-    window.location.href = '/login?reason=idle';
-  }, [dispatch]);
+  // The shared sign-out path — same revoke, same reset, same `/login`
+  // destination as the menu item and the 401 middleware. It carries its own
+  // in-flight guard, so the interval firing again mid-round-trip (or the person
+  // pressing "Sign out now" while it does) can't start a second sign-out.
+  const handleExpire = useCallback(
+    () => performGlobalLogout(dispatch, 'idle'),
+    [dispatch]
+  );
 
   const { isWarning, secondsRemaining, staySignedIn } = useIdleSession(
     isAuthenticated,

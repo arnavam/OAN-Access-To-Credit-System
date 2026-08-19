@@ -18,10 +18,6 @@ export default function LoanTypeFilter({ options, selectedValues, onChange }: Lo
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setTempSelected(selectedValues);
-  }, [isOpen, selectedValues]);
-
-  useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
         dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
@@ -81,6 +77,15 @@ export default function LoanTypeFilter({ options, selectedValues, onChange }: Lo
 
   const handleClick = () => {
     if (!isOpen && dropdownRef.current) {
+      // Opening: start the draft from the committed selection, so an edit that was
+      // abandoned last time (closed without Apply) isn't still sitting there.
+      //
+      // This was an effect on [isOpen, selectedValues]. Resetting draft state in
+      // the handler that opens the menu is both the documented React pattern and
+      // narrower: the effect also re-ran whenever `selectedValues` changed
+      // identity, which could wipe an in-progress selection mid-edit.
+      setTempSelected(selectedValues);
+
       const rect = dropdownRef.current.getBoundingClientRect();
       setDropdownPos({
         top: rect.bottom + window.scrollY + 8,

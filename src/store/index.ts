@@ -1,4 +1,6 @@
 import { combineReducers, configureStore, isRejectedWithValue, Middleware, UnknownAction } from '@reduxjs/toolkit';
+import { performGlobalLogout } from '../features/auth/logout';
+import { LOGIN_ROUTE } from '../features/auth/rbac';
 import { authReducer, logout } from '../features/auth/store/authSlice';
 import { leadReducer } from '../features/leads/store/leadSlice';
 import { loanDashboardReducer } from '../features/loans/store/loanDashboardSlice';
@@ -13,6 +15,7 @@ import { sellerOnboardingReducer } from '../features/seller/store/onboardingSlic
 import { sellerTeamReducer } from '../features/seller/store/teamSlice';
 import { ApiErrorCode } from '../lib/api/apiErrors';
 import { toast } from '../lib/toast';
+import { loadingReducer, taskSettled, taskStarted } from './loadingSlice';
 
 import { notificationReducer } from '../features/notifications/store/notificationSlice';
 
@@ -34,6 +37,44 @@ const permissionToastMiddleware: Middleware = () => (next) => (action) => {
     }
   }
   return result;
+};
+
+// Async work that must not drive the global activity bar.
+//
+//  - `auth/getMe` runs on every first paint to restore the session. It has its own
+//    treatment (the bootstrap gate in `app/providers.tsx`), and counting it here
+//    would put a bar on top of that.
+//  - notification fetches are background chrome the person did not ask for; an
+//    indicator for them is noise, and it would fire on every header mount.
+const UNTRACKED_ACTION_PREFIXES: ReadonlyArray<string> = ['auth/getMe/', 'notifications/'];
+
+// Feeds `loadingSlice.pending` from every other async thunk, so the global
+// progress bar reflects real in-flight work without a single screen having to
+// report its own loading state.
+//
+// Pending actions are matched by requestId rather than by counting pending/settled
+// pairs blindly: RTK guarantees one settle per start, but an aborted or duplicated
+// thunk can otherwise settle twice, and the counter would drift down and stick.
+const trackedRequestIds = new Set<string>();
+
+const loadingTrackerMiddleware: Middleware = (api) => (next) => (action) => {
+  const { type, meta } = action as UnknownAction & { meta?: { requestId?: string } };
+  const requestId = meta?.requestId;
+
+  if (typeof type === 'string' && requestId && !UNTRACKED_ACTION_PREFIXES.some((p) => type.startsWith(p))) {
+    if (type.endsWith('/pending')) {
+      if (!trackedRequestIds.has(requestId)) {
+        trackedRequestIds.add(requestId);
+        api.dispatch(taskStarted());
+      }
+    } else if (type.endsWith('/fulfilled') || type.endsWith('/rejected')) {
+      if (trackedRequestIds.delete(requestId)) {
+        api.dispatch(taskSettled());
+      }
+    }
+  }
+
+  return next(action);
 };
 
 const LOAN_FORM_STORAGE_KEY = 'loan_form_state';
@@ -90,16 +131,15 @@ const unauthenticatedMiddleware: Middleware = (api) => (next) => (action) => {
       (payload as { message?: string })?.message === ApiErrorCode.Auth ||
       (error as { message?: string })?.message === ApiErrorCode.Auth
     ) {
-      api.dispatch(logout());
-      if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
-        // Clear HttpOnly cookie on the server before redirecting.
-        // We use a fire-and-forget .catch(() => {}) block to guarantee the client-side session
-        // is cleared and redirect occurs even if the server is offline or unreachable.
-        fetch('/api/auth/logout', { method: 'POST' })
-          .catch(() => {}) 
-          .finally(() => {
-            window.location.href = '/login';
-          });
+      if (typeof window !== 'undefined' && window.location.pathname !== LOGIN_ROUTE) {
+        // One shared sign-out path, so an expired session is revoked, reset and
+        // redirected exactly the way an explicit sign-out is — and lands on the
+        // role chooser rather than on whichever portal the session belonged to.
+        // `reason: 'session'` is what tells the login page to explain itself.
+        void performGlobalLogout(api.dispatch, 'session');
+      } else {
+        // Already on the login page: reset state, but don't navigate.
+        api.dispatch(logout());
       }
     }
   }
@@ -120,12 +160,19 @@ const appReducer = combineReducers({
   sellerOnboarding: sellerOnboardingReducer,
   sellerTeam: sellerTeamReducer,
   notifications: notificationReducer,
+  loading: loadingReducer,
 });
 
 const rootReducer = (state: ReturnType<typeof appReducer> | undefined, action: UnknownAction) => {
   if (action.type === logout.type) {
-    // Reset all state to undefined so each slice returns its initial state
-    return appReducer(undefined, action);
+    // Reset all state to undefined so each slice returns its initial state.
+    //
+    // `loading` is carried across, because it describes the app rather than the
+    // session: sign-out raises the blocking overlay and *then* dispatches this,
+    // so wiping the slice here would drop the overlay and flash the dashboard
+    // back for the length of the redirect.
+    const next = appReducer(undefined, action);
+    return state ? { ...next, loading: state.loading } : next;
   }
   return appReducer(state, action);
 };
@@ -133,7 +180,12 @@ const rootReducer = (state: ReturnType<typeof appReducer> | undefined, action: U
 export const store = configureStore({
   reducer: rootReducer,
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(storageMiddleware, unauthenticatedMiddleware, permissionToastMiddleware),
+    getDefaultMiddleware().concat(
+      storageMiddleware,
+      loadingTrackerMiddleware,
+      unauthenticatedMiddleware,
+      permissionToastMiddleware
+    ),
 });
 
 if (typeof window !== 'undefined') {

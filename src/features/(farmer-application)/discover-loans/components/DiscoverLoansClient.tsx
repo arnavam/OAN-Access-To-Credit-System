@@ -2,111 +2,159 @@
 
 import { Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { mockLoans } from '../data/mockLoans';
+import { getCatalog, getCatalogFacets, removeBookmark, saveBookmark } from '../../api/farmerApi';
+import type {
+  CatalogFacets,
+  CatalogFilters,
+  CatalogSortKey,
+  FarmerLoanProduct,
+} from '../../types';
 import LoanCard from './LoanCard';
 import Pagination from './Pagination';
 import SidebarFilters from './SidebarFilters';
 import TopBar from './TopBar';
 
-// Generate a larger dataset for pagination demonstration
-const allLoans = Array.from({ length: 6 }, (_, i) =>
-  mockLoans.map(loan => ({ ...loan, id: `${loan.id}-${i}` }))
-).flat();
-
 export default function DiscoverLoansClient() {
-  const [activeTab, setActiveTab] = useState('All Loans');
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState('best_match');
+  // What the box shows and what we query are separate: firing a request per
+  // keystroke means results trail the input, and on a slow link whichever
+  // response lands last wins — which reads as search ignoring what was typed.
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [sortBy, setSortBy] = useState<CatalogSortKey>('product_name');
+  const [filters, setFilters] = useState<CatalogFilters>({});
   const [currentPage, setCurrentPage] = useState(1);
   const [entriesPerPage, setEntriesPerPage] = useState(10);
 
-  // Reset to page 1 when filters or page size change
+  const [facets, setFacets] = useState<CatalogFacets | null>(null);
+  const [products, setProducts] = useState<FarmerLoanProduct[]>([]);
+  const [totalEntries, setTotalEntries] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  // Filter options come from the catalog itself, so the sidebar only ever offers
+  // choices that match something. Fetched once — the option set changes when a
+  // bank publishes a product, not while the farmer is browsing.
+  useEffect(() => {
+    let isMounted = true;
+    getCatalogFacets()
+      .then((res) => {
+        if (isMounted) setFacets(res.data);
+      })
+      .catch((error) => {
+        console.error('Error fetching catalog facets', error);
+        if (isMounted) setFacets({ categories: [], tenures: [], amount_range: null, max_interest_rate: null });
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Reset to page 1 when the result set changes underneath the pager.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentPage(1);
-  }, [activeTab, searchQuery, sortBy, entriesPerPage]);
+  }, [debouncedSearch, sortBy, filters, entriesPerPage]);
 
-  // Apply filtering based on Active Tab and Search Query
-  const filteredLoans = allLoans.filter(loan => {
-    let tabMatch = true;
-    if (activeTab === 'Short-Term') {
-      tabMatch = loan.tenureMonths <= 3;
-    } else if (activeTab === 'Long-Term') {
-      tabMatch = loan.tenureMonths > 3;
-    }
+  useEffect(() => {
+    let isMounted = true;
+    const fetchLoans = async () => {
+      setIsLoading(true);
+      setLoadError(null);
+      try {
+        const response = await getCatalog({
+          ...filters,
+          search: debouncedSearch,
+          sort_by: sortBy,
+          start: (currentPage - 1) * entriesPerPage,
+          limit: entriesPerPage,
+        });
 
-    let searchMatch = true;
-    if (searchQuery.trim() !== '') {
-      const q = searchQuery.toLowerCase();
-      searchMatch = 
-        loan.bankName.toLowerCase().includes(q) ||
-        loan.title.toLowerCase().includes(q) ||
-        loan.tags.some(tag => tag.toLowerCase().includes(q));
-    }
+        if (!isMounted) return;
 
-    return tabMatch && searchMatch;
-  });
+        setProducts(response.data.products || []);
+        setTotalEntries(response.pagination.total);
+      } catch (error) {
+        console.error('Error fetching catalog', error);
+        if (isMounted) {
+          setProducts([]);
+          setTotalEntries(0);
+          setLoadError('We could not load loan products just now. Please try again.');
+        }
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
 
-  // Apply sorting
-  filteredLoans.sort((a, b) => {
-    if (sortBy === 'interest_low_high') {
-      return a.interestRate - b.interestRate;
-    }
-    if (sortBy === 'amount_high_low') {
-      return b.amount - a.amount;
-    }
-    // best_match (default)
-    return b.matchPercentage - a.matchPercentage;
-  });
+    fetchLoans();
+    return () => {
+      isMounted = false;
+    };
+  }, [debouncedSearch, sortBy, filters, currentPage, entriesPerPage]);
 
-  // Calculate Pagination
-  const totalEntries = filteredLoans.length;
   const totalPages = Math.ceil(totalEntries / entriesPerPage) || 1;
-  const startIndex = (currentPage - 1) * entriesPerPage;
-  const displayLoans = filteredLoans.slice(startIndex, startIndex + entriesPerPage);
-  const visibleCount = displayLoans.length;
+  const hasActiveFilters = Object.values(filters).some((v) => v !== undefined);
+
+  // Rethrows: the card renders the new state optimistically and needs to know
+  // when the write failed so it can put the bookmark back rather than keep
+  // showing a save that never happened.
+  const handleBookmarkToggle = async (
+    product: FarmerLoanProduct,
+    isCurrentlyBookmarked: boolean
+  ) => {
+    if (isCurrentlyBookmarked) {
+      await removeBookmark(product.name);
+    } else {
+      await saveBookmark(product.name);
+    }
+  };
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 w-full">
       {/* Sidebar - Left */}
       <div className="w-full lg:w-[320px] shrink-0">
-        <SidebarFilters />
+        <SidebarFilters
+          facets={facets}
+          filters={filters}
+          onApply={setFilters}
+          onReset={() => setFilters({})}
+        />
       </div>
 
       {/* Main Content - Right */}
       <div className="flex-1 min-w-0 flex flex-col">
         <TopBar
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           sortBy={sortBy}
           onSortChange={setSortBy}
         />
 
-        {displayLoans.length > 0 ? (
+        {isLoading ? (
+          <div className="flex-1 flex justify-center items-center py-20">Loading...</div>
+        ) : products.length > 0 ? (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            {displayLoans.map((loan) => (
-              <LoanCard key={loan.id} loan={loan} />
+            {products.map((loan) => (
+              <LoanCard key={loan.name} loan={loan} onBookmarkToggle={handleBookmarkToggle} />
             ))}
           </div>
         ) : (
-          <div
-            key={activeTab}
-            className="flex-1 flex flex-col items-center justify-center p-10 bg-white rounded-2xl border border-[#F1F3F4] text-center px-6 shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.05),0px_2px_4px_-1px_rgba(0,0,0,0.03)] animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out border-[#F1F3F4] shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.05),0px_2px_4px_-1px_rgba(0,0,0,0.03)] hover:-translate-y-1 hover:shadow-lg transition-all"
-          >
+          <div className="flex-1 flex flex-col items-center justify-center p-10 bg-white rounded-2xl text-center px-6 border border-[#F1F3F4] shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.05),0px_2px_4px_-1px_rgba(0,0,0,0.03)] animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out hover:-translate-y-1 hover:shadow-lg transition-all">
             <div className="bg-green-50 rounded-full w-16 h-16 flex items-center justify-center mb-6">
               <Search className="w-7 h-7 text-[#16A34A]" strokeWidth={2} />
             </div>
             <h3 className="text-xl font-bold text-gray-900 mb-3">
-              {activeTab === 'Long-Term'
-                ? "No Long-Term Loans Available"
-                : "No loans found"}
+              {loadError ? 'Could not load loans' : 'No loans found'}
             </h3>
             <p className="text-[15px] text-gray-500 max-w-sm mx-auto leading-relaxed">
-              {activeTab === 'Long-Term'
-                ? "We currently don't have any long-term loan options that match your criteria. Try switching to \"Short-Term\" or \"All Loans\" to explore other great financial products!"
-                : "Try adjusting your filters or search query to find what you're looking for."}
+              {loadError ??
+                (searchQuery || hasActiveFilters
+                  ? "Try adjusting your filters or search query to find what you're looking for."
+                  : 'No loan products are available yet. Please check back soon.')}
             </p>
           </div>
         )}
@@ -117,7 +165,7 @@ export default function DiscoverLoansClient() {
               currentPage={currentPage}
               totalPages={totalPages}
               totalEntries={totalEntries}
-              visibleCount={visibleCount}
+              visibleCount={products.length}
               entriesPerPage={entriesPerPage}
               onPageChange={setCurrentPage}
               onPageSizeChange={setEntriesPerPage}

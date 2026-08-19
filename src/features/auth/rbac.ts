@@ -22,6 +22,28 @@ export function homeRouteFor(kind: UserKind): string {
   return HOME_ROUTE[kind];
 }
 
+/**
+ * The one place a signed-out person lands, whatever role they held.
+ *
+ * There are per-role sign-in pages (`/login/farmer`, `/login/bank-admin`, …) and
+ * sign-out used to return people to the one matching the role they just left.
+ * That was wrong in both directions: someone who signs out on a shared machine
+ * is shown, and leaves behind, the portal for a role that is no longer theirs to
+ * pick — and someone whose session expired mid-task lands on a page that assumes
+ * they know which of five portals they belong to. `/login` is the role chooser,
+ * so it is the only correct destination for *leaving* a session. The per-role
+ * pages remain reachable, as deep links from the chooser.
+ */
+export const LOGIN_ROUTE = '/login';
+
+/** Why a session ended, surfaced on the login page so the sign-out is explained. */
+export type LogoutReason = 'idle' | 'session';
+
+/** `/login`, carrying the reason the previous session ended when there is one. */
+export function loginRouteFor(reason?: LogoutReason): string {
+  return reason ? `${LOGIN_ROUTE}?reason=${reason}` : LOGIN_ROUTE;
+}
+
 // Route prefix -> roles allowed to access it.
 //
 // Ordering matters: the guard picks the FIRST prefix that matches, so more

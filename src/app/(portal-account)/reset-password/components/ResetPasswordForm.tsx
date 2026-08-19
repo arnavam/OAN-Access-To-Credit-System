@@ -2,6 +2,8 @@
 
 import { resetPassword } from '@/features/auth/api/authApi';
 import { toast } from '@/lib/toast';
+import { strongPasswordSchema } from '@/lib/api/api.schemas';
+import { PasswordRequirements } from '@/components/ui/PasswordRequirements';
 import { Eye, EyeOff, KeyRound, Mail, Lock } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useState, useEffect } from 'react';
@@ -38,8 +40,9 @@ function ResetPasswordFormContent() {
       return;
     }
 
-    if (newPassword.length < 8) {
-      toast.error('Password must be at least 8 characters long');
+    const parsed = strongPasswordSchema.safeParse(newPassword);
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message ?? 'That password is not strong enough.');
       return;
     }
 
@@ -120,26 +123,30 @@ function ResetPasswordFormContent() {
         </div>
 
         <div className="space-y-2">
-          <label className="text-[14px] font-bold text-[#374151]">Confirm New Password</label>
-          <div className="relative group">
-            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 group-focus-within:text-[#16A34A] transition-colors" />
-            <input
-              type={showConfirmPassword ? 'text' : 'password'}
-              required
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Confirm new password"
-              className="w-full pl-12 pr-12 py-3.5 bg-[#F9FAFB] border border-[#E5E7EB] rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] focus:bg-white text-[15px] font-medium transition-all"
-            />
-            <button
-              type="button"
-              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors"
-            >
-              {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-            </button>
-          </div>
+            <label className="text-[14px] font-semibold text-[#374151]">Confirm New Password</label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                <Lock className="w-5 h-5" />
+              </span>
+              <input
+                type={showConfirmPassword ? 'text' : 'password'}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                className="w-full pl-11 pr-12 py-3 bg-white border border-[#D1D5DB] rounded-xl text-[14px] text-[#1F2937] focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] transition-all"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+              >
+                {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
         </div>
+
+        <PasswordRequirements password={newPassword} />
 
         <button
           type="submit"

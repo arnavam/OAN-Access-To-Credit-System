@@ -67,8 +67,14 @@ const eslintConfig = defineConfig([
           { from: ["feature"], allow: ["feature"], dependency: { relationship: { from: "internal" } } },
           // shared components can import lib, hooks, and — for header/sidebar
           // chrome that needs auth/notification state or shared app/ layout
-          // pieces (e.g. LanguageSelector) — features and app
-          { from: ["shared"], allow: ["lib", "hooks", "types", "feature", "app"] },
+          // pieces (e.g. LanguageSelector) — features and app.
+          //
+          // `store` is allowed for the same reason: the chrome that lives here
+          // (DashboardHeader, NotificationDropdown, the global loader) reads
+          // app-wide state through the typed hooks in src/store. It was already
+          // doing so; listing it stops that being reported as drift while the
+          // genuine check below — features reaching into each other — still is.
+          { from: ["shared"], allow: ["lib", "hooks", "types", "feature", "app", "store"] },
           // lib is a leaf for runtime deps, but mocks (under src/lib/mocks)
           // legitimately need feature payload/response types for realistic typing
           { from: ["lib"], allow: ["types", "feature"] },

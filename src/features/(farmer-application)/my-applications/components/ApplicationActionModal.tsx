@@ -31,21 +31,28 @@ export default function ApplicationActionModal({
   if (!isOpen) return null;
 
   const themes = {
-    review: {
+    Draft: {
+      wrapper: 'bg-[#FFF8E1] border-[#FFECB3]',
+      iconBg: 'bg-[#FFECB3] text-[#FF8F00]',
+      icon: CheckCircle2,
+      subtitle: 'text-[#FF8F00]',
+      statValue: 'text-[#FF8F00]',
+    },
+    Processing: {
       wrapper: 'bg-[#F0FAFA] border-[#B2EBF2]',
       iconBg: 'bg-[#E0F7FA] text-[#00ACC1]',
       icon: CheckCircle2,
       subtitle: 'text-[#00ACC1]',
       statValue: 'text-[#00ACC1]',
     },
-    disbursed: {
+    Approved: {
       wrapper: 'bg-green-50 border-green-200',
       iconBg: 'bg-green-100 text-green-600',
       icon: Award,
       subtitle: 'text-green-600',
       statValue: 'text-green-700',
     },
-    rejected: {
+    Rejected: {
       wrapper: 'bg-red-50/50 border-red-200',
       iconBg: 'bg-red-100 text-red-600',
       icon: XCircle,

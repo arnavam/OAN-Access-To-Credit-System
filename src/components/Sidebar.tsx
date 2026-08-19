@@ -54,7 +54,7 @@ function Sidebar({ isCollapsed, isMobileOpen = false, sections = [] }: SidebarPr
       className={[
         // ── Layout & colour ──────────────────────────────────────────────
         'flex flex-col text-white h-auto',
-        'bg-[linear-gradient(180deg,var(--panel-bg)_0%,var(--panel-bg-deep)_100%)]',
+        'bg-[#074728]',
 
         // ── Mobile (<900px): fixed off-canvas drawer ─────────────────────
         // top-0 + bottom-0 stretches to the true full screen height without
@@ -160,7 +160,7 @@ function Sidebar({ isCollapsed, isMobileOpen = false, sections = [] }: SidebarPr
                       'transition-[background-color,color,transform] duration-150 ease-in-out',
                       'hover:translate-x-[1px] hover:bg-white/[0.06] hover:text-white',
                       isActive
-                        ? 'bg-white/[0.12] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)] font-bold'
+                        ? 'bg-[#3d6551] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)] font-bold'
                         : 'bg-transparent text-white/[0.76] font-normal',
                       isCollapsed
                         ? 'min-[900px]:justify-center min-[900px]:gap-0 min-[900px]:px-[0.35rem]'

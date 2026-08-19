@@ -1,51 +1,9 @@
-import { Loan, mockLoans } from '@/features/(farmer-application)/discover-loans/data/mockLoans';
-import { ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
-import AdditionalNotes from './components/AdditionalNotes';
-import ApplicationHeader from './components/ApplicationHeader';
-import AuditHistory from './components/AuditHistory';
-import ConsentManagement from './components/ConsentManagement';
-import CreditInformation from './components/CreditInformation';
+import ApplyLoanClient from './components/ApplyLoanClient';
 
 interface ApplyLoanPageProps {
-  id: string;
+  id: string; // The product slug
 }
 
 export default function ApplyLoanPage({ id }: ApplyLoanPageProps) {
-  const defaultLoan: Loan = { id: '0', bankName: 'Commercial Bank of Ethiopia', title: 'Agricultural Loan', matchPercentage: 85, matchType: 'High Match', amount: 200000, interestRate: 11, tenureMonths: 2, tags: [], isBookmarked: false };
-  const loan: Loan = mockLoans.find(l => l.id === id) || mockLoans[0] || defaultLoan;
-
-  return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-
-
-      {/* Main Content Area */}
-      <div className="flex-1 overflow-auto p-0">
-        <div className="w-full mx-auto">
-          {/* Back Button */}
-          <div className="mb-6">
-            <Link href="/discover-loans" className="inline-flex items-center gap-2 text-sm font-bold text-gray-600 hover:text-gray-900 transition-colors">
-              <ArrowLeft className="w-4 h-4" /> Back
-            </Link>
-          </div>
-
-          <ApplicationHeader loan={loan} />
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column - Form Content */}
-            <div className="lg:col-span-2">
-              <ConsentManagement />
-              <CreditInformation />
-              <AdditionalNotes />
-            </div>
-
-            {/* Right Column - Audit History */}
-            <div className="lg:col-span-1">
-              <AuditHistory />
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  return <ApplyLoanClient productId={id} />;
 }

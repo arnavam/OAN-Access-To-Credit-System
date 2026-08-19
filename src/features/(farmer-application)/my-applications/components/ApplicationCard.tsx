@@ -3,7 +3,7 @@ import { Award, CheckCircle2, XCircle } from 'lucide-react';
 import { useState } from 'react';
 import ApplicationActionModal from './ApplicationActionModal';
 
-export type ApplicationStatus = 'review' | 'disbursed' | 'rejected';
+export type ApplicationStatus = 'Draft' | 'Processing' | 'Approved' | 'Rejected';
 
 export interface ApplicationCardProps {
   status: ApplicationStatus;
@@ -27,7 +27,17 @@ export default function ApplicationCard({
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const themes = {
-    review: {
+    Draft: {
+      wrapper: 'bg-[#FFF8E1] border-[#FFECB3]',
+      iconBg: 'bg-[#FFECB3] text-[#FF8F00]',
+      icon: CheckCircle2,
+      subtitle: 'text-[#FF8F00]',
+      statValue: 'text-[#FF8F00]',
+      button: 'bg-[#FFB300] hover:bg-[#FF8F00] text-white',
+      buttonIcon: CheckCircle2,
+      buttonText: 'Resume Draft',
+    },
+    Processing: {
       wrapper: 'bg-[#F0FAFA] border-[#B2EBF2]',
       iconBg: 'bg-[#E0F7FA] text-[#00ACC1]',
       icon: CheckCircle2,
@@ -37,7 +47,7 @@ export default function ApplicationCard({
       buttonIcon: CheckCircle2,
       buttonText: 'Track Application',
     },
-    disbursed: {
+    Approved: {
       wrapper: 'bg-green-50 border-green-200',
       iconBg: 'bg-green-100 text-green-600',
       icon: Award,
@@ -47,7 +57,7 @@ export default function ApplicationCard({
       buttonIcon: CheckCircle2,
       buttonText: 'Accept Loan Offer',
     },
-    rejected: {
+    Rejected: {
       wrapper: 'bg-red-50/50 border-red-200',
       iconBg: 'bg-red-100 text-red-600',
       icon: XCircle,

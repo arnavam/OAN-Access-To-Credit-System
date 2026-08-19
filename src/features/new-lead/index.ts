@@ -8,6 +8,11 @@ export {
 export {
     clearConsentState, searchFarmerConsent, selectConsentState, submitConsentThunk, verifyOtpThunk
 } from './store/consentSlice';
+export type { ConsentAudience } from './store/consentSlice';
+// The consent UI itself, so a feature outside this one (the farmer's own
+// apply-for-a-loan page) mounts the same components rather than cloning them.
+export { ConsentManagementSection } from './components/ConsentManagementSection';
+export { ConsentFinalizationSection } from './components/ConsentFinalizationSection';
 // Selectors, actions, thunks, and types from farmerSlice
 export {
     clearFarmerState, fetchLeadDetailsThunk, searchFarmerThunk, selectDetailsError, selectFarmerState, selectIsPollingLong, setFarmerId,

@@ -4,17 +4,28 @@ import { AlertCircle, Calendar, CheckSquare, Eye, FileText, Folder, Loader2, Spa
 import { useParams } from 'next/navigation';
 import { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { AllowedDataField, ConsentReason, newLeadService } from '../api/newLead.service';
-import { selectConsentState, submitConsentThunk } from '../store/consentSlice';
+import { selectConsentState, submitConsentThunk, type ConsentAudience } from '../store/consentSlice';
 import { selectFarmerState, selectIsPollingLong } from '../store/farmerSlice';
 import { ProfileSyncLoadingModal } from './modals/ProfileSyncLoadingModal';
 
 const MAX_FILE_SIZE_MB = 10;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
-export function ConsentFinalizationSection() {
+interface ConsentFinalizationSectionProps {
+  /**
+   * The lead the consent is anchored on. Optional so the Development Agent's
+   * `/leads/[id]` route keeps reading it from the route param; the farmer's
+   * apply page has no such param and passes its own lead explicitly.
+   */
+  leadId?: string | undefined;
+  audience?: ConsentAudience | undefined;
+}
+
+export function ConsentFinalizationSection({ leadId: leadIdProp, audience = 'agent' }: ConsentFinalizationSectionProps = {}) {
   const dispatch = useAppDispatch();
   const params = useParams();
-  const leadId = params?.id as string || '';
+  const leadId = leadIdProp || (params?.id as string) || '';
+  const isFarmer = audience === 'farmer';
 
   const { isOtpVerified, consentDate, isSubmittingConsent, consentError } = useAppSelector(selectConsentState);
   const isPollingLong = useAppSelector(selectIsPollingLong);
@@ -231,7 +242,9 @@ export function ConsentFinalizationSection() {
             Consent Details
           </h2>
           <p className="text-[13.5px] text-[#4B5563]">
-            Verification has succeeded. You can now complete and submit the consent request.
+            {isFarmer
+              ? 'Your identity is verified. Choose what you are sharing, for how long, and upload your signed consent form.'
+              : 'Verification has succeeded. You can now complete and submit the consent request.'}
           </p>
         </div>
 
@@ -255,7 +268,7 @@ export function ConsentFinalizationSection() {
               )}
               <div className="flex flex-col gap-2 items-start">
                 <span className="px-2 py-0.5 bg-[#E8F5E9] text-[#16A34A] text-[10px] font-bold tracking-wider rounded uppercase">
-                  SELECTED FARMER
+                  {isFarmer ? 'APPLICANT' : 'SELECTED FARMER'}
                 </span>
                 <div className="flex flex-col gap-1.5">
                   <span className="font-bold text-[#1F2937] text-lg bg-[#E0E7FF] px-1.5 rounded-sm w-fit leading-tight uppercase">

@@ -12,6 +12,9 @@ export interface OtpVerificationPopupProps {
   onSubmit: (otp: string) => void;
   /** Masked phone number or email the OTP was sent to, shown in the helper text. */
   destination?: string;
+  /** Replaces the default helper line. Signing a consent agreement is not the
+   *  same act as confirming a login, and the copy should be able to say so. */
+  message?: string;
 }
 
 export function OtpVerificationPopup({
@@ -19,6 +22,7 @@ export function OtpVerificationPopup({
   onClose,
   onSubmit,
   destination = '091****645',
+  message,
 }: OtpVerificationPopupProps) {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState('');
@@ -121,8 +125,12 @@ export function OtpVerificationPopup({
 
               <h3 className="text-[18px] font-bold text-[#1F2937] mb-2">Fayda OTP Verification</h3>
               <p className="text-[14px] text-[#6B7280] mb-6">
-                OTP sent to <span className="font-semibold text-[#374151]">{destination || 'your registered contact'}</span>.<br />
-                Ask the farmer to provide the 6-digit code.
+                {message ?? (
+                  <>
+                    OTP sent to <span className="font-semibold text-[#374151]">{destination || 'your registered contact'}</span>.<br />
+                    Ask the farmer to provide the 6-digit code.
+                  </>
+                )}
               </p>
 
               <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="w-full max-w-[360px]">

@@ -1,103 +1,38 @@
 'use client';
-import { ChevronDown, Phone, Check, Search, SlidersHorizontal, Inbox } from 'lucide-react';
+import { ChevronDown, Phone, Search, SlidersHorizontal, Inbox, Eye } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
-import { Portal } from '@/components/Portal';
 import LoanTypeFilter from './filters/LoanTypeFilter';
 import LoanAmountFilter from './filters/LoanAmountFilter';
 import AdvancedFiltersDrawer, { AdvancedFiltersState } from './filters/AdvancedFilters';
 
-interface StatusDropdownProps {
-  value: string;
-  disabled: boolean;
-  onChange: (newStatus: string) => void;
+interface StatusStyle {
+  badge: string;
+  dot: string;
 }
 
-function StatusDropdown({ value, disabled, onChange }: StatusDropdownProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0 });
-  const [openUpwards, setOpenUpwards] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const options = ['Active', 'Verified', 'Processed', 'Rejected'];
+// Held outside the lookup rather than as an 'Unknown' key in it. `Record<string, T>`
+// under `noUncheckedIndexedAccess` types *every* read as `T | undefined`, including
+// the fallback one — so `STATUS_STYLES['Unknown']` was no safer than the lookup it
+// was covering for, and both reads below were possibly-undefined errors.
+const UNKNOWN_STATUS_STYLE: StatusStyle = {
+  badge: 'bg-gray-50 text-gray-700 border border-gray-200',
+  dot: 'bg-gray-500',
+};
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
-        menuRef.current && !menuRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false);
-      }
-    };
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen]);
+const STATUS_STYLES: Record<string, StatusStyle> = {
+  'Active': { badge: 'bg-emerald-50 text-emerald-700 border border-emerald-200', dot: 'bg-emerald-500' },
+  'Verified': { badge: 'bg-blue-50 text-blue-700 border border-blue-200', dot: 'bg-blue-500' },
+  'Processed': { badge: 'bg-indigo-50 text-indigo-700 border border-indigo-200', dot: 'bg-indigo-500' },
+  'Rejected': { badge: 'bg-red-50 text-red-700 border border-red-200', dot: 'bg-red-500' },
+};
 
-  const handleClick = () => {
-    if (!isOpen && dropdownRef.current) {
-      const rect = dropdownRef.current.getBoundingClientRect();
-      const spaceBelow = window.innerHeight - rect.bottom;
-      const menuHeight = 156; // 4 items * 36px + 8px padding + 4px gap
-
-      const shouldOpenUpwards = spaceBelow < menuHeight;
-      setOpenUpwards(shouldOpenUpwards);
-
-      setDropdownPos({
-        top: shouldOpenUpwards ? rect.top + window.scrollY - menuHeight - 4 : rect.bottom + window.scrollY + 4,
-        left: rect.left + window.scrollX,
-        width: rect.width
-      });
-    }
-    setIsOpen(!isOpen);
-  };
-
+function StatusBadge({ status }: { status: string }) {
+  const style = STATUS_STYLES[status] ?? UNKNOWN_STATUS_STYLE;
   return (
-    <div className="relative w-[120px]" ref={dropdownRef}>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={handleClick}
-        className="w-full flex items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2 text-[14px] font-medium text-gray-700 shadow-sm transition-all duration-200 hover:border-emerald-500 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] cursor-pointer disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed disabled:hover:border-gray-200 disabled:hover:shadow-sm active:scale-95"
-      >
-        {value}
-        <ChevronDown
-          size={14}
-          className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''} ${disabled ? 'text-gray-300' : 'text-gray-400'}`}
-        />
-      </button>
-
-      {isOpen && (
-        <Portal>
-          <div
-            ref={menuRef}
-            style={{ top: dropdownPos.top, left: dropdownPos.left, width: dropdownPos.width }}
-            className={`absolute z-[100] overflow-hidden rounded-lg border border-gray-100 bg-white shadow-lg animate-in fade-in zoom-in-95 duration-200 ${openUpwards ? 'origin-bottom' : 'origin-top'}`}
-          >
-            <div className="p-1 flex flex-col gap-0.5">
-              {options.map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => {
-                    onChange(option);
-                    setIsOpen(false);
-                  }}
-                  className={`w-full flex items-center justify-between rounded-md px-2.5 py-2 text-left text-[13px] transition-colors ${value === option
-                    ? 'bg-emerald-50 font-semibold text-emerald-700'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
-                >
-                  {option}
-                  {value === option && <Check size={14} className="text-emerald-600" />}
-                </button>
-              ))}
-            </div>
-          </div>
-        </Portal>
-      )}
-    </div>
+    <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-[13px] font-semibold select-none ${style.badge}`}>
+      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${style.dot}`} />
+      {status}
+    </span>
   );
 }
 
@@ -184,9 +119,11 @@ export default function AgentApplicationTable() {
     ...initialMockData.map(item => ({ ...item, id: `${item.id}-03` })),
   ];
 
-  const [data, setData] = useState(extendedData);
+  // Read-only now that per-row status is a badge rather than an editable dropdown,
+  // so the setter is gone. Still `useState` rather than a plain const, to keep the
+  // extended mock array stable across renders.
+  const [data] = useState(extendedData);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [addedRowIds, setAddedRowIds] = useState<Set<string>>(new Set());
 
   // Filter states
   // We use advancedFilters.loanType and advancedFilters.loanAmount directly
@@ -216,6 +153,9 @@ export default function AgentApplicationTable() {
       loanAmount: [],
       loanType: [],
       location: '',
+      // quickDate is omitted rather than set to undefined: exactOptionalPropertyTypes
+      // treats "absent" and "explicitly undefined" as different things, and this must
+      // match the initial state above, which omits it.
       dateRange: { from: '', to: '' }
     });
     setCurrentPage(1);
@@ -314,20 +254,6 @@ export default function AgentApplicationTable() {
     setSelectedIds(newSelected);
   };
 
-  const handleStatusChange = (id: string, newStatus: string) => {
-    setData(prevData =>
-      prevData.map(row => row.id === id ? { ...row, status: newStatus } : row)
-    );
-  };
-
-  const handleAdd = (id: string) => {
-    setAddedRowIds(prev => {
-      const newSet = new Set(prev);
-      newSet.add(id);
-      return newSet;
-    });
-  };
-
   const isAllSelected = paginatedData.length > 0 && selectedIds.size === paginatedData.length;
 
   return (
@@ -379,7 +305,7 @@ export default function AgentApplicationTable() {
         </div>
       </div>
 
-      <div>
+      <div className="overflow-x-auto">
         <table className="w-full min-w-[1000px] border-collapse bg-white text-left text-base text-gray-500 whitespace-nowrap">
           <thead className="bg-[#fafafa] text-[13px] font-bold uppercase tracking-wider text-gray-500 border-b border-gray-200">
             <tr>
@@ -407,13 +333,14 @@ export default function AgentApplicationTable() {
                 />
               </th>
               <th className="px-6 py-4 font-semibold text-center">Applied On</th>
+              <th className="px-6 py-4 font-semibold text-center">Status</th>
               <th className="px-6 py-4 font-semibold text-center">Actions</th>
             </tr>
           </thead>
           {filteredData.length === 0 ? (
             <tbody>
               <tr>
-                <td colSpan={7} className="h-[700px]">
+                <td colSpan={8} className="h-[700px]">
                   <div className="flex-1 flex flex-col">
                     <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 animate-in fade-in slide-in-from-bottom-4 duration-500 h-full">
                       <div className="relative w-20 h-20 mb-6 flex items-center justify-center">
@@ -444,8 +371,6 @@ export default function AgentApplicationTable() {
             <tbody className="divide-y divide-gray-100">
               {paginatedData.map((row, index) => {
                 const isSelected = selectedIds.has(row.id);
-                const isAdded = addedRowIds.has(row.id);
-                const isDisabled = isAdded || row.status === 'Rejected';
 
                 return (
                   <tr key={index} className={`transition-colors hover:bg-gray-50/50 group ${isSelected ? 'bg-emerald-50/30' : ''}`}>
@@ -487,22 +412,21 @@ export default function AgentApplicationTable() {
                         <span className="text-sm text-gray-500">{row.applied.split(', ')[2]}</span>
                       </div>
                     </td>
+                    <td className="px-6 py-5 text-center">
+                      <StatusBadge status={row.status} />
+                    </td>
                     <td className="px-6 py-5">
                       <div className="flex items-center justify-center gap-3">
-                        <StatusDropdown
-                          value={row.status}
-                          disabled={isDisabled}
-                          onChange={(newStatus) => handleStatusChange(row.id, newStatus)}
-                        />
+                        {/* No handler yet — this button was the old "Add" action,
+                            and its `onClick` still marked the row as added, which
+                            nothing read and which "View" should not do anyway.
+                            Wire it to the application detail route when that lands. */}
                         <button
-                          onClick={() => handleAdd(row.id)}
-                          disabled={isDisabled}
-                          className="inline-flex w-[70px] items-center justify-center rounded-lg bg-[#16A34A] px-4 py-2 text-[14px] font-semibold text-white shadow-sm transition-all duration-200 hover:bg-[#15803d] hover:shadow-md active:scale-95 disabled:bg-gray-200/80 disabled:text-gray-400 disabled:cursor-not-allowed disabled:active:scale-100 disabled:hover:shadow-none disabled:hover:bg-gray-200/80"
+                          type="button"
+                          className="inline-flex w-[80px] items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-[13px] font-semibold text-gray-700 shadow-sm transition-all duration-200 hover:bg-gray-50 hover:shadow-md hover:border-gray-300 active:scale-95"
                         >
-                          <span className='font-semibold'>
-                            Add
-                          </span>
-
+                          <Eye size={16} className="text-gray-500" />
+                          View
                         </button>
                       </div>
                     </td>

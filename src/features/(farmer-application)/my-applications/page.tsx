@@ -1,12 +1,35 @@
 "use client";
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { getMyApplications } from '../api/farmerApi';
+import type { FarmerLoanApplication } from '../types';
 import ApplicationList from './components/ApplicationList';
 import ApplicationSummary from './components/ApplicationSummary';
 
-export type TabType = 'total' | 'review' | 'disbursed' | 'rejected';
+export type TabType = 'total' | 'Draft' | 'Processing' | 'Approved' | 'Rejected';
 
 export default function MyApplicationsPage() {
     const [activeTab, setActiveTab] = useState<TabType>('total');
+    const [applications, setApplications] = useState<FarmerLoanApplication[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        let isMounted = true;
+        const fetchApps = async () => {
+            setIsLoading(true);
+            try {
+                const res = await getMyApplications();
+                if (isMounted && res.data) {
+                    setApplications(res.data);
+                }
+            } catch (e) {
+                console.error(e);
+            } finally {
+                if (isMounted) setIsLoading(false);
+            }
+        };
+        fetchApps();
+        return () => { isMounted = false; };
+    }, []);
 
     return (
         <div className="w-full mx-auto pb-8">
@@ -14,9 +37,22 @@ export default function MyApplicationsPage() {
                 <h1 className="text-xl font-bold text-gray-900">My Applications</h1>
             </div>
 
-            <ApplicationSummary activeTab={activeTab} onTabChange={(tab: string) => setActiveTab(tab as TabType)} />
-
-            <ApplicationList activeTab={activeTab} onTabChange={(tab: string) => setActiveTab(tab as TabType)} />
+            {isLoading ? (
+                <div className="py-20 text-center">Loading applications...</div>
+            ) : (
+                <>
+                    <ApplicationSummary 
+                        activeTab={activeTab} 
+                        onTabChange={(tab: string) => setActiveTab(tab as TabType)} 
+                        applications={applications}
+                    />
+                    <ApplicationList 
+                        activeTab={activeTab} 
+                        onTabChange={(tab: string) => setActiveTab(tab as TabType)} 
+                        applications={applications}
+                    />
+                </>
+            )}
         </div>
     );
 }

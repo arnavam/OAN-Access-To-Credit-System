@@ -5,7 +5,7 @@ import { AlertCircle, CheckCircle2, ShieldCheck } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
-import { searchFarmerConsent, selectConsentState } from '../store/consentSlice';
+import { searchFarmerConsent, selectConsentState, type ConsentAudience } from '../store/consentSlice';
 import { searchFarmerThunk, selectFarmerState, setFarmerId } from '../store/farmerSlice';
 import { selectVerificationBlocked } from '../store/newLeadSlice';
 
@@ -16,14 +16,25 @@ const ConsentDetailsModal = dynamic(() => import('./modals/ConsentDetailsModal')
   ssr: false,
 });
 
-export function ConsentManagementSection() {
+interface ConsentManagementSectionProps {
+  /**
+   * The lead the consent is anchored on. Optional so the Development Agent's
+   * `/leads/[id]` route keeps reading it from the route param; the farmer's
+   * apply page has no such param and passes its own lead explicitly.
+   */
+  leadId?: string | undefined;
+  audience?: ConsentAudience | undefined;
+}
+
+export function ConsentManagementSection({ leadId: leadIdProp, audience = 'agent' }: ConsentManagementSectionProps = {}) {
   const dispatch = useAppDispatch();
   const { farmerId, isSearchingFarmer, searchedFarmer, farmerDetails, searchError, detailsError } = useAppSelector(selectFarmerState);
   const { isLoadingConsent, consentError, isOtpVerified, consentDate } = useAppSelector(selectConsentState);
   const verificationBlocked = useAppSelector(selectVerificationBlocked);
   const officerName = useAppSelector(selectOfficerName) || 'AgriBank';
   const params = useParams();
-  const leadId = params?.id as string;
+  const leadId = leadIdProp || (params?.id as string);
+  const isFarmer = audience === 'farmer';
   const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
   const [isConsentModalOpen, setIsConsentModalOpen] = useState(false);
   const [maskedPhone, setMaskedPhone] = useState<string>('');
@@ -88,7 +99,7 @@ export function ConsentManagementSection() {
 
       <div className="flex flex-col items-start px-4 sm:px-6 w-full max-w-2xl gap-1">
         <label htmlFor="consent-farmer-id" className="text-[14px] font-medium text-[#374151] mb-1">
-          Farmer ID / Fayda ID <span className="text-red-500">*</span>
+          {isFarmer ? "Your Fayda ID / National ID" : "Farmer ID / Fayda ID"} <span className="text-red-500">*</span>
         </label>
         {isVerified ? (
           <div className="w-full flex flex-col gap-3">
@@ -119,7 +130,7 @@ export function ConsentManagementSection() {
                 type="text"
                 value={farmerId}
                 onChange={(e) => dispatch(setFarmerId(e.target.value))}
-                placeholder="Search by Farmer ID or National ID"
+                placeholder={isFarmer ? "Enter your Fayda ID or National ID" : "Search by Farmer ID or National ID"}
                 className="flex-1 h-[42px] rounded-md border border-[#D1D5DB] px-4 text-[15px] shadow-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 bg-white min-w-0"
               />
               <button
@@ -137,7 +148,7 @@ export function ConsentManagementSection() {
             </div>
             {searchedFarmer?.firstName && (
               <div className="text-[13px] text-green-600 font-medium bg-[#F0FDFA] border border-[#DCFCE7] rounded px-3 py-1.5 w-full break-all">
-                Farmer: {searchedFarmer.firstName} {searchedFarmer.lastName} ({searchedFarmer.phoneNumber})
+                {isFarmer ? 'Matched: ' : 'Farmer: '}{searchedFarmer.firstName} {searchedFarmer.lastName} ({searchedFarmer.phoneNumber})
               </div>
             )}
             <button
@@ -164,6 +175,8 @@ export function ConsentManagementSection() {
         farmerId={farmerId}
         maskedPhone={maskedPhone}
         onResend={requestOtp}
+        leadId={leadId}
+        audience={audience}
       />
 
       <ConsentDetailsModal
