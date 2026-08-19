@@ -7,6 +7,7 @@ describe('Registration payload - Zone and Region replacement & constraints', () 
       bank_name: 'Commercial Bank of Ethiopia S.C.',
       brand_name: 'CBE AgriCredit',
       entity_type: 'Bank',
+      bank_code: 'CBE-001',
       registered_street: 'Bole Road, Tower 2',
       registered_zone: 'Bole Zone',
       registered_region: 'Addis Ababa',

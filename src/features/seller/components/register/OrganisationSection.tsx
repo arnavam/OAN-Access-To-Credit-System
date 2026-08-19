@@ -5,6 +5,7 @@ export interface OrganisationFields {
   bank_name: string;
   brand_name: string;
   entity_type: string;
+  bank_code: string;
 }
 
 interface OrganisationSectionProps {
@@ -36,6 +37,14 @@ export function OrganisationSection({ fields, onChange }: OrganisationSectionPro
           placeholder="Enter Entity type"
           value={fields.entity_type}
           onChange={(e) => onChange({ entity_type: e.target.value })}
+        />
+        <InputField
+          label="Tax registration number"
+          required
+          placeholder="Enter Tax registration number"
+          hint="Tax Identification number (9-10 characters)"
+          value={fields.bank_code}
+          onChange={(e) => onChange({ bank_code: e.target.value })}
         />
       </div>
     </FormCard>
