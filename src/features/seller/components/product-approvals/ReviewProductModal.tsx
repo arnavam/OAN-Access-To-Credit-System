@@ -42,11 +42,26 @@ export function ReviewProductModal({ isOpen, onClose, product, initialMode = nul
   const [reason, setReason] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // The form belongs to one opening of the dialog, so it is re-seeded whenever
+  // what the dialog is showing changes. Adjusting state during render is React's
+  // documented answer to "reset state when a prop changes"; doing it inside the
+  // effect below rendered the previous reason/mode once before correcting it.
+  const [shownFor, setShownFor] = useState({ isOpen, product, initialMode });
+  if (
+    shownFor.isOpen !== isOpen ||
+    shownFor.product !== product ||
+    shownFor.initialMode !== initialMode
+  ) {
+    setShownFor({ isOpen, product, initialMode });
+    if (isOpen) {
+      setActionMode(initialMode === 'reject' ? 'reject' : initialMode === 'approve' ? 'approve' : null);
+      setReason('');
+    }
+  }
+
   useEffect(() => {
     if (isOpen) {
       dispatch(clearMutationError());
-      setActionMode(initialMode === 'reject' ? 'reject' : initialMode === 'approve' ? 'approve' : null);
-      setReason('');
       dispatch(fetchTaxonomy());
       if (product) {
         dispatch(fetchProductDetail(product.name));

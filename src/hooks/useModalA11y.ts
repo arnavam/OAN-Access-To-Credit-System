@@ -1,24 +1,23 @@
 'use client';
 
+import { lockScroll } from '@/lib/scrollLock';
 import { useEffect, useRef } from 'react';
 import { useEscapeToClose } from './useEscapeToClose';
 
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-// Ref-counted so stacked modals don't have an inner close re-enable page
-// scroll while an outer one is still open.
-let lockCount = 0;
-
-function useBodyScrollLock(active: boolean) {
+// Delegated to the shared lock in `lib/scrollLock`, which is ref-counted the same
+// way this used to be but freezes the *actual* scroller.
+//
+// Setting `document.body.style.overflow` here had no effect on any dashboard
+// screen — the scroll container is `#dashboard-main`, so the page behind an open
+// dialog carried on scrolling. The shared lock also pauses smooth scrolling,
+// which ignores `overflow: hidden` altogether.
+function useScrollLock(active: boolean) {
   useEffect(() => {
     if (!active) return;
-    if (lockCount === 0) document.body.style.overflow = 'hidden';
-    lockCount++;
-    return () => {
-      lockCount--;
-      if (lockCount === 0) document.body.style.overflow = '';
-    };
+    return lockScroll();
   }, [active]);
 }
 
@@ -41,7 +40,7 @@ export function useModalA11y<T extends HTMLElement>(
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
 
   useEscapeToClose(isOpen, onClose, containerRef);
-  useBodyScrollLock(isOpen);
+  useScrollLock(isOpen);
 
   useEffect(() => {
     if (!isOpen) return;

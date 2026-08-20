@@ -235,3 +235,14 @@ export const { clearConsentState } = consentSlice.actions;
 export const selectConsentState = (state: RootState) => state.consent;
 
 export const consentReducer = consentSlice.reducer;
+
+/**
+ * Who is driving the consent flow.
+ *
+ * The mechanics are identical either way — same endpoints, same thunks, same
+ * lead anchor — so this only selects wording. A Development Agent is collecting
+ * consent *from* a farmer who is sitting with them; a farmer on the marketplace
+ * is giving it for themselves, and second-person copy about "the farmer" reads
+ * as if it were about someone else.
+ */
+export type ConsentAudience = 'agent' | 'farmer';

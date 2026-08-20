@@ -2,11 +2,10 @@
 
 import { DashboardHeader } from '@/components/header/DashboardHeader';
 import Sidebar, { NavSection } from '@/components/Sidebar';
-import { selectAuthStatus } from '@/features/auth/store/authSlice';
-import { useAppSelector } from '@/store/hooks';
-import { LayoutDashboard, ListChecks, Users, FileText } from 'lucide-react';
+import { useDashboardSidebar } from '@/hooks/useDashboardSidebar';
+import { Users, FileText, Search } from 'lucide-react';
 import { usePathname } from 'next/navigation';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 
 import '@/styles/main-layout.scss';
 
@@ -21,26 +20,16 @@ const navigationSections: NavSection[] = [
         icon: Users,
       },
       {
-        path: '/loan-application-dashboard',
-        activePaths: ['/loan-application-dashboard'],
-        label: 'Loans Dashboard',
-        icon: LayoutDashboard,
+        path: '/loan-discovery',
+        activePaths: ['/loan-discovery'],
+        label: 'Loan Discovery',
+        icon: Search,
       },
       {
-        path: '/agent-application-lists',
-        activePaths: ['/agent-application-lists'],
-        label: 'Applications Lists',
+        path: '/dev-application-lists',
+        activePaths: ['/dev-application-lists'],
+        label: 'Application Lists',
         icon: FileText,
-      },
-    ],
-  },
-  {
-    title: 'WORKFLOW',
-    items: [
-      {
-        path: '#',
-        label: 'New Loan Application',
-        icon: ListChecks,
       },
     ],
   },
@@ -52,39 +41,20 @@ const PAGE_TITLES: Record<string, string> = {
 };
 
 export default function DevAgentLayout({ children }: { children: React.ReactNode }) {
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
   const pathname = usePathname();
-  const authStatus = useAppSelector(selectAuthStatus);
-  // getMeThunk (dispatched on app mount) hasn't resolved yet — mounting
-  // DashboardHeader before then risks it hydrating after the session resolves
-  // client-side but before the server-rendered (unresolved) HTML is compared,
-  // which mismatches and forces a client rebuild that flashes the generic role
-  // name. Matches the same gate BankAdminLayout uses for the same reason.
-  const authResolved = authStatus === 'succeeded' || authStatus === 'failed';
+  const { isCollapsed, isMobileOpen, toggle, closeMobile } = useDashboardSidebar(pathname);
 
-  const filteredSections = navigationSections.map(section => {
-    if (section.title === 'WORKFLOW') {
-      return {
-        ...section,
-        items: section.items.map(item => ({
-          ...item,
-          path: pathname.endsWith('/new-loan-application') ? pathname : item.path,
-        })),
-      };
-    }
-    return section;
-  }).filter(section => {
-    if (section.title === 'WORKFLOW') return pathname.endsWith('/new-loan-application');
-    return true;
-  });
+  // No local auth gate here. `AuthBootstrapGate` (mounted in app/providers.tsx)
+  // already holds the first paint of every protected route until getMe settles,
+  // so a second `authStatus !== succeeded|failed -> render nothing` check in this
+  // layout could never be reached — it only looked like the thing keeping the
+  // header from flashing a generic role name.
 
-  const activeItem = filteredSections
+  const activeItem = navigationSections
     .flatMap(s => s.items)
     .find(item =>
       item.path === pathname ||
-      item.activePaths?.includes(pathname) ||
-      (item.label === 'New Loan Application' && pathname.endsWith('/new-loan-application'))
+      item.activePaths?.includes(pathname)
     );
 
   const pageTitle = activeItem?.label ?? PAGE_TITLES[pathname] ?? 'Dashboard';
@@ -93,48 +63,38 @@ export default function DevAgentLayout({ children }: { children: React.ReactNode
     document.title = `${pageTitle} | Open AgriNet`;
   }, [pageTitle]);
 
-  useEffect(() => {
-    // Closes the mobile nav on route change — can't be computed during render
-    // since it has to react to navigation, not just the current render's props.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setIsMobileOpen(false);
-  }, [pathname]);
-
-  function handleToggleSidebar() {
-    if (window.innerWidth <= 900) {
-      setIsMobileOpen(prev => !prev);
-    } else {
-      setIsSidebarCollapsed(prev => !prev);
-    }
-  }
-
-  if (!authResolved) {
-    return null;
-  }
-
   return (
     <div
       id="dashboard-shell"
-      className={`dashboard-shell ${isSidebarCollapsed ? 'dashboard-shell--collapsed' : ''}`}
+      className={`dashboard-shell ${isCollapsed ? 'dashboard-shell--collapsed' : ''}`}
     >
       {isMobileOpen && (
         <div
           className="dashboard-sidebar-overlay"
           aria-hidden="true"
-          onClick={() => setIsMobileOpen(false)}
+          onClick={closeMobile}
         />
       )}
       <Sidebar
-        isCollapsed={isSidebarCollapsed}
+        isCollapsed={isCollapsed}
         isMobileOpen={isMobileOpen}
-        sections={filteredSections}
+        sections={navigationSections}
       />
       <main id="dashboard-main" className="dashboard-main">
         <DashboardHeader
-          onMenuClick={handleToggleSidebar}
+          onMenuClick={toggle}
           title={pageTitle}
         />
-        <div id="dashboard-content" className="dashboard-content">
+        {/* Keyed on the pathname so the enter animation replays on every
+            navigation — the container itself lives in this layout and would
+            otherwise only animate once, on first mount. Animating this element
+            rather than a new wrapper keeps `.dashboard-content`'s flex gap
+            applying directly to the page's own children. */}
+        <div
+          key={pathname}
+          id="dashboard-content"
+          className="dashboard-content animate-page-enter motion-reduce:animate-none"
+        >
           {children}
         </div>
       </main>

@@ -66,7 +66,7 @@ export function RegisteredAddressSection({ fields, onChange }: RegisteredAddress
         />
         <InputField
           label="Website"
-          type="url"
+          type="text"
           placeholder="Enter Website"
           hint="Your website - used as your network address - can be added later"
           value={fields.website}

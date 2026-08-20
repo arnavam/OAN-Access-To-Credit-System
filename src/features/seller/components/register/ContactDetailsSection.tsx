@@ -20,6 +20,9 @@ interface ContactDetailsSectionProps {
 export function ContactDetailsSection({ fields, onChange, isAgreed, setIsAgreed }: ContactDetailsSectionProps) {
   const [isPhoneDropdownOpen, setIsPhoneDropdownOpen] = useState(false);
   const [selectedPhoneCode, setSelectedPhoneCode] = useState('+255');
+  // Keep local digits separate so switching the country code dropdown never
+  // alters/appends to what the user already typed (Bug #27).
+  const [localPhoneDigits, setLocalPhoneDigits] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -31,6 +34,11 @@ export function ContactDetailsSection({ fields, onChange, isAgreed, setIsAgreed 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Propagate the full number (code + digits) upstream whenever either changes.
+  const propagatePhone = (code: string, digits: string) => {
+    onChange({ registered_phone: digits ? `${code}${digits}` : '' });
+  };
 
   return (
     <FormCard title="Contact Details" bodyClassName="space-y-6">
@@ -81,6 +89,8 @@ export function ContactDetailsSection({ fields, onChange, isAgreed, setIsAgreed 
                     onClick={() => {
                       setSelectedPhoneCode(code);
                       setIsPhoneDropdownOpen(false);
+                      // Re-propagate with new code but keep digits untouched
+                      propagatePhone(code, localPhoneDigits);
                     }}
                     className={`w-full text-left px-3 py-2 text-[14px] hover:bg-gray-50 transition-colors ${
                       selectedPhoneCode === code ? 'bg-[#F0FDF4] text-[#16A34A] font-medium' : 'text-[#374151]'
@@ -96,10 +106,11 @@ export function ContactDetailsSection({ fields, onChange, isAgreed, setIsAgreed 
               autoComplete="off"
               maxLength={PHONE_NUMBER_MAX_LENGTH}
               placeholder="Enter Phone Number"
-              value={fields.registered_phone.startsWith(selectedPhoneCode) ? fields.registered_phone.slice(selectedPhoneCode.length).trimStart() : fields.registered_phone}
+              value={localPhoneDigits}
               onChange={(e) => {
-                const inputDigits = e.target.value;
-                onChange({ registered_phone: inputDigits ? `${selectedPhoneCode}${inputDigits}` : '' });
+                const digits = e.target.value;
+                setLocalPhoneDigits(digits);
+                propagatePhone(selectedPhoneCode, digits);
               }}
               className="flex-1 px-3 py-2.5 bg-white border border-[#D1D5DB] rounded-lg text-[14px] text-[#1F2937] focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] transition-all placeholder:text-[#9CA3AF]"
             />

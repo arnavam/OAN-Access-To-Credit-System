@@ -1,4 +1,8 @@
-import { CheckCircle2, ClipboardList, FileText, LucideIcon, Users, XCircle } from 'lucide-react';
+'use client';
+
+import { selectBankMetrics } from '@/features/loans/store/bankApplicationsSlice';
+import { useAppSelector } from '@/store/hooks';
+import { Award, FileText, LucideIcon, Users, XCircle } from 'lucide-react';
 
 interface StatCardProps {
   label: string;
@@ -22,40 +26,47 @@ function StatCard({ label, value, icon: Icon, iconBgColor, iconColor }: StatCard
   );
 }
 
+/**
+ * Counts for the bank's own applications.
+ *
+ * Sourced from `get_loan_summary`, which aggregates through `frappe.get_list`
+ * and so is scoped by the same bank/lifecycle rules as the table below — the
+ * totals can never describe applications the list refuses to show.
+ *
+ * There are four cards, not the five that were here before: Active / Verified /
+ * Processed are not A2C Loan Application statuses, so those tiles were counting
+ * nothing. The lifecycle a bank sees is Processing → Granted (Approved) or
+ * Rejected.
+ */
 export default function StatCards() {
+  const metrics = useAppSelector(selectBankMetrics);
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       <StatCard
         label="Total Applications"
-        value={151}
+        value={metrics.total}
         icon={Users}
         iconBgColor="bg-blue-100"
         iconColor="text-blue-500"
       />
       <StatCard
-        label="Active"
-        value={30}
-        icon={ClipboardList}
-        iconBgColor="bg-green-100"
-        iconColor="text-green-500"
-      />
-      <StatCard
-        label="Verified"
-        value={21}
-        icon={CheckCircle2}
-        iconBgColor="bg-teal-100"
-        iconColor="text-teal-500"
-      />
-      <StatCard
-        label="Processed"
-        value={30}
+        label="Processing"
+        value={metrics.processing}
         icon={FileText}
         iconBgColor="bg-cyan-100"
         iconColor="text-cyan-500"
       />
       <StatCard
+        label="Granted"
+        value={metrics.approved}
+        icon={Award}
+        iconBgColor="bg-green-100"
+        iconColor="text-green-500"
+      />
+      <StatCard
         label="Rejected"
-        value={5}
+        value={metrics.rejected}
         icon={XCircle}
         iconBgColor="bg-red-100"
         iconColor="text-red-500"

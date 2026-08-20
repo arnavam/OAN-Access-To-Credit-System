@@ -258,13 +258,52 @@ export type TeamUser = z.infer<typeof teamUserSchema>;
 // Mirrors validate_password_complexity in the backend (oan_a2c/api/utils.py).
 // Every place a user picks their own password validates against this one schema,
 // so the rule the UI enforces can't drift from the rule the server enforces.
-export const strongPasswordSchema = z
-  .string()
-  .min(8, 'Password must be between 8 and 64 characters long.')
-  .max(64, 'Password must be between 8 and 64 characters long.')
-  .regex(/[A-Za-z]/, 'Password must contain at least 1 letter.')
-  .regex(/\d/, 'Password must contain at least 1 number.')
-  .regex(/[^A-Za-z0-9]/, 'Password must contain at least 1 special character.');
+export interface PasswordRule {
+  /** Shown in the checklist under a password field. */
+  label: string;
+  /** Returned by validation when the rule is not met. */
+  message: string;
+  test: (value: string) => boolean;
+}
+
+/**
+ * The password policy, written once.
+ *
+ * `PasswordRequirements` renders this list as the live checklist and
+ * `strongPasswordSchema` below is built from the same entries, so what a person
+ * is told to satisfy and what their password is actually checked against cannot
+ * drift apart. They were previously two hand-maintained copies of the same four
+ * rules in two files.
+ */
+export const PASSWORD_RULES: ReadonlyArray<PasswordRule> = [
+  {
+    label: 'At least 8 characters',
+    message: 'Password must be between 8 and 64 characters long.',
+    test: (value) => value.length >= 8 && value.length <= 64,
+  },
+  {
+    label: 'A letter',
+    message: 'Password must contain at least 1 letter.',
+    test: (value) => /[A-Za-z]/.test(value),
+  },
+  {
+    label: 'A number',
+    message: 'Password must contain at least 1 number.',
+    test: (value) => /\d/.test(value),
+  },
+  {
+    label: 'A symbol',
+    message: 'Password must contain at least 1 special character.',
+    test: (value) => /[^A-Za-z0-9]/.test(value),
+  },
+];
+
+// Rules are applied in order, so the first issue reported is the first unmet
+// rule — which is what the forms surface.
+export const strongPasswordSchema: z.ZodType<string> = PASSWORD_RULES.reduce<z.ZodType<string>>(
+  (schema, rule) => schema.refine(rule.test, { message: rule.message }),
+  z.string()
+);
 
 export const registerSellerSchema = z.object({
   email: z.string().email('Invalid email address format.'),

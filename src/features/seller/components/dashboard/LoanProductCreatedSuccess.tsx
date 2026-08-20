@@ -19,7 +19,7 @@ export function LoanProductCreatedSuccess({ onDone, height = 'h-[420px]' }: Loan
         Loan Product Saved!
       </h2>
       <p className="text-[18px] text-[#6B7280] max-w-[400px] mb-12 leading-relaxed animate-in slide-in-from-bottom-4 fade-in duration-500 delay-500 fill-mode-both">
-        Your loan product changes have been saved successfully and synchronized with the backend.
+        Your loan product changes have been saved successfully.
       </p>
       <button
         onClick={onDone}

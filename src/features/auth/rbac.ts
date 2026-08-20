@@ -22,6 +22,28 @@ export function homeRouteFor(kind: UserKind): string {
   return HOME_ROUTE[kind];
 }
 
+/**
+ * The one place a signed-out person lands, whatever role they held.
+ *
+ * There are per-role sign-in pages (`/login/farmer`, `/login/bank-admin`, …) and
+ * sign-out used to return people to the one matching the role they just left.
+ * That was wrong in both directions: someone who signs out on a shared machine
+ * is shown, and leaves behind, the portal for a role that is no longer theirs to
+ * pick — and someone whose session expired mid-task lands on a page that assumes
+ * they know which of five portals they belong to. `/login` is the role chooser,
+ * so it is the only correct destination for *leaving* a session. The per-role
+ * pages remain reachable, as deep links from the chooser.
+ */
+export const LOGIN_ROUTE = '/login';
+
+/** Why a session ended, surfaced on the login page so the sign-out is explained. */
+export type LogoutReason = 'idle' | 'session';
+
+/** `/login`, carrying the reason the previous session ended when there is one. */
+export function loginRouteFor(reason?: LogoutReason): string {
+  return reason ? `${LOGIN_ROUTE}?reason=${reason}` : LOGIN_ROUTE;
+}
+
 // Route prefix -> roles allowed to access it.
 //
 // Ordering matters: the guard picks the FIRST prefix that matches, so more
@@ -35,18 +57,25 @@ const ROUTE_ACCESS: ReadonlyArray<readonly [string, ReadonlyArray<UserKind>]> = 
   // --- Bank agent (restricted admin) ---
   ['/agent-dashboard', ['bank_agent']],
   ['/agent-loan-products', ['bank_agent']],
+  ['/agent-application-lists', ['bank_agent']],
 
   // --- Bank admin (+ marketplace share the admin surface) ---
   ['/dashboard', ['bank_admin', 'marketplace']],
   ['/loan-products', ['bank_admin', 'marketplace', 'bank_agent']],
+  ['/application-lists', ['bank_admin', 'marketplace']],
   ['/product-approvals', ['bank_admin', 'marketplace']],
   ['/kyc-compliance', ['bank_admin', 'marketplace']],
 
   // --- Dev agent (field/back-office loan pipeline) ---
   ['/leads', ['dev_agent']],
   ['/loan-application-dashboard', ['dev_agent']],
+  ['/dev-application-lists', ['dev_agent']],
   ['/update-loan-application-status', ['dev_agent']],
   ['/loans', ['dev_agent']],
+
+  // Shared by both staff portals: the bank-agent and dev-agent layouts each link
+  // to it from their own nav. Farmers browse the same catalog at /discover-loans.
+  ['/loan-discovery', ['bank_agent', 'dev_agent']],
 
   // --- Farmer (marketplace applicant) ---
   ['/farmer-dashboard', ['farmer']],

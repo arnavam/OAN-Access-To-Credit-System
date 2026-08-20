@@ -24,13 +24,15 @@ export default function CreditInformation() {
   const [selectedLoanAmount, setSelectedLoanAmount] = useState('350,000');
 
   const [loanPurpose, setLoanPurpose] = useState('');
-  const [tableData, setTableData] = useState([
-    {
-      type: 'Crop Loan',
-      amount: 'ETB 200,000',
-      purpose: 'Met with farmer at the cooperative office. He has all his land documents ready. Recommended for the Fertilizer 2026 campaign.',
-    }
-  ]);
+  // Starts empty. It used to be seeded with a row describing a meeting at a
+  // cooperative office that never happened, shown to every farmer as though it
+  // were their own entry.
+  //
+  // NOTE: nothing on this form is submitted yet — no endpoint is called and the
+  // rows live only in this component's state. `farmerApi.startApplication` is
+  // what turns a farmer's intent into an A2C Loan Application, and it is not
+  // wired up here.
+  const [tableData, setTableData] = useState<{ type: string; amount: string; purpose: string }[]>([]);
 
   const handleAdd = () => {
     if (!loanPurpose.trim()) return;
@@ -168,6 +170,13 @@ export default function CreditInformation() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
+            {tableData.length === 0 && (
+              <tr>
+                <td colSpan={3} className="px-6 py-8 text-center text-gray-400 font-medium">
+                  Nothing added yet.
+                </td>
+              </tr>
+            )}
             {tableData.map((row, idx) => (
               <tr key={idx}>
                 <td className="px-6 py-4">
