@@ -121,6 +121,11 @@ export function proxy(request: NextRequest) {
 // Next's own inline + chunk scripts run while injected scripts are blocked.
 // The nonce is propagated to Next via the request header above; pages must be
 // dynamically rendered for it to be applied (see `dynamic` in app/layout.tsx).
+//
+// Third-party libraries that inject their own unnonced <style> tags at
+// runtime (e.g. sonner's toast layer) won't get a pass here — import their
+// static stylesheet instead (see `sonner/dist/styles.css` in app/layout.tsx)
+// rather than loosening this policy.
 function buildCsp(nonce: string): string {
   const isProd = process.env.NODE_ENV === 'production';
   const apiBaseUrl = process.env.API_BASE_URL ?? '';

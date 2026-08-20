@@ -1,4 +1,9 @@
 import '@/styles/main.scss';
+// Statically bundled so it loads as a same-origin <link>, not sonner's
+// runtime-injected <style> tag — the latter has no way to carry our
+// per-request CSP nonce and gets blocked under the strict style-src used in
+// production (see buildCsp in src/proxy.ts).
+import 'sonner/dist/styles.css';
 import type { Metadata } from 'next';
 import { Roboto, Space_Grotesk } from 'next/font/google';
 import { Providers } from './providers';
