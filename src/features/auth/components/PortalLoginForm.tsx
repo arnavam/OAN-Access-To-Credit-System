@@ -1,22 +1,32 @@
 'use client';
 
-import { logoutUser } from '@/features/auth/api/authApi';
+import { SessionEndedNotice } from '@/components/SessionEndedNotice';
 import { ForgotPasswordModal } from '@/features/auth/components/ForgotPasswordModal';
 import { SetInitialPasswordForm } from '@/features/auth/components/SetInitialPasswordForm';
+import { clearSession } from '@/features/auth/logout';
 import type { UserKind } from '@/features/auth/rbac';
-import { clearAuthError, loginThunk, logout } from '@/features/auth/store/authSlice';
+import { clearAuthError, loginThunk } from '@/features/auth/store/authSlice';
 import type { User as AuthUser } from '@/features/auth/types/auth.types';
 import { useAutofillGuard } from '@/hooks/useAutofillGuard';
 import { AUTH_MESSAGES } from '@/lib/authMessages';
 import { useAppDispatch } from '@/store/hooks';
-import { ArrowRight, CheckCircle2, Clock, Eye, EyeOff, Lock, User } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Eye, EyeOff, Lock, User } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 interface PortalLoginFormProps {
+  /** Heading above the subtitle */
+  heading?: string;
   /** Title shown below the heading */
   subtitle: string;
+  /** Label for the identifier field. Portals that accept only one kind of
+   *  identifier should say so — "Phone Number or Email" on a form that only
+   *  accepts an email is an invitation to type the wrong thing. */
+  usernameLabel?: string;
+  /** `email` gets the right mobile keyboard and browser-level format checking.
+   *  Defaults to `text` because most portals still accept a phone number too. */
+  usernameType?: 'text' | 'email';
   /** Placeholder for the username/phone field */
   usernamePlaceholder?: string;
   /** Roles allowed to log in via this portal */
@@ -32,7 +42,10 @@ interface PortalLoginFormProps {
 const PARTNER_BANKS = ['CBE', 'Dashen', 'Awash', 'CBO', 'Abyssinia', 'OIB'];
 
 export function PortalLoginForm({
+  heading = 'Welcome to the Portal',
   subtitle,
+  usernameLabel = 'Phone Number or Email',
+  usernameType = 'text',
   usernamePlaceholder = '+251 911 234 567',
   allowedKinds,
   redirectTo,
@@ -41,9 +54,6 @@ export function PortalLoginForm({
 }: PortalLoginFormProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
-  // Set by IdleSessionWatcher and by the middleware's idle check, so the sign-out
-  // is explained on arrival rather than looking like a session that just vanished.
-  const wasSignedOutForIdling = useSearchParams().get('reason') === 'idle';
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -100,8 +110,10 @@ export function PortalLoginForm({
         if (allowedKinds.includes(user.kind)) {
           router.push(redirectTo(user));
         } else {
-          await logoutUser();
-          dispatch(logout());
+          // Valid credentials, wrong portal. The half-session must not survive,
+          // but the person stays on this form — so this clears without
+          // redirecting, unlike `performGlobalLogout`.
+          await clearSession(dispatch);
           setErrorMessage(AUTH_MESSAGES.wrongPortal);
         }
       } else {
@@ -122,8 +134,7 @@ export function PortalLoginForm({
         onDone={async (successMessage) => {
           // No session was ever created, but clear any stale cookie/state anyway
           // so the user lands on a genuinely clean sign-in.
-          await logoutUser();
-          dispatch(logout());
+          await clearSession(dispatch);
           returnToSignIn();
           setNotice(successMessage);
         }}
@@ -136,7 +147,7 @@ export function PortalLoginForm({
     <div className="flex-1 flex flex-col items-center justify-center h-full px-0 sm:px-0 max-w-lg mx-auto w-full">
       <div className="w-full flex flex-col items-center text-center mb-8">
         <h2 className="text-[28px] sm:text-[32px] font-bold text-[#1F2937] mb-2 tracking-tight">
-          Welcome to the Portal
+          {heading}
         </h2>
         <p className="text-[#6B7280] text-[15px] font-medium max-w-[280px]">{subtitle}</p>
       </div>
@@ -154,20 +165,10 @@ export function PortalLoginForm({
         </div>
       )}
 
-      {wasSignedOutForIdling && !errorMessage && !notice && (
-        <div
-          role="status"
-          className="w-full mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3"
-        >
-          <Clock className="mt-0.5 shrink-0 text-amber-600" size={18} strokeWidth={2.5} />
-          <div>
-            <p className="text-sm font-bold text-amber-900">Signed out for inactivity</p>
-            <p className="mt-0.5 text-sm font-medium text-amber-900/90">
-              Your session ended because it was left idle. Please sign in again to continue.
-            </p>
-          </div>
-        </div>
-      )}
+      {/* Explains an idle timeout or an expired session, from the `reason` the
+          shared sign-out path puts on the URL. Suppressed while the form has
+          something more immediate to say. */}
+      <SessionEndedNotice suppressed={!!errorMessage || !!notice} />
 
       {errorMessage && (
         <div className="w-full mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">
@@ -178,13 +179,13 @@ export function PortalLoginForm({
       <form onSubmit={handleSubmit} className="w-full space-y-6" autoComplete="off">
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <label className="text-[14px] font-semibold text-[#374151]">Phone Number or Email</label>
+            <label className="text-[14px] font-semibold text-[#374151]">{usernameLabel}</label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#9CA3AF]">
                 <User size={18} strokeWidth={2} />
               </div>
               <input
-                type="text"
+                type={usernameType}
                 autoComplete="off"
                 readOnly={usernameReadOnly}
                 onFocus={unlockUsername}

@@ -1,5 +1,6 @@
 'use client';
 
+import { SessionEndedNotice } from '@/components/SessionEndedNotice';
 import { ArrowRight, CheckCircle } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -24,6 +25,10 @@ export function LoginForm() {
 
   return (
     <div className="max-w-[480px] mx-auto w-full flex-grow flex flex-col justify-center">
+      {/* Every sign-out in the app lands here now, not on a per-role portal, so
+          this is where an idle timeout or an expired session gets explained. */}
+      <SessionEndedNotice />
+
       <div className="text-center mb-10">
         <h2 className="text-[32px] font-extrabold text-gray-900 mb-3 tracking-tight">Welcome to the Portal</h2>
         <p className="text-gray-500 text-[15px] font-medium leading-relaxed px-4">Select your role to access the agricultural credit system network.</p>

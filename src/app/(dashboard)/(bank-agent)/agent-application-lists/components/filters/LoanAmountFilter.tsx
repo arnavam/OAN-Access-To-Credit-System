@@ -41,10 +41,6 @@ export default function LoanAmountFilter({ selectedValues, onChange }: LoanAmoun
   ];
 
   useEffect(() => {
-    setTempSelected(selectedValues);
-  }, [isOpen, selectedValues]);
-
-  useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
         dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
@@ -104,6 +100,13 @@ export default function LoanAmountFilter({ selectedValues, onChange }: LoanAmoun
 
   const handleClick = () => {
     if (!isOpen && dropdownRef.current) {
+      // Opening: start the draft (and so the slider position) from the committed
+      // selection. Previously an effect on [isOpen, selectedValues] — which also
+      // re-ran on any `selectedValues` identity change, wiping an in-progress
+      // slider drag. Resetting draft state where the menu is opened is narrower
+      // and is the documented React pattern.
+      setTempSelected(selectedValues);
+
       const rect = dropdownRef.current.getBoundingClientRect();
       setDropdownPos({
         top: rect.bottom + window.scrollY + 8,

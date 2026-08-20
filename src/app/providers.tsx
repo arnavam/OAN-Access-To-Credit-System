@@ -1,9 +1,12 @@
 'use client';
 import { logger } from '@/lib/logger';
 
+import { GlobalLoader } from '@/components/GlobalLoader';
+import { FullPageLoader } from '@/components/ui/Loader';
+import { AuthBootstrapGate } from '@/features/auth/components/AuthBootstrapGate';
 import { getMeThunk } from '@/features/auth/store/authSlice';
 import { store } from '@/store';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { Provider as ReduxProvider } from 'react-redux';
 import { Toaster } from 'sonner';
 
@@ -35,12 +38,20 @@ export function Providers({ children }: { children: React.ReactNode }) {
   }, []);
 
   if (!mswReady) {
-    return null; // Or a loading spinner
+    // Mock-mode only, and previously `null` — a blank white page for as long as
+    // the service worker took to register, with nothing to say it was working.
+    return <FullPageLoader label="Starting mock API…" />;
   }
 
   return (
     <ReduxProvider store={store}>
-      {children}
+      {/* One activity bar and one blocking overlay for the whole app, mounted
+          above the routed tree so neither is torn down by a navigation.
+          `GlobalLoader` reads the URL, so it sits behind a Suspense boundary. */}
+      <Suspense fallback={null}>
+        <GlobalLoader />
+      </Suspense>
+      <AuthBootstrapGate>{children}</AuthBootstrapGate>
       <Toaster position="top-right" richColors closeButton />
     </ReduxProvider>
   );

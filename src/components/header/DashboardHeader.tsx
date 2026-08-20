@@ -1,13 +1,13 @@
 'use client';
 import { LanguageSelector } from '@/app/(portal-account)/components/LanguageSelector';
-import { logoutUser, getUserProfile } from '@/features/auth/api/authApi';
-import { logout, selectBankName, selectOfficerName, selectUserImage, selectUserKind, setUserImage } from '@/features/auth/store/authSlice';
+import { getUserProfile } from '@/features/auth/api/authApi';
+import { performGlobalLogout } from '@/features/auth/logout';
+import { selectBankName, selectOfficerName, selectUserImage, selectUserKind, setUserImage } from '@/features/auth/store/authSlice';
 import type { UserKind } from '@/features/auth/rbac';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { Bell, Building2, ChevronDown, LogOut, Menu, UserRound, UsersRound } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 import { fetchNotifications } from '@/features/notifications/store/notificationSlice';
@@ -18,21 +18,23 @@ import { toProxiedFileUrl } from '@/lib/utils';
 interface RoleConfig {
   /** Fallback display name when the store has none. */
   fallbackName: string;
-  /** Where to send the user after logout. */
-  loginPath: string;
 }
 
 // Keyed by the authoritative UserKind (backend user_type) — the single source
 // of truth for roles. No presentational role vocabulary is kept in parallel.
+//
+// This used to carry a per-role `loginPath` that sign-out redirected to. It no
+// longer does: sign-out goes through `performGlobalLogout`, which always lands on
+// the `/login` role chooser. See the note on `LOGIN_ROUTE` in `auth/rbac.ts`.
 const ROLE_CONFIG: Record<UserKind, RoleConfig> = {
-  bank_admin: { fallbackName: 'Bank Admin', loginPath: '/login/bank-admin' },
-  bank_agent: { fallbackName: 'Bank Agent', loginPath: '/login/bank-agent' },
-  dev_agent: { fallbackName: 'Development Agent', loginPath: '/login/development-agent' },
-  marketplace: { fallbackName: 'Marketplace', loginPath: '/login' },
-  farmer: { fallbackName: 'Farmer', loginPath: '/' },
+  bank_admin: { fallbackName: 'Bank Admin' },
+  bank_agent: { fallbackName: 'Bank Agent' },
+  dev_agent: { fallbackName: 'Development Agent' },
+  marketplace: { fallbackName: 'Marketplace' },
+  farmer: { fallbackName: 'Farmer' },
 };
 
-const FALLBACK_CONFIG: RoleConfig = { fallbackName: 'User', loginPath: '/login' };
+const FALLBACK_CONFIG: RoleConfig = { fallbackName: 'User' };
 
 interface DashboardHeaderProps {
   onMenuClick?: () => void;
@@ -47,7 +49,6 @@ interface DashboardHeaderProps {
 
 export function DashboardHeader({ onMenuClick, title = 'Dashboard', subtitle }: DashboardHeaderProps) {
   const dispatch = useAppDispatch();
-  const router = useRouter();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -91,23 +92,12 @@ export function DashboardHeader({ onMenuClick, title = 'Dashboard', subtitle }: 
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     setIsProfileOpen(false);
-    let clearedServerSide = false;
-    try {
-      clearedServerSide = await logoutUser();
-    } finally {
-      dispatch(logout());
-      // If the server did not clear the cookies, a client-side push would land
-      // on the login route and be bounced straight back by the middleware, which
-      // reads the cookies that are still there. A full load at least re-runs
-      // that decision against real state instead of a stale client shell.
-      if (clearedServerSide) {
-        router.push(config.loginPath);
-      } else {
-        window.location.href = config.loginPath;
-      }
-    }
+    // Revoke, reset and redirect all live in one place now — including raising
+    // the global blocking overlay, so the dashboard isn't left clickable while
+    // the session is being torn down.
+    void performGlobalLogout(dispatch);
   };
 
   // DevAgentLayout, BankAgentLayout, and BankAdminLayout gate this header

@@ -4,7 +4,10 @@ import { Check, ShieldCheck, X } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import * as React from 'react';
 import { useEffect, useRef, useState } from 'react';
-import { selectConsentState, verifyOtpThunk } from '../..';
+// Imported from the slice directly, not the feature barrel: the barrel now also
+// exports the consent sections, and one of those renders this modal — going
+// through it would close an import cycle for no benefit.
+import { selectConsentState, verifyOtpThunk, type ConsentAudience } from '../../store/consentSlice';
 
 // Seconds the farmer must wait before a code can be resent.
 const RESEND_COOLDOWN_SECONDS = 60;
@@ -16,13 +19,20 @@ interface OTPVerificationModalProps {
   maskedPhone?: string;
   /** Re-requests an OTP. Resolves to true when a new code was sent. */
   onResend?: () => Promise<boolean>;
+  /**
+   * The lead the consent is anchored on. Optional so the Development Agent's
+   * `/leads/[id]` route keeps working off the route param; the farmer's apply
+   * page has no such param and passes the lead it created explicitly.
+   */
+  leadId?: string | undefined;
+  audience?: ConsentAudience | undefined;
 }
 
-export function OTPVerificationModal({ isOpen, onClose, farmerId: _farmerId, maskedPhone, onResend }: OTPVerificationModalProps) {
+export function OTPVerificationModal({ isOpen, onClose, farmerId: _farmerId, maskedPhone, onResend, leadId: leadIdProp, audience = 'agent' }: OTPVerificationModalProps) {
   const dispatch = useAppDispatch();
   const { isVerifyingOtp } = useAppSelector(selectConsentState);
   const params = useParams();
-  const leadId = params?.id as string || '';
+  const leadId = leadIdProp || (params?.id as string) || '';
 
   const [otp, setOtp] = useState<string[]>(Array(6).fill(''));
   const [error, setError] = useState<string | null>(null);
@@ -161,7 +171,9 @@ export function OTPVerificationModal({ isOpen, onClose, farmerId: _farmerId, mas
                   Consent Authorization
                 </h4>
                 <p className="font-inter font-normal text-[12px] leading-5 text-[#1E40AF] m-0">
-                  By requesting OTP, you confirm the farmer is present and has verbally agreed to share their registry data with AgriBank for the purpose of this loan application.
+                  {audience === 'farmer'
+                    ? 'Entering this code confirms you agree to share your registry data with the bank for the purpose of this loan application.'
+                    : 'By requesting OTP, you confirm the farmer is present and has verbally agreed to share their registry data with AgriBank for the purpose of this loan application.'}
                 </p>
               </div>
             </div>
@@ -181,7 +193,7 @@ export function OTPVerificationModal({ isOpen, onClose, farmerId: _farmerId, mas
                 Enter Verification Code
               </h3>
               <p className="font-inter font-normal text-[14px] leading-5 text-center text-[#6B7280] m-0">
-                A 6-digit code has been sent to the farmer&apos;s registered phone {maskedPhone}.
+                A 6-digit code has been sent to {audience === 'farmer' ? 'your' : "the farmer's"} registered phone {maskedPhone}.
               </p>
 
               {/* Inputs */}

@@ -20,6 +20,14 @@ export default function config(phase) {
   return {
     reactStrictMode: true,
 
+    // Next 16.3 appends a managed block to AGENTS.md (and creates CLAUDE.md) on
+    // `next dev` when it detects an AI coding agent, pointing at the
+    // version-matched docs in node_modules/next/dist/docs/. Disabled here: this
+    // repo's AGENTS.md is hand-written and reviewed, and a file that rewrites
+    // itself on every `pnpm dev` shows up as an uncommitted change for whoever
+    // happens to run the dev server next.
+    agentRules: false,
+
     typescript: {
       ignoreBuildErrors: false,
     },

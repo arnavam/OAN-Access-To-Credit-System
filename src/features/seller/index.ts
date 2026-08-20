@@ -1,6 +1,7 @@
 // Page components (client-side) — import only from app/ route files
 export { default as AgentDashboardPage } from './pages/AgentDashboardPage';
 export { default as AgentLoanProductsPage } from './pages/AgentLoanProductsPage';
+export { default as BankAdminApplicationsPage } from './pages/BankAdminApplicationsPage';
 export { default as BankAdminDashboardPage } from './pages/BankAdminDashboardPage';
 export { default as KycCompliancePage } from './pages/KycCompliancePage';
 export { default as LoanProductsPage } from './pages/LoanProductsPage';

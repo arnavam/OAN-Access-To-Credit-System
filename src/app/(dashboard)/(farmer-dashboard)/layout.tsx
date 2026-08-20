@@ -1,9 +1,39 @@
 'use client';
 
 import { DashboardHeader } from '@/components/header/DashboardHeader';
-import FarmerSidebar from '@/components/siderbar/FarmerSidebar';
+import Sidebar, { NavSection } from '@/components/Sidebar';
+import { useDashboardSidebar } from '@/hooks/useDashboardSidebar';
+import { LayoutDashboard, Search, FileText } from 'lucide-react';
 import { usePathname } from 'next/navigation';
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
+
+import '@/styles/main-layout.scss';
+
+const navigationSections: NavSection[] = [
+  {
+    title: 'DASHBOARDS',
+    items: [
+      {
+        path: '/farmer-dashboard',
+        activePaths: ['/farmer-dashboard'],
+        label: 'Dashboard',
+        icon: LayoutDashboard,
+      },
+      {
+        path: '/discover-loans',
+        activePaths: ['/discover-loans', '/discover-loans/apply'],
+        label: 'Discover Loans',
+        icon: Search,
+      },
+      {
+        path: '/my-applications',
+        activePaths: ['/my-applications'],
+        label: 'My Applications',
+        icon: FileText,
+      },
+    ],
+  },
+];
 
 function getFarmerPageTitle(pathname: string): string {
   if (pathname.startsWith('/discover-loans/apply')) return 'New Loan Application';
@@ -13,22 +43,50 @@ function getFarmerPageTitle(pathname: string): string {
 }
 
 export default function FarmerLayout({ children }: { children: React.ReactNode }) {
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
   const pathname = usePathname();
+  const { isCollapsed, isMobileOpen, toggle, closeMobile } = useDashboardSidebar(pathname);
+
+  const pageTitle = getFarmerPageTitle(pathname);
+
+  useEffect(() => {
+    document.title = `${pageTitle} | Open AgriNet`;
+  }, [pageTitle]);
 
   return (
-    <div className="flex min-h-screen bg-[#F8F9fa] font-sans">
-      <FarmerSidebar isExpanded={isSidebarExpanded} setIsExpanded={setIsSidebarExpanded} />
-      <div className="flex-1 flex flex-col min-w-0 transition-all duration-300">
-        <DashboardHeader
-          title={getFarmerPageTitle(pathname)}
-          subtitle="Farmer ID: ETH-2847"
-          onMenuClick={() => setIsSidebarExpanded(prev => !prev)}
+    <div
+      id="dashboard-shell"
+      className={`dashboard-shell ${isCollapsed ? 'dashboard-shell--collapsed' : ''}`}
+    >
+      {isMobileOpen && (
+        <div
+          className="dashboard-sidebar-overlay"
+          aria-hidden="true"
+          onClick={closeMobile}
         />
-        <main id="main-content" className="flex-1 p-6 md:p-10 overflow-x-hidden">
-          {children}
-        </main>
-      </div>
+      )}
+      <Sidebar
+        isCollapsed={isCollapsed}
+        isMobileOpen={isMobileOpen}
+        sections={navigationSections}
+      />
+      <main id="dashboard-main" className="dashboard-main">
+        {/* No subtitle: this used to read "Farmer ID: ETH-2847" for every farmer
+            who ever signed in. The layout has no access to the real id — it is on
+            A2C Farmer Profile, which only the dashboard summary fetches — and the
+            profile card on the dashboard already shows it. `DashboardHeader`
+            falls back to the role label, which at least is true of everyone. */}
+        <DashboardHeader
+          onMenuClick={toggle}
+          title={pageTitle}
+        />
+        <div id="dashboard-content" className="dashboard-content">
+          {/* Keyed on the pathname so the enter animation replays on every
+              navigation, not just on first mount. */}
+          <div key={pathname} className="p-6 md:p-10 animate-page-enter motion-reduce:animate-none">
+            {children}
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

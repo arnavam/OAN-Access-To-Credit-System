@@ -21,15 +21,7 @@ interface SetInitialPasswordFormProps {
   onCancel: () => void;
 }
 
-// Live affordance only — strongPasswordSchema is the gate that actually decides,
-// and the backend re-checks after that. Keep these four in step with it by hand;
-// Zod does not expose its refinements in a form this can be derived from.
-const RULES = [
-  { label: 'At least 8 characters', test: (v: string) => v.length >= 8 && v.length <= 64 },
-  { label: 'A letter', test: (v: string) => /[A-Za-z]/.test(v) },
-  { label: 'A number', test: (v: string) => /\d/.test(v) },
-  { label: 'A symbol', test: (v: string) => /[^A-Za-z0-9]/.test(v) },
-];
+import { PasswordRequirements } from '@/components/ui/PasswordRequirements';
 
 const INPUT_CLASSES =
   'w-full pl-10 py-3 bg-white border border-gray-300 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-green/20 focus:border-brand-green transition-all placeholder:text-gray-400 font-medium shadow-sm';
@@ -180,19 +172,7 @@ export function SetInitialPasswordForm({
             </div>
           </div>
 
-          <ul className="flex flex-wrap gap-x-4 gap-y-1.5 pt-1">
-            {RULES.map((rule) => {
-              const met = rule.test(newPassword);
-              return (
-                <li
-                  key={rule.label}
-                  className={`text-xs font-medium ${met ? 'text-brand-green' : 'text-gray-400'}`}
-                >
-                  {met ? '✓' : '•'} {rule.label}
-                </li>
-              );
-            })}
-          </ul>
+          <PasswordRequirements password={newPassword} />
         </div>
 
         <button
