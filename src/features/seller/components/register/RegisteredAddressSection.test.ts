@@ -12,7 +12,7 @@ describe('Registration payload - Zone and Region replacement & constraints', () 
       registered_zone: 'Bole Zone',
       registered_region: 'Addis Ababa',
       registered_country: 'Ethiopia',
-      registered_postal_code: '100000',
+      registered_postal_code: '1000',
       registered_email: 'support@cbe.com.et',
       registered_phone: '+251911223344',
       website: 'https://www.combanketh.et',
@@ -20,6 +20,6 @@ describe('Registration payload - Zone and Region replacement & constraints', () 
 
     expect(payload.registered_zone).toBe('Bole Zone');
     expect(payload.registered_region).toBe('Addis Ababa');
-    expect(payload.registered_postal_code.length).toBeLessThanOrEqual(6);
+    expect(payload.registered_postal_code.length).toBeLessThanOrEqual(10);
   });
 });

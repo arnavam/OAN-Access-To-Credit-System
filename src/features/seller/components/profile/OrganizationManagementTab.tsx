@@ -113,7 +113,7 @@ export default function OrganizationManagementTab({ readOnly = false }: { readOn
             { label: 'Region', name: 'registered_region', placeholder: 'Enter Region', required: true },
             { label: 'Postal code', name: 'registered_postal_code', placeholder: 'Enter Postal code', required: true, maxLength: POSTAL_CODE_MAX_LENGTH },
             { label: 'Organization Type', name: 'entity_type', placeholder: 'e.g. Bank, Microfinance Institution', required: true },
-            { label: 'Website URL', name: 'website', placeholder: 'https://www.example.com', type: 'url' },
+            { label: 'Website URL', name: 'website', placeholder: 'https://www.example.com', type: 'text' },
           ].map(({ label, name, placeholder, required, type, maxLength }) => (
             <div key={name}>
               <label className="block text-xs font-bold text-gray-900 mb-1.5">

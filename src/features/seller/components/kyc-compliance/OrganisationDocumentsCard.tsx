@@ -105,7 +105,7 @@ export function OrganisationDocumentsCard() {
 
         <div className="flex flex-1 flex-col p-6">
           <label className="mb-3 block text-[14px] font-bold text-gray-700">
-            Tax Registration Certificate <span className="text-green-600">*</span>
+            Tax Registration Certificate <span className="text-red-500">*</span>
           </label>
 
           <input

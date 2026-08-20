@@ -4,5 +4,6 @@
 /** Local mobile number digits (excludes the country/dial code prefix). */
 export const PHONE_NUMBER_MAX_LENGTH = 10;
 
-/** Postal / ZIP code digits. */
-export const POSTAL_CODE_MAX_LENGTH = 6;
+/** Postal / ZIP code digits — intentionally generous (1–10) to cover all
+ *  country-specific formats (e.g. Ethiopia 4, US 5, India 6, UK up to 8). */
+export const POSTAL_CODE_MAX_LENGTH = 10;
