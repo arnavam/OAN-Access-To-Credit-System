@@ -78,14 +78,15 @@ export const loanProductsService = {
   },
 
   async setProductStatus(productId: string, status: 'Active' | 'Archived' | 'Rejected' | 'Pending Approval', reason?: string): Promise<ApiResponse<null>> {
+    const finalReason = reason ?? (status === 'Archived' ? 'Archived by seller' : undefined);
     return fetchApi('oan_a2c.api.v1.seller.loan_products.set_product_status', {
       method: 'POST',
-      body: JSON.stringify({ product_id: productId, status, reason }),
+      body: JSON.stringify({ product_id: productId, status, reason: finalReason }),
     }) as Promise<ApiResponse<null>>;
   },
 
-  async archiveProduct(productId: string): Promise<ApiResponse<null>> {
-    return this.setProductStatus(productId, 'Archived');
+  async archiveProduct(productId: string, reason = 'Archived by seller'): Promise<ApiResponse<null>> {
+    return this.setProductStatus(productId, 'Archived', reason);
   },
 
   async getDashboardStats(bankCode?: string): Promise<ApiResponse<SellerDashboardStats>> {
