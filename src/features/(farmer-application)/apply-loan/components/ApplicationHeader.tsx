@@ -1,4 +1,5 @@
 "use client";
+import { formatAmount, formatRate, formatTenure } from '../../format';
 import type { FarmerLoanProduct } from '../../types';
 import { Landmark } from 'lucide-react';
 
@@ -28,15 +29,15 @@ export default function ApplicationHeader({ loan }: ApplicationHeaderProps) {
 
       <div className="bg-[#F0FDF4] border border-[#DCFCE7] rounded-xl flex items-center justify-between p-6 w-full flex-wrap gap-4">
         <div className="flex flex-col items-center flex-1 min-w-[120px]">
-          <div className="text-xl font-bold text-[#16A34A]">ETB {loan.max_amount ? loan.max_amount.toLocaleString('en-US') : 'N/A'}</div>
+          <div className="text-xl font-bold text-[#16A34A]">{formatAmount(loan.max_amount)}</div>
           <div className="text-sm text-gray-500 font-medium mt-1">Max Amount</div>
         </div>
         <div className="flex flex-col items-center flex-1 min-w-[120px]">
-          <div className="text-xl font-bold text-[#16A34A]">{loan.min_interest_rate || 0}%</div>
+          <div className="text-xl font-bold text-[#16A34A]">{formatRate(loan.min_interest_rate)}</div>
           <div className="text-sm text-gray-500 font-medium mt-1">Interest p.a</div>
         </div>
         <div className="flex flex-col items-center flex-1 min-w-[120px]">
-          <div className="text-xl font-bold text-[#16A34A]">{loan.tenure_months || 0} mo</div>
+          <div className="text-xl font-bold text-[#16A34A]">{formatTenure(loan.tenure_months)}</div>
           <div className="text-sm text-gray-500 font-medium mt-1">Tenure</div>
         </div>
         <div className="flex flex-col items-center flex-1 min-w-[120px]">

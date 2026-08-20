@@ -3,6 +3,7 @@ import { performGlobalLogout } from '../features/auth/logout';
 import { LOGIN_ROUTE } from '../features/auth/rbac';
 import { authReducer, logout } from '../features/auth/store/authSlice';
 import { leadReducer } from '../features/leads/store/leadSlice';
+import { bankApplicationsReducer } from '../features/loans/store/bankApplicationsSlice';
 import { loanDashboardReducer } from '../features/loans/store/loanDashboardSlice';
 import { assignmentReducer } from '../features/new-lead/store/assignmentSlice';
 import { consentReducer } from '../features/new-lead/store/consentSlice';
@@ -156,6 +157,7 @@ const appReducer = combineReducers({
   assignment: assignmentReducer,
   loanForm: loanFormReducer,
   loanDashboard: loanDashboardReducer,
+  bankApplications: bankApplicationsReducer,
   sellerProducts: sellerProductsReducer,
   sellerOnboarding: sellerOnboardingReducer,
   sellerTeam: sellerTeamReducer,

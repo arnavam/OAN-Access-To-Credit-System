@@ -1,7 +1,9 @@
 'use client';
 
+import { Loader } from '@/components/ui/Loader';
+import { logger } from '@/lib/logger';
 import { Search } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { getCatalog, getCatalogFacets, removeBookmark, saveBookmark } from '../../api/farmerApi';
 import type {
   CatalogFacets,
@@ -26,6 +28,7 @@ export default function DiscoverLoansClient() {
   const [entriesPerPage, setEntriesPerPage] = useState(10);
 
   const [facets, setFacets] = useState<CatalogFacets | null>(null);
+  const [facetsFailed, setFacetsFailed] = useState(false);
   const [products, setProducts] = useState<FarmerLoanProduct[]>([]);
   const [totalEntries, setTotalEntries] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,19 +37,39 @@ export default function DiscoverLoansClient() {
   // Filter options come from the catalog itself, so the sidebar only ever offers
   // choices that match something. Fetched once — the option set changes when a
   // bank publishes a product, not while the farmer is browsing.
+  //
+  // A failure is reported as a failure. Substituting an all-empty facet set here
+  // made the sidebar say "No filters available — the catalog is empty", which is
+  // a statement about the catalog, not about the request that did not arrive —
+  // and it is the wrong statement in the one case where the farmer most needs to
+  // know to retry.
+  const [facetsAttempt, setFacetsAttempt] = useState(0);
+
   useEffect(() => {
     let isMounted = true;
     getCatalogFacets()
       .then((res) => {
-        if (isMounted) setFacets(res.data);
+        if (!isMounted) return;
+        setFacets(res.data);
+        setFacetsFailed(false);
       })
       .catch((error) => {
-        console.error('Error fetching catalog facets', error);
-        if (isMounted) setFacets({ categories: [], tenures: [], amount_range: null, max_interest_rate: null });
+        logger.error('Error fetching catalog facets', error);
+        if (!isMounted) return;
+        setFacets(null);
+        setFacetsFailed(true);
       });
     return () => {
       isMounted = false;
     };
+  }, [facetsAttempt]);
+
+  // Clearing the failure here rather than at the top of the effect keeps the
+  // reset in the event that caused it — an effect body that calls setState
+  // synchronously is a cascading render, and the lint rule says so.
+  const retryFacets = useCallback(() => {
+    setFacetsFailed(false);
+    setFacetsAttempt((attempt) => attempt + 1);
   }, []);
 
   useEffect(() => {
@@ -79,7 +102,7 @@ export default function DiscoverLoansClient() {
         setProducts(response.data.products || []);
         setTotalEntries(response.pagination.total);
       } catch (error) {
-        console.error('Error fetching catalog', error);
+        logger.error('Error fetching catalog', error);
         if (isMounted) {
           setProducts([]);
           setTotalEntries(0);
@@ -119,6 +142,8 @@ export default function DiscoverLoansClient() {
       <div className="w-full lg:w-[320px] shrink-0">
         <SidebarFilters
           facets={facets}
+          hasFailed={facetsFailed}
+          onRetry={retryFacets}
           filters={filters}
           onApply={setFilters}
           onReset={() => setFilters({})}
@@ -135,7 +160,9 @@ export default function DiscoverLoansClient() {
         />
 
         {isLoading ? (
-          <div className="flex-1 flex justify-center items-center py-20">Loading...</div>
+          <div className="flex-1 flex justify-center items-center py-20">
+            <Loader label="Loading loans…" />
+          </div>
         ) : products.length > 0 ? (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
             {products.map((loan) => (

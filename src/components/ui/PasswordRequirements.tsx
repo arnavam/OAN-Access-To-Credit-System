@@ -1,19 +1,20 @@
+import { PASSWORD_RULES } from '@/lib/api/api.schemas';
 
 interface PasswordRequirementsProps {
   password?: string;
 }
 
-export const RULES = [
-  { label: 'At least 8 characters', test: (v: string) => v.length >= 8 && v.length <= 64 },
-  { label: 'A letter', test: (v: string) => /[A-Za-z]/.test(v) },
-  { label: 'A number', test: (v: string) => /\d/.test(v) },
-  { label: 'A symbol', test: (v: string) => /[^A-Za-z0-9]/.test(v) },
-];
-
+/**
+ * The live checklist under a password field.
+ *
+ * The rules come from the same list `strongPasswordSchema` is built from — a
+ * local copy meant the checklist could go green on a password the validator
+ * would still reject.
+ */
 export function PasswordRequirements({ password = '' }: PasswordRequirementsProps) {
   return (
     <ul className="flex flex-wrap gap-x-4 gap-y-1.5 pt-1">
-      {RULES.map((rule) => {
+      {PASSWORD_RULES.map((rule) => {
         const met = rule.test(password);
         return (
           <li

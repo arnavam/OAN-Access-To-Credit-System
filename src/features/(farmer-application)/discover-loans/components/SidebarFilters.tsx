@@ -6,8 +6,11 @@ import { useState } from 'react';
 import type { CatalogFacets, CatalogFilters } from '../../types';
 
 interface SidebarFiltersProps {
-  /** Options derived from the live catalog; null while loading. */
+  /** Options derived from the live catalog; null while loading or after a failure. */
   facets: CatalogFacets | null;
+  /** True when the facets request failed — a different state from "no options". */
+  hasFailed?: boolean;
+  onRetry?: () => void;
   filters: CatalogFilters;
   onApply: (filters: CatalogFilters) => void;
   onReset: () => void;
@@ -47,7 +50,7 @@ function Section({
 const formatETB = (value: number) =>
   new Intl.NumberFormat('en-ET', { maximumFractionDigits: 0 }).format(value);
 
-export default function SidebarFilters({ facets, filters, onApply, onReset }: SidebarFiltersProps) {
+export default function SidebarFilters({ facets, hasFailed = false, onRetry, filters, onApply, onReset }: SidebarFiltersProps) {
   // Draft state: the sidebar is an "apply" form, so nothing refetches until the
   // farmer commits. Seeded from the applied filters so reopening shows the truth.
   const [draft, setDraft] = useState<CatalogFilters>(filters);
@@ -61,6 +64,27 @@ export default function SidebarFilters({ facets, filters, onApply, onReset }: Si
   if (lastApplied !== filters) {
     setLastApplied(filters);
     setDraft(filters);
+  }
+
+  // Checked before the loading state: a failed request also leaves `facets` null,
+  // and "Loading filters…" forever is the one thing worse than saying so.
+  if (hasFailed) {
+    return (
+      <div className="h-fit bg-white rounded-2xl border border-gray-200 p-6 border-[#F1F3F4] shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.05),0px_2px_4px_-1px_rgba(0,0,0,0.03)] flex flex-col gap-3">
+        <h2 className="text-lg font-bold text-gray-900">Filters</h2>
+        <p className="text-sm font-medium text-gray-500">
+          We could not load the filter options. The loans themselves are still listed.
+        </p>
+        {onRetry && (
+          <button
+            onClick={onRetry}
+            className="self-start text-sm font-bold text-[#16A34A] hover:text-green-700 transition-colors"
+          >
+            Try again
+          </button>
+        )}
+      </div>
+    );
   }
 
   if (!facets) {

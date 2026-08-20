@@ -1,6 +1,7 @@
 'use client';
 
 import { Portal } from '@/components/Portal';
+import { BANK_STATUS_OPTIONS } from '@/features/loans/store/bankApplicationsSlice';
 import { X, ChevronDown, Check } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
@@ -25,12 +26,11 @@ interface AdvancedFiltersDrawerProps {
   availableLoanTypes: string[];
 }
 
-const statusOptions = [
-  { label: 'Active', color: 'bg-emerald-500' },
-  { label: 'Verified', color: 'bg-teal-500' },
-  { label: 'Processed', color: 'bg-blue-500' },
-  { label: 'Rejected', color: 'bg-red-500' },
-];
+// The real lifecycle rather than a display list. `value` is the status the API
+// filters on; `label` is what the business calls it ("Approved" reads as
+// "Granted"). Active/Verified/Processed used to sit here — none of them is an
+// A2C Loan Application status, so every one of those filters matched nothing.
+const statusOptions = BANK_STATUS_OPTIONS;
 
 const loanAmountOptions = [
   '0 - 25,000',
@@ -103,14 +103,14 @@ export default function AdvancedFiltersDrawer({
     });
   };
 
-  const toggleStatus = (statusLabel: string) => {
+  const toggleStatus = (statusValue: string) => {
     setFilters(prev => {
-      const isSelected = prev.status.includes(statusLabel);
+      const isSelected = prev.status.includes(statusValue);
       return {
         ...prev,
         status: isSelected
-          ? prev.status.filter(s => s !== statusLabel)
-          : [...prev.status, statusLabel]
+          ? prev.status.filter(s => s !== statusValue)
+          : [...prev.status, statusValue]
       };
     });
   };
@@ -219,11 +219,13 @@ export default function AdvancedFiltersDrawer({
             <h3 className="text-[14px] font-bold text-gray-700">Status</h3>
             <div className="grid grid-cols-2 gap-3">
               {statusOptions.map(status => {
-                const isSelected = filters.status.includes(status.label);
+                // Selection is stored as the API status (`status.value`), never the
+                // label — the label is presentation and would not match server-side.
+                const isSelected = filters.status.includes(status.value);
                 return (
                   <button
-                    key={status.label}
-                    onClick={() => toggleStatus(status.label)}
+                    key={status.value}
+                    onClick={() => toggleStatus(status.value)}
                     className={`flex items-center justify-between p-3 rounded-lg border text-[14px] font-semibold transition-all ${isSelected
                       ? 'border-[#16A34A] bg-[#16A34A]/8 text-gray-700'
                       : 'border-gray-300 bg-white text-gray-700 hover:border-[#10883c]/50'

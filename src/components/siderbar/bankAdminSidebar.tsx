@@ -2,7 +2,7 @@
 import { selectBankStatus } from '@/features/auth/store/authSlice';
 import { fetchDashboardStats, selectSellerStats } from '@/features/seller/store/loanProductsSlice';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { ClipboardCheck, LayoutDashboard, Package, ShieldCheck } from 'lucide-react';
+import { ClipboardCheck, FileText, LayoutDashboard, Package, ShieldCheck } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -57,6 +57,12 @@ export default function FarmerSidebar({ isExpanded, setIsExpanded: _setIsExpande
         <Link href="/loan-products" className={`flex items-center ${isExpanded ? 'gap-4 px-4' : 'justify-center px-0'} py-3 rounded-xl font-medium text-[15px] transition-all group ${pathname === '/loan-products' ? 'bg-white/15 text-white' : 'text-white/80 hover:bg-white/5 hover:text-white'}`}>
           <Package className="w-5 h-5 shrink-0" />
           <span className={`transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0 hidden'}`}>Loan Products</span>
+        </Link>
+
+        {/* Applications Lists */}
+        <Link href="/application-lists" className={`flex items-center ${isExpanded ? 'gap-4 px-4' : 'justify-center px-0'} py-3 rounded-xl font-medium text-[15px] transition-all group ${pathname === '/application-lists' ? 'bg-white/15 text-white' : 'text-white/80 hover:bg-white/5 hover:text-white'}`}>
+          <FileText className="w-5 h-5 shrink-0" />
+          <span className={`transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0 hidden'}`}>Applications Lists</span>
         </Link>
 
         {/* Product Approvals */}

@@ -2,6 +2,7 @@
 
 import { isScrollLocked, subscribeScrollLock } from '@/lib/scrollLock';
 import Lenis from 'lenis';
+import { useReducedMotion } from 'motion/react';
 import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 
@@ -39,9 +40,14 @@ export function SmoothScroll() {
   // changes. A single long-lived instance would be watching a detached node.
   const pathname = usePathname();
 
+  // Anyone who has asked their OS for less motion gets native scrolling. Read
+  // through the same hook the motion components use rather than a one-off
+  // matchMedia call: it is SSR-safe and it *subscribes*, so turning the setting
+  // on mid-session takes effect instead of being missed until the next route.
+  const prefersReducedMotion = useReducedMotion();
+
   useEffect(() => {
-    // Anyone who has asked their OS for less motion gets native scrolling.
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (prefersReducedMotion) return;
 
     const wrapper = document.getElementById('dashboard-main');
 
@@ -83,7 +89,7 @@ export function SmoothScroll() {
       cancelAnimationFrame(frame);
       lenis.destroy();
     };
-  }, [pathname]);
+  }, [pathname, prefersReducedMotion]);
 
   return null;
 }

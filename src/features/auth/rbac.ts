@@ -57,18 +57,25 @@ const ROUTE_ACCESS: ReadonlyArray<readonly [string, ReadonlyArray<UserKind>]> = 
   // --- Bank agent (restricted admin) ---
   ['/agent-dashboard', ['bank_agent']],
   ['/agent-loan-products', ['bank_agent']],
+  ['/agent-application-lists', ['bank_agent']],
 
   // --- Bank admin (+ marketplace share the admin surface) ---
   ['/dashboard', ['bank_admin', 'marketplace']],
   ['/loan-products', ['bank_admin', 'marketplace', 'bank_agent']],
+  ['/application-lists', ['bank_admin', 'marketplace']],
   ['/product-approvals', ['bank_admin', 'marketplace']],
   ['/kyc-compliance', ['bank_admin', 'marketplace']],
 
   // --- Dev agent (field/back-office loan pipeline) ---
   ['/leads', ['dev_agent']],
   ['/loan-application-dashboard', ['dev_agent']],
+  ['/dev-application-lists', ['dev_agent']],
   ['/update-loan-application-status', ['dev_agent']],
   ['/loans', ['dev_agent']],
+
+  // Shared by both staff portals: the bank-agent and dev-agent layouts each link
+  // to it from their own nav. Farmers browse the same catalog at /discover-loans.
+  ['/loan-discovery', ['bank_agent', 'dev_agent']],
 
   // --- Farmer (marketplace applicant) ---
   ['/farmer-dashboard', ['farmer']],

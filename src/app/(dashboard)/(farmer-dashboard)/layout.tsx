@@ -70,10 +70,14 @@ export default function FarmerLayout({ children }: { children: React.ReactNode }
         sections={navigationSections}
       />
       <main id="dashboard-main" className="dashboard-main">
+        {/* No subtitle: this used to read "Farmer ID: ETH-2847" for every farmer
+            who ever signed in. The layout has no access to the real id — it is on
+            A2C Farmer Profile, which only the dashboard summary fetches — and the
+            profile card on the dashboard already shows it. `DashboardHeader`
+            falls back to the role label, which at least is true of everyone. */}
         <DashboardHeader
           onMenuClick={toggle}
           title={pageTitle}
-          subtitle="Farmer ID: ETH-2847"
         />
         <div id="dashboard-content" className="dashboard-content">
           {/* Keyed on the pathname so the enter animation replays on every

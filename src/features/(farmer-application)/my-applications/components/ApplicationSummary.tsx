@@ -1,12 +1,10 @@
 import { Award, FileText, Users, XCircle, Clock } from 'lucide-react';
 import type { FarmerLoanApplication } from '../../types';
+import { countByStatus } from '../counts';
 
 export default function ApplicationSummary({ activeTab: _activeTab, onTabChange, applications }: { activeTab: string, onTabChange: (tab: string) => void, applications: FarmerLoanApplication[] }) {
-  const total = applications.length;
-  const draft = applications.filter(a => a.status === 'Draft').length;
-  const processing = applications.filter(a => a.status === 'Processing').length;
-  const approved = applications.filter(a => a.status === 'Approved').length;
-  const rejected = applications.filter(a => a.status === 'Rejected').length;
+  const { total, Draft: draft, Processing: processing, Approved: approved, Rejected: rejected } =
+    countByStatus(applications);
   return (
     <div className="grid grid-cols-4 gap-6 mb-8">
       {/* Total Card */}

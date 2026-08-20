@@ -1,9 +1,27 @@
 'use client';
-import { ChevronDown, Phone, Search, SlidersHorizontal, Inbox, Eye } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
-import LoanTypeFilter from './filters/LoanTypeFilter';
-import LoanAmountFilter from './filters/LoanAmountFilter';
+import {
+  BankApplicationRow,
+  selectBankApplicationRows,
+  selectBankApplicationsLoading,
+  selectBankFilters,
+  selectBankLoanTypeOptions,
+  selectBankPage,
+  selectBankPageSize,
+  selectBankSearchQuery,
+  selectBankTotalCount,
+  selectBankTotalPages,
+  clearBankFilters,
+  setBankFilters,
+  setBankPage,
+  setBankPageSize,
+  setBankSearchQuery,
+} from '@/features/loans/store/bankApplicationsSlice';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
+import { ChevronDown, Eye, Inbox, Loader2, Phone, Search, SlidersHorizontal } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import AdvancedFiltersDrawer, { AdvancedFiltersState } from './filters/AdvancedFilters';
+import LoanAmountFilter from './filters/LoanAmountFilter';
+import LoanTypeFilter from './filters/LoanTypeFilter';
 
 interface StatusStyle {
   badge: string;
@@ -19,19 +37,21 @@ const UNKNOWN_STATUS_STYLE: StatusStyle = {
   dot: 'bg-gray-500',
 };
 
+// Keyed by the backend status, not by the label shown in the badge — the label is
+// display only and a bank sees "Granted" for an Approved application.
 const STATUS_STYLES: Record<string, StatusStyle> = {
-  'Active': { badge: 'bg-emerald-50 text-emerald-700 border border-emerald-200', dot: 'bg-emerald-500' },
-  'Verified': { badge: 'bg-blue-50 text-blue-700 border border-blue-200', dot: 'bg-blue-500' },
-  'Processed': { badge: 'bg-indigo-50 text-indigo-700 border border-indigo-200', dot: 'bg-indigo-500' },
-  'Rejected': { badge: 'bg-red-50 text-red-700 border border-red-200', dot: 'bg-red-500' },
+  Processing: { badge: 'bg-cyan-50 text-cyan-700 border border-cyan-200', dot: 'bg-cyan-500' },
+  Approved: { badge: 'bg-emerald-50 text-emerald-700 border border-emerald-200', dot: 'bg-emerald-500' },
+  Rejected: { badge: 'bg-red-50 text-red-700 border border-red-200', dot: 'bg-red-500' },
+  Draft: { badge: 'bg-gray-50 text-gray-600 border border-gray-200', dot: 'bg-gray-400' },
 };
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status, label }: { status: string; label: string }) {
   const style = STATUS_STYLES[status] ?? UNKNOWN_STATUS_STYLE;
   return (
     <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-[13px] font-semibold select-none ${style.badge}`}>
       <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${style.dot}`} />
-      {status}
+      {label}
     </span>
   );
 }
@@ -97,137 +117,63 @@ function PaginationDropdown({ value, options, onChange }: PaginationDropdownProp
   );
 }
 
-const initialMockData = [
-  { id: 'ET-FRM-2026-00872', name: 'Abebe Girma', initials: 'AG', initialsColor: 'bg-green-100 text-green-700', location: 'Adama', phone: '+251 (555) 123-4567', type: 'Tractor Loan', amount: 'ETB 15,000', applied: 'May 28, 2026, 10:42 AM', status: 'Active' },
-  { id: 'ET-FRM-2026-00988', name: 'Dereje Bekele', initials: 'DB', initialsColor: 'bg-blue-100 text-blue-700', location: 'Mekelle', phone: '+251 (555) 222-3333', type: 'Crop Loan', amount: 'ETB 45,000', applied: 'May 28, 2026, 09:15 AM', status: 'Verified' },
-  { id: 'ET-FRM-2026-00631', name: 'Mohammed Yusuf', initials: 'MY', initialsColor: 'bg-orange-100 text-orange-700', location: 'Bishoftu', phone: '+251 (555) 343-11111', type: 'Crop Loan', amount: 'ETB 75,000', applied: 'May 27, 2026, 16:30 PM', status: 'Verified' },
-  { id: 'ET-FRM-2026-01299', name: 'Selamawit Tadesse', initials: 'ST', initialsColor: 'bg-purple-100 text-purple-700', location: 'Mekelle', phone: '+251 (555) 231-3221', type: 'Livestock Loan', amount: 'ETB 1,50,000', applied: 'May 27, 2026, 14:20 PM', status: 'Processed' },
-  { id: 'ET-FRM-2026-01045', name: 'Tigist Haile', initials: 'TH', initialsColor: 'bg-red-100 text-red-700', location: 'Dire Dawa', phone: '+251 (555) 231-0198', type: 'Input Finance', amount: 'ETB 1,75,000', applied: 'May 27, 2026, 11:05 AM', status: 'Rejected' },
-  { id: 'ET-FRM-2026-00989', name: 'Dereje Bekele', initials: 'DB', initialsColor: 'bg-blue-100 text-blue-700', location: 'Adama', phone: '+251 (555) 222-3333', type: 'Seed Loan', amount: 'ETB 20,000', applied: 'May 28, 2026, 09:15 AM', status: 'Verified' },
-  { id: 'ET-FRM-2026-00873', name: 'Abebe Girma', initials: 'AG', initialsColor: 'bg-green-100 text-green-700', location: 'Adama', phone: '+251 (555) 123-4567', type: 'Input Finance', amount: 'ETB 90,000', applied: 'May 28, 2026, 10:42 AM', status: 'Active' },
-  { id: 'ET-FRM-2026-00990', name: 'Dereje Bekele', initials: 'DB', initialsColor: 'bg-blue-100 text-blue-700', location: 'Mekelle', phone: '+251 (555) 222-3333', type: 'Livestock Loan', amount: 'ETB 2,50,000', applied: 'May 28, 2026, 09:15 AM', status: 'Verified' },
-];
+interface AgentApplicationTableProps {
+  /** Opens the read-only application summary. Owned by the parent, which holds the modal. */
+  onView: (row: BankApplicationRow) => void;
+}
 
-export default function AgentApplicationTable() {
-  const [searchInput, setSearchInput] = useState('');
-  const [appliedSearchQuery, setAppliedSearchQuery] = useState('');
-  // Extending mock data to allow testing of pagination
-  const extendedData = [
-    ...initialMockData,
-    ...initialMockData.map(item => ({ ...item, id: `${item.id}-01` })),
-    ...initialMockData.map(item => ({ ...item, id: `${item.id}-02` })),
-    ...initialMockData.map(item => ({ ...item, id: `${item.id}-03` })),
-  ];
+export default function AgentApplicationTable({ onView }: AgentApplicationTableProps) {
+  const dispatch = useAppDispatch();
 
-  // Read-only now that per-row status is a badge rather than an editable dropdown,
-  // so the setter is gone. Still `useState` rather than a plain const, to keep the
-  // extended mock array stable across renders.
-  const [data] = useState(extendedData);
+  // Rows come from `get_all_loans`, which the backend scopes to the caller's own
+  // bank (and hides Draft applications from bank users). Filtering, sorting and
+  // paging are therefore all server-side: doing any of it here would only ever
+  // narrow one page of an already-scoped result and report misleading totals.
+  const rows = useAppSelector(selectBankApplicationRows);
+  const isLoading = useAppSelector(selectBankApplicationsLoading);
+  const totalEntries = useAppSelector(selectBankTotalCount);
+  const totalPages = useAppSelector(selectBankTotalPages);
+  const currentPage = useAppSelector(selectBankPage);
+  const entriesPerPage = useAppSelector(selectBankPageSize);
+  const appliedSearchQuery = useAppSelector(selectBankSearchQuery);
+  const filters = useAppSelector(selectBankFilters);
+  const loanTypeOptions = useAppSelector(selectBankLoanTypeOptions);
+
+  const [searchInput, setSearchInput] = useState(appliedSearchQuery);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-
-  // Filter states
-  // We use advancedFilters.loanType and advancedFilters.loanAmount directly
-
-  // Advanced Filters state
   const [isAdvancedFiltersOpen, setIsAdvancedFiltersOpen] = useState(false);
-  const [advancedFilters, setAdvancedFilters] = useState<AdvancedFiltersState>({
-    status: [],
-    loanAmount: [],
-    loanType: [],
-    location: '',
-    dateRange: { from: '', to: '' }
-  });
 
+  // The drawer speaks its own filter shape (a from/to pair); the store keeps the
+  // two dates flat because that is how the API takes them.
+  const drawerFilters: AdvancedFiltersState = {
+    status: filters.status,
+    loanAmount: filters.loanAmount,
+    loanType: filters.loanType,
+    location: filters.location,
+    dateRange: { from: filters.dateFrom, to: filters.dateTo },
+  };
 
-
-  const handleApplyAdvancedFilters = (filters: AdvancedFiltersState) => {
-    setAdvancedFilters(filters);
-    setCurrentPage(1);
+  const handleApplyAdvancedFilters = (next: AdvancedFiltersState) => {
+    dispatch(setBankFilters({
+      status: next.status,
+      loanAmount: next.loanAmount,
+      loanType: next.loanType,
+      location: next.location,
+      dateFrom: next.dateRange.from,
+      dateTo: next.dateRange.to,
+    }));
   };
 
   const handleClearAllFilters = () => {
     setSearchInput('');
-    setAppliedSearchQuery('');
-    setAdvancedFilters({
-      status: [],
-      loanAmount: [],
-      loanType: [],
-      location: '',
-      // quickDate is omitted rather than set to undefined: exactOptionalPropertyTypes
-      // treats "absent" and "explicitly undefined" as different things, and this must
-      // match the initial state above, which omits it.
-      dateRange: { from: '', to: '' }
-    });
-    setCurrentPage(1);
+    dispatch(clearBankFilters());
   };
 
-  // Apply filters
-  const filteredData = data.filter(row => {
-    if (appliedSearchQuery) {
-      const query = appliedSearchQuery.toLowerCase();
-      const matchesSearch =
-        row.id.toLowerCase().includes(query) ||
-        row.phone.toLowerCase().includes(query) ||
-        row.name.toLowerCase().includes(query) ||
-        row.amount.toLowerCase().includes(query) ||
-        row.type.toLowerCase().includes(query) ||
-        row.location.toLowerCase().includes(query) ||
-        row.status.toLowerCase().includes(query) ||
-        row.applied.toLowerCase().includes(query);
-      if (!matchesSearch) return false;
-    }
+  const applySearch = () => {
+    dispatch(setBankSearchQuery(searchInput.trim()));
+  };
 
-    if (advancedFilters.loanType.length > 0 && !advancedFilters.loanType.includes(row.type)) return false;
-
-    if (advancedFilters.loanAmount.length > 0) {
-      const amountValue = parseInt(row.amount.replace(/[^0-9]/g, ''));
-      const matchesAmount = advancedFilters.loanAmount.some(range => {
-        if (range === '0 - 25,000') return amountValue >= 0 && amountValue <= 25000;
-        if (range === '25,001 - 50,000') return amountValue > 25000 && amountValue <= 50000;
-        if (range === '50,001 - 1,00,000') return amountValue > 50000 && amountValue <= 100000;
-        if (range === '1,00,000 and above') return amountValue > 100000;
-        return false;
-      });
-      if (!matchesAmount) return false;
-    }
-
-    if (advancedFilters.status.length > 0 && !advancedFilters.status.includes(row.status)) return false;
-
-    if (advancedFilters.location) {
-      const locQuery = advancedFilters.location.toLowerCase();
-      if (!row.location.toLowerCase().includes(locQuery)) return false;
-    }
-
-    if (advancedFilters.dateRange.from || advancedFilters.dateRange.to) {
-      const rowDate = new Date(row.applied);
-      if (advancedFilters.dateRange.from) {
-        const fromDate = new Date(advancedFilters.dateRange.from);
-        if (rowDate < fromDate) return false;
-      }
-      if (advancedFilters.dateRange.to) {
-        const toDate = new Date(`${advancedFilters.dateRange.to}T23:59:59`);
-        if (rowDate > toDate) return false;
-      }
-    }
-
-    return true;
-  });
-
-  // Extract unique options for filters
-  const loanTypeOptions = Array.from(new Set(data.map(row => row.type)));
-
-  // Pagination states
-  const [currentPage, setCurrentPage] = useState(1);
-  const [entriesPerPage, setEntriesPerPage] = useState(10);
-
-  const totalEntries = filteredData.length;
-  const totalPages = Math.max(1, Math.ceil(totalEntries / entriesPerPage));
-
-  // Standard dropdown options
   const displayOptions = [10, 20, 50, 100];
-
-  const offset = (currentPage - 1) * entriesPerPage;
-  const paginatedData = filteredData.slice(offset, offset + entriesPerPage);
 
   const getPageNumbers = () => {
     if (totalPages <= 5) return Array.from({ length: totalPages }, (_, i) => i + 1);
@@ -238,7 +184,7 @@ export default function AgentApplicationTable() {
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
-      setSelectedIds(new Set(paginatedData.map(row => row.id)));
+      setSelectedIds(new Set(rows.map(row => row.id)));
     } else {
       setSelectedIds(new Set());
     }
@@ -254,7 +200,16 @@ export default function AgentApplicationTable() {
     setSelectedIds(newSelected);
   };
 
-  const isAllSelected = paginatedData.length > 0 && selectedIds.size === paginatedData.length;
+  const isAllSelected = rows.length > 0 && selectedIds.size === rows.length;
+
+  const hasFilters =
+    Boolean(appliedSearchQuery) ||
+    filters.status.length > 0 ||
+    filters.loanType.length > 0 ||
+    filters.loanAmount.length > 0 ||
+    Boolean(filters.location) ||
+    Boolean(filters.dateFrom) ||
+    Boolean(filters.dateTo);
 
   return (
     <div className="flex flex-col w-full">
@@ -268,20 +223,14 @@ export default function AgentApplicationTable() {
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  setAppliedSearchQuery(searchInput);
-                  setCurrentPage(1);
-                }
+                if (e.key === 'Enter') applySearch();
               }}
               placeholder="Search applications..."
               className="w-full pl-10 pr-4 py-2.5 text-[14px] bg-[#F8FAFC] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] text-gray-800 placeholder-gray-400 transition-all"
             />
           </div>
           <button
-            onClick={() => {
-              setAppliedSearchQuery(searchInput);
-              setCurrentPage(1);
-            }}
+            onClick={applySearch}
             className="bg-[#16A34A] hover:bg-[#15803d] text-white px-6 py-2.5 rounded-lg text-[14px]  transition-colors shadow-sm shrink-0"
           >
             <span className='font-semibold'>Search</span>
@@ -314,6 +263,7 @@ export default function AgentApplicationTable() {
                   type="checkbox"
                   checked={isAllSelected}
                   onChange={handleSelectAll}
+                  aria-label="Select all applications on this page"
                   className="h-6 w-6 rounded-md border-2 border-gray-300 text-emerald-600 focus:ring-emerald-600 focus:ring-offset-1 cursor-pointer transition-all duration-200 hover:border-emerald-500 hover:shadow-sm hover:scale-110 active:scale-95"
                 />
               </th>
@@ -322,14 +272,14 @@ export default function AgentApplicationTable() {
               <th className="px-6 py-4 font-semibold">
                 <LoanTypeFilter
                   options={loanTypeOptions}
-                  selectedValues={advancedFilters.loanType}
-                  onChange={(types) => setAdvancedFilters(prev => ({ ...prev, loanType: types }))}
+                  selectedValues={filters.loanType}
+                  onChange={(types) => dispatch(setBankFilters({ ...filters, loanType: types }))}
                 />
               </th>
               <th className="px-6 py-4 font-bold text-gray-500 uppercase tracking-wider min-w-[200px]">
                 <LoanAmountFilter
-                  selectedValues={advancedFilters.loanAmount}
-                  onChange={(amounts) => setAdvancedFilters(prev => ({ ...prev, loanAmount: amounts }))}
+                  selectedValues={filters.loanAmount}
+                  onChange={(amounts) => dispatch(setBankFilters({ ...filters, loanAmount: amounts }))}
                 />
               </th>
               <th className="px-6 py-4 font-semibold text-center">Applied On</th>
@@ -337,48 +287,72 @@ export default function AgentApplicationTable() {
               <th className="px-6 py-4 font-semibold text-center">Actions</th>
             </tr>
           </thead>
-          {filteredData.length === 0 ? (
+          {rows.length === 0 ? (
             <tbody>
               <tr>
                 <td colSpan={8} className="h-[700px]">
                   <div className="flex-1 flex flex-col">
                     <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 animate-in fade-in slide-in-from-bottom-4 duration-500 h-full">
-                      <div className="relative w-20 h-20 mb-6 flex items-center justify-center">
-                        <div
-                          className="absolute inset-0 bg-[#00C48C]/20 rounded-full animate-ping opacity-75"
-                          style={{ animationDuration: '3s' }}
-                        />
-                        <div className="relative w-16 h-16 bg-[#E6F9F3] rounded-full flex items-center justify-center border-4 border-white shadow-sm z-10">
-                          <Inbox className="w-8 h-8 text-[#00C48C] animate-bounce" style={{ animationDuration: '2s' }} />
-                        </div>
-                      </div>
-                      <h3 className="text-[#1F2937] text-[18px] font-bold mb-2 text-center">No applications yet</h3>
-                      <p className="text-[#6B7280] text-[14px] text-center leading-relaxed">
-                        Farmer loan applications routed through the OAN Farmer<br />
-                        Profiling System will appear here once your loan products are<br />
-                        active and published.
-                      </p>
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="w-8 h-8 mb-6 text-[#00C48C] animate-spin" />
+                          <h3 className="text-[#1F2937] text-[18px] font-bold mb-2 text-center">Loading applications…</h3>
+                        </>
+                      ) : (
+                        <>
+                          <div className="relative w-20 h-20 mb-6 flex items-center justify-center">
+                            <div
+                              className="absolute inset-0 bg-[#00C48C]/20 rounded-full animate-ping opacity-75"
+                              style={{ animationDuration: '3s' }}
+                            />
+                            <div className="relative w-16 h-16 bg-[#E6F9F3] rounded-full flex items-center justify-center border-4 border-white shadow-sm z-10">
+                              <Inbox className="w-8 h-8 text-[#00C48C] animate-bounce" style={{ animationDuration: '2s' }} />
+                            </div>
+                          </div>
+                          {hasFilters ? (
+                            <>
+                              <h3 className="text-[#1F2937] text-[18px] font-bold mb-2 text-center">No matching applications</h3>
+                              <p className="text-[#6B7280] text-[14px] text-center leading-relaxed mb-4">
+                                No application in your bank matches the current filters.
+                              </p>
+                              <button
+                                type="button"
+                                onClick={handleClearAllFilters}
+                                className="text-[14px] font-semibold text-[#16A34A] hover:text-[#15803d] transition-colors"
+                              >
+                                Clear Filters
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <h3 className="text-[#1F2937] text-[18px] font-bold mb-2 text-center">No applications yet</h3>
+                              <p className="text-[#6B7280] text-[14px] text-center leading-relaxed">
+                                Farmer loan applications routed through the OAN Farmer<br />
+                                Profiling System will appear here once your loan products are<br />
+                                active and published.
+                              </p>
+                            </>
+                          )}
+                        </>
+                      )}
                     </div>
-
-
                   </div>
-
-
                 </td>
               </tr>
             </tbody>
           ) : (
             <tbody className="divide-y divide-gray-100">
-              {paginatedData.map((row, index) => {
+              {rows.map((row) => {
                 const isSelected = selectedIds.has(row.id);
 
                 return (
-                  <tr key={index} className={`transition-colors hover:bg-gray-50/50 group ${isSelected ? 'bg-emerald-50/30' : ''}`}>
+                  <tr key={row.id} className={`transition-colors hover:bg-gray-50/50 group ${isSelected ? 'bg-emerald-50/30' : ''}`}>
                     <td className="px-6 py-5 text-center">
                       <input
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => handleSelectRow(row.id)}
+                        aria-label={`Select application ${row.id}`}
                         className="h-6 w-6 rounded-md border-2 border-gray-300 text-emerald-600 focus:ring-emerald-600 focus:ring-offset-1 cursor-pointer transition-all duration-200 hover:border-emerald-500 hover:shadow-sm hover:scale-110 active:scale-95"
                       />
                     </td>
@@ -389,7 +363,7 @@ export default function AgentApplicationTable() {
                         </div>
                         <div className="flex flex-col">
                           <strong className="block text-[16px] font-semibold text-[#16A34A]">{row.id}</strong>
-                          <span className="mt-1 block text-sm font-medium text-gray-700">{row.name}</span>
+                          <span className="mt-1 block text-sm font-medium text-gray-700">{row.applicant}</span>
                           <span className="mt-0.5 block text-[13px] text-gray-400">{row.location}</span>
                         </div>
                       </div>
@@ -401,28 +375,31 @@ export default function AgentApplicationTable() {
                       </div>
                     </td>
                     <td className="px-6 py-5 font-medium text-gray-700 text-sm">
-                      {row.type}
+                      <div className="flex flex-col">
+                        <span>{row.type}</span>
+                        {row.productName && (
+                          <span className="mt-0.5 text-[13px] font-normal text-gray-400">{row.productName}</span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-5 font-medium text-gray-700 text-sm">
-                      {row.amount}
+                      {row.loanAmount}
                     </td>
                     <td className="px-6 py-5 text-center">
                       <div className="flex flex-col text-sm">
-                        <span className='text-sm text-gray-500 '>{row.applied.split(', ')[0] + ', ' + row.applied.split(', ')[1]}</span>
-                        <span className="text-sm text-gray-500">{row.applied.split(', ')[2]}</span>
+                        <span className='text-sm text-gray-500'>{row.appliedDate}</span>
+                        <span className="text-sm text-gray-500">{row.appliedTime}</span>
                       </div>
                     </td>
                     <td className="px-6 py-5 text-center">
-                      <StatusBadge status={row.status} />
+                      <StatusBadge status={row.status} label={row.statusLabel} />
                     </td>
                     <td className="px-6 py-5">
                       <div className="flex items-center justify-center gap-3">
-                        {/* No handler yet — this button was the old "Add" action,
-                            and its `onClick` still marked the row as added, which
-                            nothing read and which "View" should not do anyway.
-                            Wire it to the application detail route when that lands. */}
                         <button
                           type="button"
+                          onClick={() => onView(row)}
+                          aria-label={`View application ${row.id}`}
                           className="inline-flex w-[80px] items-center justify-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-[13px] font-semibold text-gray-700 shadow-sm transition-all duration-200 hover:bg-gray-50 hover:shadow-md hover:border-gray-300 active:scale-95"
                         >
                           <Eye size={16} className="text-gray-500" />
@@ -441,24 +418,21 @@ export default function AgentApplicationTable() {
 
       {/* Pagination Footer */}
       {
-        filteredData.length > 0 && (
+        rows.length > 0 && (
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-gray-100 px-6 py-5 text-[14px] text-gray-500 bg-white rounded-b-lg">
             <div className="flex items-center gap-3">
               <span className="font-medium">Showing</span>
               <PaginationDropdown
                 value={entriesPerPage}
                 options={displayOptions}
-                onChange={(val) => {
-                  setEntriesPerPage(val);
-                  setCurrentPage(1);
-                }}
+                onChange={(val) => dispatch(setBankPageSize(val))}
               />
               <span className="font-medium">of {totalEntries.toLocaleString()} entries</span>
             </div>
 
             <div className="flex items-center gap-1.5">
               <button
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                onClick={() => dispatch(setBankPage(Math.max(1, currentPage - 1)))}
                 disabled={currentPage === 1}
                 className="flex items-center justify-center rounded-lg border border-gray-200 px-4 py-2.5 text-[14px] font-semibold text-gray-600 transition-all duration-200 hover:bg-gray-50 hover:shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none"
               >
@@ -471,7 +445,7 @@ export default function AgentApplicationTable() {
                 ) : (
                   <button
                     key={`page-${pageNum}`}
-                    onClick={() => setCurrentPage(pageNum as number)}
+                    onClick={() => dispatch(setBankPage(pageNum as number))}
                     className={`h-10 w-10 flex items-center justify-center rounded-lg text-[14px] font-bold transition-all duration-200 shadow-sm active:scale-95 ${currentPage === pageNum
                       ? 'bg-[#16A34A] text-white'
                       : 'border border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
@@ -483,7 +457,7 @@ export default function AgentApplicationTable() {
               ))}
 
               <button
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                onClick={() => dispatch(setBankPage(Math.min(totalPages, currentPage + 1)))}
                 disabled={currentPage === totalPages}
                 className="flex items-center justify-center rounded-lg border border-gray-200 px-4 py-2.5 text-[14px] font-semibold text-gray-600 transition-all duration-200 hover:bg-gray-50 hover:shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none"
               >
@@ -498,7 +472,7 @@ export default function AgentApplicationTable() {
         isOpen={isAdvancedFiltersOpen}
         onClose={() => setIsAdvancedFiltersOpen(false)}
         onApply={handleApplyAdvancedFilters}
-        initialFilters={advancedFilters}
+        initialFilters={drawerFilters}
         availableLoanTypes={loanTypeOptions}
       />
     </div >

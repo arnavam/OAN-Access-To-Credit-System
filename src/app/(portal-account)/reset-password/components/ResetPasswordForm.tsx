@@ -3,6 +3,7 @@
 import { resetPassword } from '@/features/auth/api/authApi';
 import { toast } from '@/lib/toast';
 import { strongPasswordSchema } from '@/lib/api/api.schemas';
+import { Loader, Spinner } from '@/components/ui/Loader';
 import { PasswordRequirements } from '@/components/ui/PasswordRequirements';
 import { Eye, EyeOff, KeyRound, Mail, Lock } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -153,11 +154,7 @@ function ResetPasswordFormContent() {
           disabled={isSubmitting || !email || !otp || !newPassword || !confirmPassword}
           className="w-full bg-[#16A34A] hover:bg-[#15803d] text-white py-4 rounded-2xl font-extrabold text-[15px] transition-all transform active:scale-[0.98] disabled:opacity-70 disabled:active:scale-100 flex justify-center items-center mt-4 shadow-sm"
         >
-          {isSubmitting ? (
-            <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-          ) : (
-            'Reset Password'
-          )}
+          {isSubmitting ? <Spinner size="sm" /> : 'Reset Password'}
         </button>
       </form>
     </div>
@@ -168,7 +165,7 @@ export function ResetPasswordForm() {
   return (
     <Suspense fallback={
       <div className="flex-1 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-[#16A34A] border-t-transparent rounded-full animate-spin"></div>
+        <Loader label={null} />
       </div>
     }>
       <ResetPasswordFormContent />

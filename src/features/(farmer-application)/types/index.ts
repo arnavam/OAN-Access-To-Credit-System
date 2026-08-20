@@ -42,6 +42,11 @@ export interface FarmerLoanApplication {
   bank: string;
   creation: string;
   loan_reason?: string;
+  /** Terms the application was made under, snapshotted from the product when it
+   *  was created. Null for applications made before the snapshot existed — the
+   *  card shows a placeholder rather than inventing a rate for them. */
+  interest_rate?: number | null;
+  tenure_months?: number | null;
 }
 
 /** Shape returned by api.v1.farmer.dashboard.get_dashboard_summary.

@@ -2,9 +2,7 @@
 
 import { DashboardHeader } from '@/components/header/DashboardHeader';
 import Sidebar, { NavSection } from '@/components/Sidebar';
-import { selectAuthStatus } from '@/features/auth/store/authSlice';
 import { useDashboardSidebar } from '@/hooks/useDashboardSidebar';
-import { useAppSelector } from '@/store/hooks';
 import { LayoutDashboard, Package, FileText, Search } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import React, { useEffect } from 'react';
@@ -52,7 +50,6 @@ const PAGE_TITLES: Record<string, string> = {
 
 export default function BankAgentLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const authStatus = useAppSelector(selectAuthStatus);
   const { isCollapsed, isMobileOpen, toggle, closeMobile } = useDashboardSidebar(pathname);
 
   const activeItem = navigationSections
@@ -68,17 +65,11 @@ export default function BankAgentLayout({ children }: { children: React.ReactNod
     document.title = `${pageTitle} | Open AgriNet`;
   }, [pageTitle]);
 
-  // getMeThunk (dispatched on app mount) hasn't resolved yet — mounting the
-  // dashboard chrome (which reads officerName off this same session) before
-  // then risks it hydrating after the session resolves client-side but before
-  // the server-rendered (unresolved) HTML is compared, which mismatches and
-  // forces a client rebuild that flashes the generic role name. Matches the
-  // same gate BankAdminLayout and DevAgentLayout use for the same reason.
-  const authResolved = authStatus === 'succeeded' || authStatus === 'failed';
-
-  if (!authResolved) {
-    return null;
-  }
+  // No local auth gate here. `AuthBootstrapGate` (mounted in app/providers.tsx)
+  // already holds the first paint of every protected route until getMe settles,
+  // so a second `authStatus !== succeeded|failed -> render nothing` check in this
+  // layout could never be reached — it only looked like the thing keeping the
+  // header from flashing a generic role name.
 
   return (
     <div

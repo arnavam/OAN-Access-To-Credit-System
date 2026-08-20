@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isProtectedRoute, readRoutingSession } from './rbac';
+import { canAccess, isProtectedRoute, readRoutingSession } from './rbac';
 
 /** Builds an unsigned JWT-shaped token. Signature is never checked here. */
 function tokenWith(claims: Record<string, unknown>): string {
@@ -69,6 +69,9 @@ describe('isProtectedRoute', () => {
     '/product-approvals',
     '/kyc-compliance',
     '/loan-application-dashboard',
+    '/agent-application-lists',
+    '/dev-application-lists',
+    '/application-lists',
     '/profile',
   ])('protects %s', (pathname) => {
     expect(isProtectedRoute(pathname)).toBe(true);
@@ -80,4 +83,42 @@ describe('isProtectedRoute', () => {
       expect(isProtectedRoute(pathname)).toBe(false);
     }
   );
+});
+
+describe('canAccess: application lists', () => {
+  // The three lists render the same component against the same endpoint, and
+  // the endpoint answers differently per role — a bank role sees only its own
+  // bank's non-Draft applications, a Development Agent sees the pipeline across
+  // banks. Each portal owns its own route, so none may wander into another's.
+  it('lets a bank agent reach its own applications list', () => {
+    expect(canAccess('bank_agent', '/agent-application-lists')).toBe(true);
+  });
+
+  it('keeps every other role out of the bank applications list', () => {
+    expect(canAccess('dev_agent', '/agent-application-lists')).toBe(false);
+    expect(canAccess('bank_admin', '/agent-application-lists')).toBe(false);
+    expect(canAccess('farmer', '/agent-application-lists')).toBe(false);
+    expect(canAccess('marketplace', '/agent-application-lists')).toBe(false);
+  });
+
+  it('lets a dev agent reach its own applications list', () => {
+    expect(canAccess('dev_agent', '/dev-application-lists')).toBe(true);
+  });
+
+  it('keeps bank roles out of the dev agent applications list', () => {
+    expect(canAccess('bank_agent', '/dev-application-lists')).toBe(false);
+    expect(canAccess('bank_admin', '/dev-application-lists')).toBe(false);
+    expect(canAccess('farmer', '/dev-application-lists')).toBe(false);
+  });
+
+  it('lets a bank admin reach its own applications list', () => {
+    expect(canAccess('bank_admin', '/application-lists')).toBe(true);
+    expect(canAccess('marketplace', '/application-lists')).toBe(true);
+  });
+
+  it('keeps non-admin roles out of the bank admin applications list', () => {
+    expect(canAccess('bank_agent', '/application-lists')).toBe(false);
+    expect(canAccess('dev_agent', '/application-lists')).toBe(false);
+    expect(canAccess('farmer', '/application-lists')).toBe(false);
+  });
 });

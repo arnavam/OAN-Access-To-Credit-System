@@ -3,6 +3,7 @@ import { ArrowRight, Star, Landmark } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { toast } from '@/lib/toast';
+import { formatAmount, formatRate, formatTenure } from '../../format';
 import type { FarmerLoanProduct } from '../../types';
 
 interface LoanCardProps {
@@ -24,10 +25,10 @@ export default function LoanCard({ loan, onBookmarkToggle }: LoanCardProps) {
     setIsSaving(true);
     try {
       await onBookmarkToggle(loan, previous);
-    } catch (err: any) {
+    } catch (err) {
       // The write failed; showing it as saved would be a lie the next reload
       // silently corrects.
-      toast.error(err.message || 'Failed to save product');
+      toast.error(err instanceof Error ? err.message : 'Failed to save product');
       setIsBookmarked(previous);
     } finally {
       setIsSaving(false);
@@ -62,18 +63,24 @@ export default function LoanCard({ loan, onBookmarkToggle }: LoanCardProps) {
         </div>
       </div>
 
-      {/* Details */}
+      {/* Details.
+
+          Every number here is shown only when the product actually carries it.
+          `|| 0` rendered a missing rate as "0%" and a missing tenure as "0 mo",
+          which is not an absence — it reads as an interest-free loan repayable
+          whenever, and it is the most attractive card in the list. A dash says
+          the bank has not published that term. */}
       <div className="grid grid-cols-3 gap-4 pt-2">
         <div>
-          <div className="text-lg font-bold text-gray-900">ETB {loan.max_amount ? loan.max_amount.toLocaleString('en-US') : 'N/A'}</div>
+          <div className="text-lg font-bold text-gray-900">{formatAmount(loan.max_amount)}</div>
           <div className="text-xs text-gray-400 font-medium">Max Amount</div>
         </div>
         <div className="text-center border-l border-r border-gray-100">
-          <div className="text-lg font-bold text-gray-900">{loan.min_interest_rate || 0}%</div>
+          <div className="text-lg font-bold text-gray-900">{formatRate(loan.min_interest_rate)}</div>
           <div className="text-xs text-gray-400 font-medium">Interest</div>
         </div>
         <div className="text-right">
-          <div className="text-lg font-bold text-gray-900">{loan.tenure_months || 0} mo</div>
+          <div className="text-lg font-bold text-gray-900">{formatTenure(loan.tenure_months)}</div>
           <div className="text-xs text-gray-400 font-medium">Tenure</div>
         </div>
       </div>

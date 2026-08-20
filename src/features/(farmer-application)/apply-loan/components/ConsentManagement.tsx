@@ -9,7 +9,8 @@ import {
 } from '@/features/new-lead';
 import { logger } from '@/lib/logger';
 import { useAppDispatch } from '@/store/hooks';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { Loader } from '@/components/ui/Loader';
+import { AlertCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { startConsent } from '../../api/farmerApi';
 
@@ -75,8 +76,7 @@ export default function ConsentManagement() {
   if (isLoading) {
     return (
       <section className="flex flex-col items-center py-12 gap-3 w-full bg-white border border-[#F1F3F4] rounded-xl shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.05)]">
-        <Loader2 className="animate-spin text-[#16A34A]" size={32} />
-        <p className="text-sm font-medium text-[#4B5563]">Preparing your consent request...</p>
+        <Loader label="Preparing your consent request…" />
       </section>
     );
   }

@@ -11,14 +11,9 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
 import { LanguageSelector } from '../../components/LanguageSelector';
+import { Spinner } from '@/components/ui/Loader';
 import { PasswordRequirements } from '@/components/ui/PasswordRequirements';
 import { strongPasswordSchema } from '@/lib/api/api.schemas';
-
-const activeAgents = [
-  { src: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix', alt: 'Agent 1' },
-  { src: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka', alt: 'Agent 2' },
-  { src: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Jasper', alt: 'Agent 3' },
-];
 
 export default function FarmerSignupPage() {
   const [fullName, setFullName] = useState('');
@@ -112,23 +107,8 @@ export default function FarmerSignupPage() {
               Empowering<br />Ethiopian<br />Agriculture
             </h1>
             <p className="text-white/80 text-sm md:text-[15px] leading-relaxed max-w-sm font-medium pr-4">
-              Join thousands of farmers gaining seamless access to financial credit.
+              Seamless access to financial credit for Ethiopian farmers.
             </p>
-          </div>
-
-          <div className="mt-auto relative z-10 flex items-center gap-3">
-            <div className="flex -space-x-3">
-              {activeAgents.map((agent, index) => (
-                <div key={index} className="w-10 h-10 rounded-full border-2 border-[#0B6C43] overflow-hidden flex items-center justify-center bg-white z-[3]">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={agent.src} alt={agent.alt} className="w-full h-full object-cover" />
-                </div>
-              ))}
-              <div className="w-10 h-10 rounded-full bg-[#1F2937] border-2 border-[#0B6C43] flex items-center justify-center text-[10px] font-bold text-white z-[0]">
-                +2k
-              </div>
-            </div>
-            <span className="text-xs text-white/70 font-medium">Farmers enrolled</span>
           </div>
 
         </div>
@@ -279,11 +259,7 @@ export default function FarmerSignupPage() {
                   disabled={isLoading}
                   className="w-full bg-[#16A34A] hover:bg-[#15803d] text-white py-4 rounded-2xl font-extrabold text-[15px] transition-all transform active:scale-[0.98] disabled:opacity-70 disabled:active:scale-100 flex justify-center items-center mt-4 shadow-sm"
                 >
-                  {isLoading ? (
-                    <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  ) : (
-                    'Create Account'
-                  )}
+                  {isLoading ? <Spinner size="sm" /> : 'Create Account'}
                 </button>
               </form>
             )}
