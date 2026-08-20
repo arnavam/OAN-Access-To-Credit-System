@@ -2,6 +2,7 @@
 
 import { Clock, ShieldAlert } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 /**
  * Explains why the previous session ended, on whichever login page the person
@@ -37,8 +38,22 @@ interface SessionEndedNoticeProps {
 }
 
 export function SessionEndedNotice({ suppressed = false, className }: SessionEndedNoticeProps) {
-  const reason = useSearchParams().get('reason');
-  const notice = reason === 'idle' || reason === 'session' ? NOTICES[reason] : null;
+  const searchParams = useSearchParams();
+  const reason = searchParams.get('reason');
+
+  // Capture the reason on the first render so the banner shows, then strip the
+  // query param from the URL so a manual refresh gives a clean login page.
+  const [capturedReason] = useState(() => reason);
+
+  useEffect(() => {
+    if (capturedReason === 'idle' || capturedReason === 'session') {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('reason');
+      window.history.replaceState(window.history.state, '', url.toString());
+    }
+  }, [capturedReason]);
+
+  const notice = capturedReason === 'idle' || capturedReason === 'session' ? NOTICES[capturedReason] : null;
 
   if (!notice || suppressed) return null;
 
@@ -60,3 +75,4 @@ export function SessionEndedNotice({ suppressed = false, className }: SessionEnd
     </div>
   );
 }
+

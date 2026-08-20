@@ -286,7 +286,9 @@ export function BaseLoanProductModal({
                     required={!readOnly}
                     type="number"
                     min="1"
+                    max="9999"
                     step="1"
+                    maxDigits={4}
                     value={form.tenureMonths}
                     onChange={(v) => { onClearFieldError('tenure_months'); onFormChange({ tenureMonths: v }); }}
                     placeholder="Enter tenure in months"
