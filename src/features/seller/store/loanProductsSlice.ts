@@ -208,8 +208,13 @@ export const createProductCompound = createAsyncThunk<
 
       const approved = await autoApproveIfBankAdmin(productId, input.refetchParams, dispatch, getState);
       // Skipped when approval succeeded: `setProductStatus` refetched already.
-      if (!approved) await dispatch(fetchProducts(input.refetchParams));
-
+      if (!approved) {
+        await dispatch(fetchProducts(input.refetchParams));
+        // Sidebar's pending-approval count reads from `stats`, which this create
+        // doesn't otherwise touch — without this it stays frozen at whatever it
+        // was when the sidebar first mounted.
+        dispatch(fetchDashboardStats());
+      }
       return created.data;
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Failed to create loan product';
@@ -242,7 +247,10 @@ export const updateProductCompound = createAsyncThunk<
 
       const approved = await autoApproveIfBankAdmin(productId, input.refetchParams, dispatch, getState);
       // Skipped when approval succeeded: `setProductStatus` refetched already.
-      if (!approved) await dispatch(fetchProducts(input.refetchParams));
+      if (!approved) {
+        await dispatch(fetchProducts(input.refetchParams));
+        dispatch(fetchDashboardStats());
+      }
 
       return updated.data;
     } catch (error) {
@@ -259,6 +267,10 @@ export const setProductStatus = createAsyncThunk(
     try {
       const response = await loanProductsService.setProductStatus(input.productId, input.status, input.reason);
       await dispatch(fetchProducts(input.refetchParams));
+      // Approving/rejecting moves a product out of "pending" — the sidebar's
+      // count won't reflect that without this (see the same fix on
+      // createProductCompound above).
+      dispatch(fetchDashboardStats());
       return response.data;
     } catch (error) {
       logger.error('setProductStatus thunk failed', { input, error });
@@ -276,6 +288,7 @@ export const archiveProduct = createAsyncThunk(
       const refetchParams = typeof input === 'string' ? undefined : input.refetchParams;
       const response = await loanProductsService.archiveProduct(productId, reason);
       await dispatch(fetchProducts(refetchParams));
+      dispatch(fetchDashboardStats());
       return response.data;
     } catch (error) {
       logger.error('archiveProduct thunk failed', { input, error });
