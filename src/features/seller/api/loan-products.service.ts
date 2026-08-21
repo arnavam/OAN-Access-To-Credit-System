@@ -11,6 +11,12 @@ import type {
 
 const DEFAULT_ARCHIVE_REASON = 'Archived by seller';
 
+// Bank admins publish their own products without a second pair of eyes, so the
+// approval has no human-written comment. The audit log still needs a reason, and
+// this wording says plainly that no review took place — an empty or generic
+// "Approved" would read as though someone had checked it.
+const AUTO_APPROVAL_REASON = 'Auto-approved: created or edited by bank admin';
+
 export const loanProductsService = {
   async listProducts(params?: ListProductsParams): Promise<ApiResponse<LoanProductSummary[]>> {
     const query = new URLSearchParams();
@@ -141,4 +147,4 @@ function cleanText(value: unknown): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
-export { DEFAULT_ARCHIVE_REASON };
+export { DEFAULT_ARCHIVE_REASON, AUTO_APPROVAL_REASON };

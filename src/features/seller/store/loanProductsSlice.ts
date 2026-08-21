@@ -4,9 +4,9 @@ import type {
 } from '@/lib/api/api.schemas';
 import { extractFieldErrors } from '@/lib/api/fetchApi';
 import { logger } from '@/lib/logger';
-import type { RootState } from '@/store';
+import type { AppDispatch, RootState } from '@/store';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { loanProductsService, DEFAULT_ARCHIVE_REASON } from '../api/loan-products.service';
+import { loanProductsService, DEFAULT_ARCHIVE_REASON, AUTO_APPROVAL_REASON } from '../api/loan-products.service';
 import { taxonomyService } from '../api/taxonomy.service';
 import type {
     ArchiveLoanProductInput, CreateLoanProductCompoundInput, ListProductsParams, SetLoanProductStatusInput, UpdateLoanProductCompoundInput
@@ -141,9 +141,53 @@ export const fetchDashboardStats = createAsyncThunk(
   }
 );
 
-export const createProductCompound = createAsyncThunk(
+/**
+ * Publishes a product straight to Active when the acting user is a Bank Admin.
+ *
+ * A Bank Admin is the person who would otherwise sit in the approval queue, so
+ * routing their own product through it just to have them approve it themselves
+ * is a no-op with extra clicks. Every other user kind — Bank Agents especially —
+ * still lands in Pending Approval and needs a real review.
+ *
+ * Returns whether the product ended up approved so callers refetch exactly once:
+ * `setProductStatus` already refetches, a plain create/edit does not.
+ */
+async function autoApproveIfBankAdmin(
+  productId: string,
+  refetchParams: ListProductsParams | undefined,
+  dispatch: AppDispatch,
+  getState: () => RootState,
+): Promise<boolean> {
+  if (getState().auth.user?.kind !== 'bank_admin') return false;
+
+  // `refetchParams` is spread rather than assigned: the project runs with
+  // `exactOptionalPropertyTypes`, so an explicit `undefined` is not a valid
+  // value for the optional property.
+  const result = await dispatch(setProductStatus({
+    productId,
+    status: 'Active',
+    reason: AUTO_APPROVAL_REASON,
+    ...(refetchParams !== undefined ? { refetchParams } : {}),
+  }));
+
+  if (setProductStatus.rejected.match(result)) {
+    // The product exists but is still Pending Approval. Not fatal — a human can
+    // approve it from the queue — but it must not pass silently, and the caller
+    // still needs a refetch so the list shows the real status rather than the
+    // Active one we failed to set.
+    logger.error('Auto-approval failed; product remains Pending Approval', { productId });
+    return false;
+  }
+  return true;
+}
+
+export const createProductCompound = createAsyncThunk<
+  { product_ids: string[] },
+  CreateLoanProductCompoundInput,
+  { state: RootState; dispatch: AppDispatch }
+>(
   'sellerProducts/createProductCompound',
-  async (input: CreateLoanProductCompoundInput, { dispatch, rejectWithValue }) => {
+  async (input, { dispatch, getState, rejectWithValue }) => {
     try {
       const created = await loanProductsService.createProduct(input.payload);
       const productId = created.data.product_ids?.[0];
@@ -162,7 +206,10 @@ export const createProductCompound = createAsyncThunk(
         await taxonomyService.setProductAttributes(productId, input.attributes);
       }
 
-      await dispatch(fetchProducts(input.refetchParams));
+      const approved = await autoApproveIfBankAdmin(productId, input.refetchParams, dispatch, getState);
+      // Skipped when approval succeeded: `setProductStatus` refetched already.
+      if (!approved) await dispatch(fetchProducts(input.refetchParams));
+
       return created.data;
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Failed to create loan product';
@@ -172,9 +219,13 @@ export const createProductCompound = createAsyncThunk(
   }
 );
 
-export const updateProductCompound = createAsyncThunk(
+export const updateProductCompound = createAsyncThunk<
+  { product_id: string },
+  UpdateLoanProductCompoundInput,
+  { state: RootState; dispatch: AppDispatch }
+>(
   'sellerProducts/updateProductCompound',
-  async (input: UpdateLoanProductCompoundInput, { dispatch, rejectWithValue }) => {
+  async (input, { dispatch, getState, rejectWithValue }) => {
     try {
       const updated = await loanProductsService.updateProduct(input.payload);
       const productId = input.payload.product_id;
@@ -189,7 +240,10 @@ export const updateProductCompound = createAsyncThunk(
         await taxonomyService.setProductAttributes(productId, input.attributes);
       }
 
-      await dispatch(fetchProducts(input.refetchParams));
+      const approved = await autoApproveIfBankAdmin(productId, input.refetchParams, dispatch, getState);
+      // Skipped when approval succeeded: `setProductStatus` refetched already.
+      if (!approved) await dispatch(fetchProducts(input.refetchParams));
+
       return updated.data;
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Failed to update loan product';
