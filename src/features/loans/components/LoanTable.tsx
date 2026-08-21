@@ -2,9 +2,10 @@
 
 import { useModalA11y } from '@/hooks/useModalA11y';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { Check, Eye, Filter, Phone } from 'lucide-react';
+import { Check, ChevronDown, Eye, Filter, Phone } from 'lucide-react';
 import { memo, useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+// createPortal removed
+import { AnimatePresence, motion } from 'motion/react';
 import {
   selectActivityPage, selectAdvancedFilters, selectPagedRows, selectPageSize,
   selectTableStatusFilters, selectTableTypeFilters,
@@ -47,6 +48,84 @@ const RANGE_STEPS = [
   { label: '1,00,000 and above', value: '100000+', min: 100001, max: 10000000, display: 'ETB 350000' },
   { label: 'All Amounts', value: '', min: null, max: null, display: 'All Amounts' },
 ] as const;
+
+function PaginationDropdown({
+  value,
+  onChange,
+}: {
+  value: number;
+  onChange: (val: number) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const options = [10, 20, 50];
+
+  return (
+    <div className="relative inline-block" ref={ref}>
+      <motion.button
+        type="button"
+        whileTap={{ scale: 0.95 }}
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-1 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs font-bold text-gray-700 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-colors hover:bg-gray-50"
+      >
+        {value}
+        <ChevronDown size={14} className={`transition-transform duration-200 ${isOpen ? 'rotate-180 text-emerald-600' : 'text-gray-400'}`} />
+      </motion.button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            exit="hidden"
+            variants={{
+              hidden: { opacity: 0, y: 10, scale: 0.95 },
+              visible: {
+                opacity: 1, y: 0, scale: 1,
+                transition: {
+                  type: "spring",
+                  stiffness: 300,
+                  damping: 24,
+                  staggerChildren: 0.05
+                }
+              }
+            }}
+            className="absolute bottom-full left-0 mb-1 z-50 min-w-[4rem] overflow-hidden rounded-md border border-gray-200 bg-white py-1 shadow-lg"
+          >
+            {options.map((opt) => (
+              <motion.button
+                key={opt}
+                variants={{
+                  hidden: { opacity: 0, x: -10 },
+                  visible: { opacity: 1, x: 0 }
+                }}
+                type="button"
+                onClick={() => {
+                  onChange(opt);
+                  setIsOpen(false);
+                }}
+                className={`w-full px-3 py-1.5 text-left text-xs font-bold transition-colors hover:bg-emerald-50 hover:text-emerald-700 ${value === opt ? 'bg-emerald-50 text-emerald-700' : 'text-gray-700'}`}
+              >
+                {opt}
+              </motion.button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
   const dispatch = useAppDispatch();
@@ -149,8 +228,8 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
   const totalPages = Math.max(1, Math.ceil(effectiveTotal / pageSize));
 
   return (
-    <div className="flex flex-col min-h-[400px]">
-      <div className="overflow-x-auto flex-1">
+    <div className="flex flex-col min-h-[515px]">
+      <div className="overflow-x-auto custom-scrollbar flex-1">
         <table className="w-full border-collapse text-left text-base text-gray-500 whitespace-nowrap">
           <thead className="bg-[#fafafa] text-[13px] font-bold uppercase tracking-wider text-gray-500 border-b border-gray-200">
             <tr>
@@ -169,24 +248,15 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
                   >
                     <Filter size={15} strokeWidth={2} />
                   </button>
-                  {statusFilterOpen && typeof document !== 'undefined' && createPortal(
+                  {statusFilterOpen && (
                     <div
-                      ref={statusDialogRef}
-                      role="dialog"
-                      aria-modal="true"
-                      aria-label="Status filter"
-                      tabIndex={-1}
-                      className="loan-filter-popup fixed z-[9999] w-64 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 normal-case font-normal text-sm text-gray-800"
-                      style={{
-                        top: (statusRef.current?.getBoundingClientRect().bottom ?? 0) + 8,
-                        left: Math.max(16, statusRef.current?.getBoundingClientRect().left ?? 0),
-                      }}
+                      className="absolute left-0 top-full mt-2 z-[99] w-64 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 normal-case font-normal text-sm text-gray-800"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <div className="px-4 py-2 font-semibold text-xs text-gray-400 uppercase tracking-wider border-b border-gray-100">
                         Status Filter
                       </div>
-                      <div className="max-h-60 overflow-y-auto py-1">
+                      <div className="max-h-62 overflow-y-auto py-1">
                         {['All', 'In Underwriting', 'Review', 'Approved', 'Pending', 'Rejected'].map((opt) => {
                           const isAll = opt === 'All';
                           const isChecked = isAll ? localStatuses.length === 0 : localStatuses.includes(opt);
@@ -217,18 +287,17 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
                           onClick={() => { setLocalStatuses([]); dispatch(setTableStatusFilters([])); setStatusFilterOpen(false); }}
                           className="text-xs font-semibold text-gray-500 hover:text-gray-700"
                         >
-                          Clear
+                          <span className='font-semibold'>Clear</span>
                         </button>
                         <button
                           type="button"
                           onClick={handleApplyStatus}
-                          className="px-3.5 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition-colors"
+                          className="px-3.5 py-1.5 bg-[#16A34A] text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition-colors"
                         >
-                          Apply
+                          <span className='font-semibold'>Apply</span>
                         </button>
                       </div>
-                    </div>,
-                    document.body
+                    </div>
                   )}
                 </div>
               </th>
@@ -245,24 +314,15 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
                   >
                     <Filter size={15} strokeWidth={2} />
                   </button>
-                  {loanTypeFilterOpen && typeof document !== 'undefined' && createPortal(
+                  {loanTypeFilterOpen && (
                     <div
-                      ref={loanTypeDialogRef}
-                      role="dialog"
-                      aria-modal="true"
-                      aria-label="Loan product filter"
-                      tabIndex={-1}
-                      className="loan-filter-popup fixed z-[9999] w-72 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 normal-case font-normal text-sm text-gray-800"
-                      style={{
-                        top: (loanTypeRef.current?.getBoundingClientRect().bottom ?? 0) + 8,
-                        left: Math.max(16, loanTypeRef.current?.getBoundingClientRect().left ?? 0),
-                      }}
+                      className="absolute left-0 top-full mt-2 z-[99] w-72 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 normal-case font-normal text-sm text-gray-800"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <div className="px-4 py-2 font-semibold text-xs text-gray-400 uppercase tracking-wider border-b border-gray-100">
                         Loan Product
                       </div>
-                      <div className="max-h-60 overflow-y-auto py-1">
+                      <div className="max-h-62 overflow-y-auto py-1">
                         {['All', 'CBE Smallholder Seed Loan', 'CBE Agri Input Finance', 'CBE Pastoralist Livestock Loan'].map((opt) => {
                           const isAll = opt === 'All';
                           const isChecked = isAll ? localLoanTypes.length === 0 : localLoanTypes.includes(opt);
@@ -293,18 +353,20 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
                           onClick={() => { setLocalLoanTypes([]); dispatch(setTableTypeFilters([])); setLoanTypeFilterOpen(false); }}
                           className="text-xs font-semibold text-gray-500 hover:text-gray-700"
                         >
-                          Clear
+                          <span className='font-semibold'>Clear</span>
+
                         </button>
                         <button
                           type="button"
                           onClick={handleApplyLoanType}
-                          className="px-3.5 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition-colors"
+                          className="px-3.5 py-1.5 bg-[#16A34A] text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition-colors"
                         >
-                          Apply
+
+                          <span className='font-semibold'>Apply</span>
+
                         </button>
                       </div>
-                    </div>,
-                    document.body
+                    </div>
                   )}
                 </div>
               </th>
@@ -321,18 +383,9 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
                   >
                     <Filter size={15} strokeWidth={2} />
                   </button>
-                  {amountFilterOpen && typeof document !== 'undefined' && createPortal(
+                  {amountFilterOpen && (
                     <div
-                      ref={amountDialogRef}
-                      role="dialog"
-                      aria-modal="true"
-                      aria-label="Loan amount filter"
-                      tabIndex={-1}
-                      className="loan-filter-popup fixed z-[9999] w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 p-5 normal-case font-normal text-sm text-gray-800"
-                      style={{
-                        top: (amountRef.current?.getBoundingClientRect().bottom ?? 0) + 8,
-                        left: Math.max(16, amountRef.current?.getBoundingClientRect().left ?? 0),
-                      }}
+                      className="absolute left-0 top-full mt-2 z-[99] w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 p-5 normal-case font-normal text-sm text-gray-800"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">
@@ -396,8 +449,7 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
                           );
                         })}
                       </div>
-                    </div>,
-                    document.body
+                    </div>
                   )}
                 </div>
               </th>
@@ -414,18 +466,9 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
                   >
                     <Filter size={15} strokeWidth={2} />
                   </button>
-                  {dateFilterOpen && typeof document !== 'undefined' && createPortal(
+                  {dateFilterOpen && (
                     <div
-                      ref={dateDialogRef}
-                      role="dialog"
-                      aria-modal="true"
-                      aria-label="Date filter"
-                      tabIndex={-1}
-                      className="loan-filter-popup fixed z-[9999] w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 normal-case font-normal text-sm text-gray-800"
-                      style={{
-                        top: (dateRef.current?.getBoundingClientRect().bottom ?? 0) + 8,
-                        left: Math.max(16, (dateRef.current?.getBoundingClientRect().right ?? 0) - 288),
-                      }}
+                      className="absolute right-0 top-full mt-2 z-[99] w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 normal-case font-normal text-sm text-gray-800"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
@@ -463,44 +506,44 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
                               <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${isChecked ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-gray-300'}`}>
                                 {isChecked && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                               </div>
-                              <span className="text-xs font-medium text-gray-700">{o.label}</span>
+                              <span className="text-sm font-medium text-gray-700">{o.label}</span>
                             </button>
                           );
                         })}
                       </div>
 
                       <div className="border-t border-gray-100 pt-3 space-y-2">
-                        <span className="block text-xs font-bold text-gray-500">Default Date</span>
-                        <div className="grid grid-cols-2 gap-2 text-xs">
+                        <span className="block text-sm font-bold text-gray-500">Default Date</span>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
                           <div>
-                            <span className="block text-[10px] text-gray-400 mb-1">From</span>
+                            <span className="block text-[12px] text-gray-400 mb-1">From</span>
                             <input
                               type="date"
                               value={tempDateFrom}
                               onChange={(e) => setTempDateFrom(e.target.value)}
-                              className="w-full border border-gray-200 rounded-lg p-1.5 text-xs text-gray-700"
+                              className="w-full border border-gray-200 rounded-lg p-1.5 text-sm text-gray-700"
                             />
                           </div>
                           <div>
-                            <span className="block text-[10px] text-gray-400 mb-1">To</span>
+                            <span className="block text-[12px] text-gray-400 mb-1">To</span>
                             <input
                               type="date"
                               value={tempDateTo}
                               onChange={(e) => setTempDateTo(e.target.value)}
-                              className="w-full border border-gray-200 rounded-lg p-1.5 text-xs text-gray-700"
+                              className="w-full border border-gray-200 rounded-lg p-1.5 text-sm text-gray-700"
                             />
                           </div>
                         </div>
                         <button
                           type="button"
                           onClick={handleApplyDate}
-                          className="w-full mt-3 py-2 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 transition-colors"
+                          className="w-full mt-3 py-2 bg-[#16A34A] text-white text-xs font-bold rounded-lg hover:bg-emerald-700 transition-colors"
                         >
-                          Apply Search
+
+                          <span className='font-semibold'> Apply Search</span>
                         </button>
                       </div>
-                    </div>,
-                    document.body
+                    </div>
                   )}
                 </div>
               </th>
@@ -584,19 +627,13 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
       </div>
 
       {/* Pagination Footer */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-gray-100 px-6 py-4 text-sm text-gray-500">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-gray-100 px-0 pt-4 pb-0 text-sm text-gray-500">
         <div className="flex items-center gap-2">
           <span>Showing</span>
-          <select
+          <PaginationDropdown
             value={pageSize}
-            onChange={(e) => dispatch(setPageSize(Number(e.target.value)))}
-            aria-label="Items per page"
-            className="rounded-md border border-gray-200 bg-white px-2 py-1 text-xs font-bold text-gray-700 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-          >
-            <option value={10}>10</option>
-            <option value={20}>20</option>
-            <option value={50}>50</option>
-          </select>
+            onChange={(val) => dispatch(setPageSize(val))}
+          />
           <span>of {effectiveTotal} Applications</span>
         </div>
 

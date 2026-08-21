@@ -15,7 +15,7 @@ export default function AgentDashboardPage() {
   }, [dispatch]);
 
   return (
-    <div className="w-full h-full p-8">
+    <div className="w-full h-full p-0">
       <div className="w-full mx-auto space-y-6">
         <DashboardHeader portalLabel="Bank Agent Portal - Loan Product Management" />
         <MetricCards

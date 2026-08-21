@@ -63,8 +63,8 @@ function Sidebar({ isCollapsed, isMobileOpen = false, sections = [] }: SidebarPr
         // ── Mobile (<900px): fixed off-canvas drawer ─────────────────────
         // top-0 + bottom-0 stretches to the true full screen height without
         // any explicit height value (avoids 100vh/100dvh browser quirks).
-        'fixed top-0 bottom-0 left-0 z-[200] w-[calc(100vw-1rem)] max-w-[20rem] overflow-y-auto',
-        'transition-[transform,box-shadow] duration-[280ms] ease-[cubic-bezier(0.4,0,0.2,1)]',
+        'fixed top-0 bottom-0 left-0 z-[200] w-[calc(100vw-1rem)] max-w-[20rem] overflow-x-hidden overflow-y-auto',
+        'transition-all duration-[280ms] ease-[cubic-bezier(0.4,0,0.2,1)]',
         isMobileOpen
           ? 'translate-x-0 shadow-[8px_0_40px_rgba(0,0,0,0.3)]'
           : '-translate-x-full shadow-none',
@@ -161,7 +161,7 @@ function Sidebar({ isCollapsed, isMobileOpen = false, sections = [] }: SidebarPr
                     className={[
                       'flex w-full items-center gap-[0.65rem] rounded-[0.55rem] border-0',
                       'px-[0.68rem] py-[0.7rem] text-left text-[1rem] leading-[1.1]',
-                      'transition-[background-color,color,transform] duration-150 ease-in-out',
+                      'transition-all duration-150 ease-in-out',
                       'hover:translate-x-[1px] hover:bg-white/[0.06] hover:text-white',
                       isActive
                         ? 'bg-[var(--color-green-dark)] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)] font-bold'
