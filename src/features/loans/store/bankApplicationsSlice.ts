@@ -362,13 +362,24 @@ export const selectBankLoanTypeOptions = createSelector(
   (known, filters) => Array.from(new Set([...known, ...filters.loanType])).sort()
 );
 
+/**
+ * Bank-side KPI figures, bucketed by archetype state.
+ *
+ * `processing` / `approved` / `rejected` were read here for a long time and the
+ * endpoint has never returned them — they are names from the status model the
+ * archetype refactor replaced. With `?? 0` behind them the three tiles showed a
+ * confident, permanent zero, which reads as real data rather than as missing.
+ *
+ * `by_status` is keyed on the archetype constants, so it means the same thing
+ * for every bank; a stage label does not.
+ */
 export const selectBankMetrics = createSelector([selectSummary], (summary) => {
-  const data = summary?.data;
+  const byStatus = summary?.data?.by_status;
   return {
-    total: data?.total ?? 0,
-    processing: data?.processing ?? 0,
-    approved: data?.approved ?? 0,
-    rejected: data?.rejected ?? 0,
+    total: summary?.data?.total ?? 0,
+    inTransition: byStatus?.['In Transition'] ?? 0,
+    completed: byStatus?.['Completed'] ?? 0,
+    cancelled: byStatus?.['Cancelled'] ?? 0,
   };
 });
 

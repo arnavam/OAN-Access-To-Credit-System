@@ -2,7 +2,7 @@
 
 import { CountingNumber } from '@/components/motion/CountingNumber';
 import { MotionEffect } from '@/components/motion/MotionEffect';
-import { CheckCircle2, FileCheck, LucideIcon, Package, Users } from 'lucide-react';
+import { CheckCircle2, FileCheck, FileText, LucideIcon, Package, Users } from 'lucide-react';
 
 interface MetricCard {
   label: string;
@@ -16,6 +16,9 @@ interface MetricCard {
 interface MetricCardsProps {
   pendingLabel?: string;
   pendingValue?: string;
+  /** Applications filed — a farmer who applies three times counts three times. */
+  totalApplications?: number;
+  /** Distinct farmers behind those applications — that same farmer counts once. */
   totalApplicants?: number;
   activeProducts?: number;
   totalProducts?: number;
@@ -35,6 +38,7 @@ function asNumber(value: string): number | null {
 export function MetricCards({
   pendingLabel = 'Pending Approvals',
   pendingValue,
+  totalApplications = 0,
   totalApplicants = 0,
   activeProducts = 0,
   totalProducts = 0,
@@ -42,16 +46,20 @@ export function MetricCards({
   const metrics: MetricCard[] = [
     { label: 'Active Products', value: activeProducts.toString(), icon: CheckCircle2, iconBg: 'bg-green-100', iconColor: 'text-green-500' },
     { label: 'Total Products', value: totalProducts.toString(), icon: Package, iconBg: 'bg-blue-100', iconColor: 'text-blue-500' },
+    { label: 'Total Applications', value: totalApplications.toString(), icon: FileText, iconBg: 'bg-indigo-100', iconColor: 'text-indigo-500' },
     { label: 'Total Applicants', value: totalApplicants.toString(), icon: Users, iconBg: 'bg-purple-100', iconColor: 'text-purple-500' },
     { label: pendingLabel, value: pendingValue ?? '0', icon: FileCheck, iconBg: 'bg-orange-100', iconColor: 'text-orange-500' },
   ];
 
+  // Five cards: 3-then-2 at lg, one row from xl up. Going straight to five
+  // columns at lg would squeeze each card past the point where a 32px figure and
+  // its 64px icon still fit side by side.
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
       {/* The animated element *is* the card — no wrapper. A wrapper would take
           over as the grid item, and the cards would stop stretching to a common
           height. Staggered so the row reads left to right as it arrives instead
-          of four cards appearing at once; the stats are fetched after mount, so
+          of every card appearing at once; the stats are fetched after mount, so
           this covers a real wait rather than decorating ready content. */}
       {metrics.map((metric, index) => {
         const Icon = metric.icon;

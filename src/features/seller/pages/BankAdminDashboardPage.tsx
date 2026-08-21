@@ -23,7 +23,8 @@ export default function BankAdminDashboardPage() {
       <MetricCards
         totalProducts={stats?.total_products ?? 0}
         activeProducts={stats?.active_products ?? 0}
-        totalApplicants={stats?.total_applications ?? 0}
+        totalApplications={stats?.total_applications ?? 0}
+        totalApplicants={stats?.total_applicants ?? 0}
         pendingLabel="Pending Approvals"
         pendingValue={String(stats?.pending_products ?? 0)}
       />

@@ -4,7 +4,6 @@ import { logger } from '@/lib/logger';
 import { GlobalLoader } from '@/components/GlobalLoader';
 import { FullPageLoader } from '@/components/ui/Loader';
 import { AuthBootstrapGate } from '@/features/auth/components/AuthBootstrapGate';
-import { getMeThunk } from '@/features/auth/store/authSlice';
 import { store } from '@/store';
 import { Suspense, useEffect, useState } from 'react';
 import { Provider as ReduxProvider } from 'react-redux';
@@ -16,9 +15,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
     process.env.NEXT_PUBLIC_API_MOCKING !== 'true'
   );
 
+  // Session restore is NOT kicked off here. It used to be, unconditionally on
+  // mount — which fired an authenticated `get_me` at the backend from the login
+  // screen, where there is no session cookie by definition, and got back a 401
+  // "Missing Authorization Header" every time. Harmless but alarming, and it was
+  // the first thing anyone saw in devtools right after setting a new password.
+  // `AuthBootstrapGate` owns the probe now and only runs it where a session can
+  // actually exist.
   useEffect(() => {
-    store.dispatch(getMeThunk());
-
     if (process.env.NEXT_PUBLIC_API_MOCKING === 'true') {
       import('@/lib/mocks/browser').then(({ worker }) => {
         worker.start({

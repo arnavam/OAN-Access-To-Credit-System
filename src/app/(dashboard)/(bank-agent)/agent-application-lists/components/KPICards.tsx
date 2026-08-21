@@ -33,10 +33,15 @@ function StatCard({ label, value, icon: Icon, iconBgColor, iconColor }: StatCard
  * and so is scoped by the same bank/lifecycle rules as the table below — the
  * totals can never describe applications the list refuses to show.
  *
- * There are four cards, not the five that were here before: Active / Verified /
- * Processed are not A2C Loan Application statuses, so those tiles were counting
- * nothing. The lifecycle a bank sees is Processing → Granted (Approved) or
- * Rejected.
+ * The tiles are labelled by archetype state, which is what the API can actually
+ * answer for. An earlier pass here removed Active / Verified / Processed because
+ * they were not statuses and counted nothing — but their replacements (Processing
+ * / Granted / Rejected) were names from the model the archetype refactor then
+ * replaced, so they counted nothing either, and `?? 0` made that look like data.
+ *
+ * "Granted" and "Rejected" are absent rather than guessed: the `Rejected`
+ * archetype was never implemented, so a declined loan and a disbursed one both
+ * sit on `Completed` and only the bank's own stage label separates them.
  */
 export default function StatCards() {
   const metrics = useAppSelector(selectBankMetrics);
@@ -51,22 +56,22 @@ export default function StatCards() {
         iconColor="text-blue-500"
       />
       <StatCard
-        label="Processing"
-        value={metrics.processing}
+        label="In Progress"
+        value={metrics.inTransition}
         icon={FileText}
         iconBgColor="bg-cyan-100"
         iconColor="text-cyan-500"
       />
       <StatCard
-        label="Granted"
-        value={metrics.approved}
+        label="Completed"
+        value={metrics.completed}
         icon={Award}
         iconBgColor="bg-green-100"
         iconColor="text-green-500"
       />
       <StatCard
-        label="Rejected"
-        value={metrics.rejected}
+        label="Cancelled"
+        value={metrics.cancelled}
         icon={XCircle}
         iconBgColor="bg-red-100"
         iconColor="text-red-500"
