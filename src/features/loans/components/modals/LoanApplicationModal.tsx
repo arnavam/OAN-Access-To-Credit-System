@@ -314,7 +314,8 @@ export default function LoanApplicationModal({ isOpen, onClose, data, onStatusCh
             onClick={onClose}
             className="px-6 py-2.5 border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold rounded-xl text-sm transition-colors"
           >
-            Close
+
+            <span className='font-semibold'>Close</span>
           </button>
 
           {(!isRejecting && !isApproving) && (
@@ -325,7 +326,8 @@ export default function LoanApplicationModal({ isOpen, onClose, data, onStatusCh
                 className="px-6 py-2.5 bg-[#DC2626] hover:bg-[#B91C1C] text-white font-bold rounded-xl text-sm transition-colors flex items-center gap-2 shadow-sm"
               >
                 <XCircle className="w-4 h-4" />
-                Reject
+
+                <span className='font-semibold'>Reject</span>
               </button>
               <button
                 type="button"
@@ -333,7 +335,8 @@ export default function LoanApplicationModal({ isOpen, onClose, data, onStatusCh
                 className="px-6 py-2.5 bg-[#16A34A] hover:bg-[#15803d] text-white font-bold rounded-xl text-sm transition-colors flex items-center gap-2 shadow-sm"
               >
                 <CheckCircle2 className="w-4 h-4" />
-                Approve
+
+                <span className='font-semibold'>Approve</span>
               </button>
             </div>
           )}

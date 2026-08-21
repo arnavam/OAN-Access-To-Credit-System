@@ -23,3 +23,24 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Global Scrollbar styling */
+::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f3f4;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb {
+  background: #16A34A; /* emerald-600 */
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #15803d; /* emerald-700 */
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #16A34A #f1f3f4;
+}

@@ -1,30 +1,30 @@
 'use client';
 import {
-    clearMutationError,
-    createProductCompound,
-    fetchTaxonomy,
-    selectAttributes,
-    selectCategories,
-    selectMutationFieldErrors,
-    selectProductsMutationError,
-    selectProductsMutationStatus,
-    selectTags
+  clearMutationError,
+  createProductCompound,
+  fetchTaxonomy,
+  selectAttributes,
+  selectCategories,
+  selectMutationFieldErrors,
+  selectProductsMutationError,
+  selectProductsMutationStatus,
+  selectTags
 } from '@/features/seller/store/loanProductsSlice';
 import { logger } from '@/lib/logger';
 import { toast } from '@/lib/toast';
 import type { CreateLoanProductCompoundInput, CreateLoanProductPayload } from '@/features/seller/types/loan-products.types';
 import {
-    buildAttributesPayload,
-    filterEligibilityAttributes,
-    initialProductFormState as initialFormState,
-    mapTermOptions,
-    MAX_PRODUCT_IMAGE_BYTES,
-    readImageFileAsDataUrl,
-    resolveProductImageUrl,
-    toggleSelectedId,
-    toNumber,
-    validateProductForm,
-    type ProductFormState
+  buildAttributesPayload,
+  filterEligibilityAttributes,
+  initialProductFormState as initialFormState,
+  mapTermOptions,
+  MAX_PRODUCT_IMAGE_BYTES,
+  readImageFileAsDataUrl,
+  resolveProductImageUrl,
+  toggleSelectedId,
+  toNumber,
+  validateProductForm,
+  type ProductFormState
 } from '@/features/seller/utils/loan-product-form.utils';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { Loader2, Plus } from 'lucide-react';
@@ -174,7 +174,7 @@ export function AddLoanProductModal({ isOpen, onClose }: AddLoanProductModalProp
   const realAttributes = filterEligibilityAttributes(fetchedAttributes);
 
   const footerActions = (
-    <div className="flex items-center justify-end gap-3 border-t border-gray-100 p-6 bg-white">
+    <div className="flex items-center justify-end gap-3 border-t border-gray-200 p-6 bg-white">
       <button
         type="button"
         onClick={onClose}
@@ -190,7 +190,7 @@ export function AddLoanProductModal({ isOpen, onClose }: AddLoanProductModalProp
         className="flex items-center justify-center gap-2 rounded-xl bg-[#16A34A] px-6 py-2.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-[#15803d] disabled:cursor-not-allowed disabled:opacity-80"
       >
         {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} strokeWidth={2.5} />}
-        <span>{isSubmitting ? 'Publishing...' : 'Create & Publish'}</span>
+        <span className='font-semibold'>{isSubmitting ? 'Publishing...' : 'Create & Publish'}</span>
       </button>
     </div>
   );
