@@ -9,6 +9,12 @@ export interface NavItem {
   activePaths?: string[];
   label: string;
   icon: LucideIcon;
+  /**
+   * Count pill on the right of the item (e.g. products awaiting approval).
+   * Hidden while the rail is collapsed, since there is no room for it there.
+   * Omit — or pass 0 — for no pill.
+   */
+  badge?: number | undefined;
 }
 
 export interface NavSection {
@@ -186,6 +192,17 @@ function Sidebar({ isCollapsed, isMobileOpen = false, sections = [] }: SidebarPr
                     >
                       {item.label}
                     </span>
+                    {item.badge ? (
+                      <span
+                        className={[
+                          'flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1',
+                          'bg-[#EA580C] text-[11px] font-bold text-white shadow-sm',
+                          isCollapsed ? 'min-[900px]:hidden' : '',
+                        ].join(' ')}
+                      >
+                        {item.badge}
+                      </span>
+                    ) : null}
                   </Link>
                 );
               })}

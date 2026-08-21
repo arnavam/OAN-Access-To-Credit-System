@@ -1,13 +1,10 @@
 'use client';
 
-import { DashboardHeader } from '@/components/header/DashboardHeader';
-import Sidebar, { NavSection } from '@/components/Sidebar';
-import { useDashboardSidebar } from '@/hooks/useDashboardSidebar';
-import { LayoutDashboard, Search, FileText } from 'lucide-react';
+import { DashboardShell, resolvePageTitle } from '@/components/layout/DashboardShell';
+import { NavSection } from '@/components/Sidebar';
+import { FileText, LayoutDashboard, Search } from 'lucide-react';
 import { usePathname } from 'next/navigation';
-import React, { useEffect } from 'react';
-
-import '@/styles/main-layout.scss';
+import React from 'react';
 
 const navigationSections: NavSection[] = [
   {
@@ -21,7 +18,7 @@ const navigationSections: NavSection[] = [
       },
       {
         path: '/discover-loans',
-        activePaths: ['/discover-loans', '/discover-loans/apply'],
+        activePaths: ['/discover-loans'],
         label: 'Discover Loans',
         icon: Search,
       },
@@ -35,58 +32,26 @@ const navigationSections: NavSection[] = [
   },
 ];
 
-function getFarmerPageTitle(pathname: string): string {
-  if (pathname.startsWith('/discover-loans/apply')) return 'New Loan Application';
-  if (pathname.startsWith('/discover-loans')) return 'Discover Loans';
-  if (pathname.startsWith('/my-applications')) return 'My Applications';
-  return 'Dashboard';
-}
-
 export default function FarmerLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { isCollapsed, isMobileOpen, toggle, closeMobile } = useDashboardSidebar(pathname);
-
-  const pageTitle = getFarmerPageTitle(pathname);
-
-  useEffect(() => {
-    document.title = `${pageTitle} | Open AgriNet`;
-  }, [pageTitle]);
+  // The apply flow lives under /discover-loans but is its own task, so it gets
+  // its own title rather than the nav item's.
+  const pageTitle = pathname.startsWith('/discover-loans/apply')
+    ? 'New Loan Application'
+    : resolvePageTitle(navigationSections, pathname);
 
   return (
-    <div
-      id="dashboard-shell"
-      className={`dashboard-shell ${isCollapsed ? 'dashboard-shell--collapsed' : ''}`}
+    // No subtitle: the header used to read "Farmer ID: ETH-2847" for every
+    // farmer who ever signed in. The layout has no access to the real id — it is
+    // on A2C Farmer Profile, which only the dashboard summary fetches — and the
+    // profile card on the dashboard already shows it. `DashboardHeader` falls
+    // back to the role label, which at least is true of everyone.
+    <DashboardShell
+      sections={navigationSections}
+      pageTitle={pageTitle}
+      innerContentClassName="p-6 md:p-10"
     >
-      {isMobileOpen && (
-        <div
-          className="dashboard-sidebar-overlay"
-          aria-hidden="true"
-          onClick={closeMobile}
-        />
-      )}
-      <Sidebar
-        isCollapsed={isCollapsed}
-        isMobileOpen={isMobileOpen}
-        sections={navigationSections}
-      />
-      <main id="dashboard-main" className="dashboard-main">
-        {/* No subtitle: this used to read "Farmer ID: ETH-2847" for every farmer
-            who ever signed in. The layout has no access to the real id — it is on
-            A2C Farmer Profile, which only the dashboard summary fetches — and the
-            profile card on the dashboard already shows it. `DashboardHeader`
-            falls back to the role label, which at least is true of everyone. */}
-        <DashboardHeader
-          onMenuClick={toggle}
-          title={pageTitle}
-        />
-        <div id="dashboard-content" className="dashboard-content">
-          {/* Keyed on the pathname so the enter animation replays on every
-              navigation, not just on first mount. */}
-          <div key={pathname} className="p-6 md:p-10 animate-page-enter motion-reduce:animate-none">
-            {children}
-          </div>
-        </div>
-      </main>
-    </div>
+      {children}
+    </DashboardShell>
   );
 }

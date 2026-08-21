@@ -73,9 +73,12 @@ const ROUTE_ACCESS: ReadonlyArray<readonly [string, ReadonlyArray<UserKind>]> = 
   ['/update-loan-application-status', ['dev_agent']],
   ['/loans', ['dev_agent']],
 
-  // Shared by both staff portals: the bank-agent and dev-agent layouts each link
-  // to it from their own nav. Farmers browse the same catalog at /discover-loans.
-  ['/loan-discovery', ['bank_agent', 'dev_agent']],
+  // Dev agent only, matching the backend: `list_catalog` and
+  // `get_catalog_facets` are @require_role([FARMER_ROLE, DEVELOPMENT_AGENT_ROLE]).
+  // bank_agent used to be listed here and the agent nav linked to it, so the page
+  // opened and then 403'd on every request. Farmers browse the same catalog at
+  // /discover-loans; bank agents see their own bank's at /agent-loan-products.
+  ['/loan-discovery', ['dev_agent']],
 
   // --- Farmer (marketplace applicant) ---
   ['/farmer-dashboard', ['farmer']],

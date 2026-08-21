@@ -13,7 +13,7 @@ import {
   setTableStatusFilters,
   setTableTypeFilters
 } from '../store/loanDashboardSlice';
-import LoanEmptyState from './LoanEmptyState';
+import { TableEmptyState } from '@/components/ui/TableEmptyState';
 
 export interface LoanTableRow {
   id: string;
@@ -510,7 +510,14 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
           </thead>
           <tbody className="divide-y divide-gray-100 bg-white">
             {rows.length === 0 ? (
-              <LoanEmptyState hasFilters={hasFilters} onClearFilters={handleClearFilters} />
+              <TableEmptyState
+                hasFilters={hasFilters}
+                onClearFilters={handleClearFilters}
+                colSpan={8}
+                emptyTitle="No loans yet"
+                emptyDescription="Create your first loan to get started with the pipeline."
+                filteredTitle="No loans match your filters"
+              />
             ) : (
               rows.map((row, i) => {
                 let badgeColor = 'bg-gray-100 text-gray-600 border-gray-200';

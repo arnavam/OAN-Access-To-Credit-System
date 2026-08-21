@@ -8,7 +8,7 @@ import { KPI_CARDS_LAYOUT, LEAD_STATUS_MAP, resolveDateFilter } from '@/features
 import type { KpiStat, Lead } from '@/features/leads/types/leads.types';
 
 import LeadKpiCard from '@/features/leads/components/LeadKpiCard';
-import LeadPagination from '@/features/leads/components/LeadPagination';
+import { TablePagination } from '@/components/ui/TablePagination';
 import LeadTable from '@/features/leads/components/LeadTable';
 import LeadToolbar from '@/features/leads/components/LeadToolbar';
 import dynamic from 'next/dynamic';
@@ -164,13 +164,6 @@ export function LeadsDashboardClient() {
   const visible = allLeads.length > pageSize 
     ? allLeads.slice((currentPage - 1) * pageSize, currentPage * pageSize) 
     : allLeads;
-
-  const pageNums = useMemo(() => {
-    if (totalPages <= 5) return Array.from({ length: totalPages }, (_, i) => i + 1);
-    if (safePage <= 3) return [1, 2, 3, '…', totalPages];
-    if (safePage >= totalPages - 2) return [1, '…', totalPages - 2, totalPages - 1, totalPages];
-    return [1, '…', safePage - 1, safePage, safePage + 1, '…', totalPages];
-  }, [safePage, totalPages]);
 
   const allChecked = visible.length > 0 && visible.every((l: Lead) => selectedRows.includes(l.id + l.phone));
   const toggleAll = () => setSelectedRows(allChecked ? [] : visible.map((l: Lead) => l.id + l.phone));
@@ -340,12 +333,11 @@ export function LeadsDashboardClient() {
           }}
         />
         {(visible.length > 0 || isLoading) && (
-          <LeadPagination
+          <TablePagination
             visibleCount={visible.length}
-            filteredCount={totalCount}
-            safePage={safePage}
+            totalCount={totalCount}
+            currentPage={safePage}
             totalPages={totalPages}
-            pageNums={pageNums}
             onPageChange={setCurrentPage}
             pageSize={pageSize}
             onPageSizeChange={(newSize) => {

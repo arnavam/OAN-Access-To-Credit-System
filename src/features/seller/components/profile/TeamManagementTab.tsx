@@ -6,7 +6,7 @@ import { toast } from '@/lib/toast';
 import { ResetMemberPasswordModal } from '@/features/seller/components/profile/ResetMemberPasswordModal';
 import { generateTemporaryPassword } from '@/features/seller/utils/team.utils';
 import { useModalA11y } from '@/hooks/useModalA11y';
-import { CheckCircle2, KeyRound, RefreshCw, Search, Trash2, UserPlus, XCircle } from 'lucide-react';
+import { CheckCircle2, KeyRound, Search, Trash2, UserPlus, XCircle } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 // fetchApi unwraps one layer of the raw response (see fetchApi.ts), so depending
@@ -108,7 +108,9 @@ export default function TeamManagementTab() {
   const inviteModalRef = useModalA11y<HTMLDivElement>(isInviteModalOpen, closeInviteModal);
 
   const openInviteModal = () => {
-    setInviteForm({ email: '', full_name: '', role: 'A2C Bank Agent', password: '' });
+    // The temporary password is minted here rather than typed: it is the credential
+    // that gets emailed to the invitee, and the field below is read-only.
+    setInviteForm({ email: '', full_name: '', role: 'A2C Bank Agent', password: generateTemporaryPassword() });
     setInviteErrors({});
     setIsInviteModalOpen(true);
   };
@@ -286,32 +288,25 @@ export default function TeamManagementTab() {
                 </p>
                 {inviteErrors.role && <p className="mt-1 text-xs text-red-500">{inviteErrors.role}</p>}
               </div>
+              {/* Generated once when the dialog opens and not editable: the value is
+                  emailed to the new member, so an admin-typed password would only
+                  create a credential nobody delivered. A member who never receives
+                  it goes through the reset action instead of a retyped invite. */}
               <div>
                 <label htmlFor="invite-temp-password" className="block text-sm font-medium text-gray-900 mb-1.5">
-                  Temporary Password <span className="text-red-500">*</span>
+                  Temporary Password
                 </label>
-                <div className="flex gap-2">
-                  <input
-                    id="invite-temp-password"
-                    type="text"
-                    required
-                    minLength={8}
-                    value={inviteForm.password}
-                    onChange={e => setInviteForm(f => ({ ...f, password: e.target.value }))}
-                    className={`flex-1 px-3 py-2 bg-white border ${inviteErrors.password ? 'border-red-500' : 'border-gray-300'} rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-green/20 focus:border-brand-green`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setInviteForm(f => ({ ...f, password: generateTemporaryPassword() }))}
-                    title="Generate a new password"
-                    className="px-3 py-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors"
-                  >
-                    <RefreshCw className="w-4 h-4" aria-hidden="true" />
-                    <span className="sr-only">Generate a new password</span>
-                  </button>
-                </div>
-                <p className="mt-1 text-xs text-gray-500">
-                  Share this with the agent. They must set their own password the first time they sign in.
+                <input
+                  id="invite-temp-password"
+                  type="text"
+                  readOnly
+                  value={inviteForm.password}
+                  aria-describedby="invite-temp-password-hint"
+                  className={`w-full px-3 py-2 bg-gray-50 border ${inviteErrors.password ? 'border-red-500' : 'border-gray-200'} rounded-lg text-sm font-mono text-gray-700 cursor-default focus:outline-none focus:ring-2 focus:ring-brand-green/20`}
+                />
+                <p id="invite-temp-password-hint" className="mt-1 text-xs text-gray-500">
+                  Generated automatically and emailed to the member. They must set their own password
+                  the first time they sign in.
                 </p>
                 {inviteErrors.password && <p className="mt-1 text-xs text-red-500">{inviteErrors.password}</p>}
               </div>

@@ -4,18 +4,20 @@ import { useModalA11y } from '@/hooks/useModalA11y';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { Check, ChevronDown, SlidersHorizontal, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { selectAdvancedFilters, setAdvancedFilters } from '../store/loanDashboardSlice';
+import { clearAdvancedFilters, selectAdvancedFilters, setAdvancedFilters } from '../store/loanDashboardSlice';
+import { LOAN_FILTER_STATUS_OPTIONS, type FilterStatusOption } from '../constants/loans.constants';
 
 interface LoanAdvancedFiltersProps {
   isOpen: boolean;
   onClose: () => void;
+  /**
+   * Which statuses this portal can filter on. Defaults to the dev-agent
+   * dashboard's list; the bank portals pass SELLER_FILTER_STATUS_OPTIONS.
+   * This is the *only* thing that differed between the two copies of this
+   * drawer that used to exist.
+   */
+  statusOptions?: readonly FilterStatusOption[];
 }
-
-const STATUS_OPTIONS = [
-  { label: 'Processing', value: 'Processing', dot: 'bg-teal-500' },
-  { label: 'Approved', value: 'Approved', dot: 'bg-teal-500' },
-  { label: 'Rejected', value: 'Rejected', dot: 'bg-red-500' },
-];
 
 
 const RANGE_STEPS = [
@@ -37,7 +39,11 @@ const LOAN_TYPE_OPTS = [
   'Smallholder farmer direct loan'
 ];
 
-export default function LoanAdvancedFilters({ isOpen, onClose }: LoanAdvancedFiltersProps) {
+export default function LoanAdvancedFilters({
+  isOpen,
+  onClose,
+  statusOptions = LOAN_FILTER_STATUS_OPTIONS,
+}: LoanAdvancedFiltersProps) {
   const dispatch = useAppDispatch();
   const currentFilters = useAppSelector(selectAdvancedFilters);
 
@@ -126,11 +132,17 @@ export default function LoanAdvancedFilters({ isOpen, onClose }: LoanAdvancedFil
     setDateFrom('');
     setDateTo('');
     setQuickDate('');
+    // Clear the applied filters in the store too, so the table refreshes
+    // immediately rather than waiting for a separate Apply.
+    dispatch(clearAdvancedFilters());
   };
 
+  // Index 4 is "All Amounts" — i.e. no amount filter. Comparing against 3
+  // instead counted "All Amounts" as an active filter and left the last real
+  // range uncounted.
   const activeCount =
     selStatuses.length +
-    (tempIndex !== 3 ? 1 : 0) +
+    (tempIndex !== 4 ? 1 : 0) +
     (tempLoanTypes.length > 0 ? 1 : 0) +
     (location ? 1 : 0) +
     (dateFrom || dateTo ? 1 : 0);
@@ -172,7 +184,7 @@ export default function LoanAdvancedFilters({ isOpen, onClose }: LoanAdvancedFil
           <section>
             <p className="mb-3 text-base font-semibold text-[#232F34]">Status</p>
             <div className="grid grid-cols-2 gap-2">
-              {STATUS_OPTIONS.map(opt => {
+              {statusOptions.map(opt => {
                 const sel = selStatuses.includes(opt.value);
                 return (
                   <div
