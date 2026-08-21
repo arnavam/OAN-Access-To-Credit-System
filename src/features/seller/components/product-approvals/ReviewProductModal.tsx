@@ -72,12 +72,12 @@ export function ReviewProductModal({ isOpen, onClose, product, initialMode = nul
   }, [dispatch, isOpen, product, initialMode]);
 
   const handleApprove = async () => {
-    if (!product) return;
+    if (!product || !reason.trim()) return;
     const result = await dispatch(
       setProductStatus({
         productId: product.name,
         status: 'Active',
-        ...(reason.trim() ? { reason: reason.trim() } : {}),
+        reason: reason.trim(),
         refetchParams: { status: 'Pending Approval' },
       })
     );
@@ -141,15 +141,15 @@ export function ReviewProductModal({ isOpen, onClose, product, initialMode = nul
             {actionMode === 'reject' ? (
               <>Rejection Reason <span className="text-red-500">*</span></>
             ) : (
-              'Approval Comment'
+              <>Approval Comment <span className="text-red-500">*</span></>
             )}
           </label>
           <textarea
             id="reason"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            placeholder={actionMode === 'reject' ? "Please provide a reason for rejecting this product..." : "Add an optional comment..."}
-            className={`w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-[14px] focus:outline-none focus:ring-2 ${actionMode === 'reject' ? 'focus:border-red-500 focus:ring-red-500/20' : 'focus:border-[#16A34A] focus:ring-[#16A34A]/20'
+            placeholder={actionMode === 'reject' ? "Please provide a reason for rejecting this product..." : "Please provide a comment for approving this product..."}
+            className={`w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-[14px] text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 ${actionMode === 'reject' ? 'focus:border-red-500 focus:ring-red-500/20' : 'focus:border-[#16A34A] focus:ring-[#16A34A]/20'
               }`}
             rows={3}
           />
@@ -161,7 +161,10 @@ export function ReviewProductModal({ isOpen, onClose, product, initialMode = nul
           <>
             <button
               type="button"
-              onClick={() => setActionMode(null)}
+              onClick={() => {
+                setActionMode(null);
+                setReason('');
+              }}
               disabled={isMutating}
               className="rounded-lg border border-[#D1D5DB] bg-white px-6 py-2.5 text-[14px] font-bold text-[#374151] transition-colors hover:bg-gray-50 disabled:opacity-50"
             >
@@ -181,7 +184,7 @@ export function ReviewProductModal({ isOpen, onClose, product, initialMode = nul
               <button
                 type="button"
                 onClick={handleApprove}
-                disabled={isMutating}
+                disabled={isMutating || !reason.trim()}
                 className="flex min-w-[160px] items-center justify-center gap-2 rounded-lg bg-[#16A34A] px-6 py-2.5 text-[14px] font-bold text-white transition-colors hover:bg-[#15803d] disabled:cursor-not-allowed disabled:opacity-80"
               >
                 {isMutating ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle2 size={18} />}

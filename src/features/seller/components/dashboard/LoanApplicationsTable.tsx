@@ -17,7 +17,7 @@ import {
   updateLoanStatus
 } from '@/features/loans/store/loanDashboardSlice';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { AlertCircle, Download, Inbox, Loader2, RefreshCw, Search, SlidersHorizontal } from 'lucide-react';
+import { AlertCircle, FileOutput, Inbox, Loader2, RefreshCw, Search, SlidersHorizontal } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import LoanAdvancedFilters from '@/features/loans/components/LoanAdvancedFilters';
 import { SELLER_FILTER_STATUS_OPTIONS } from '@/features/loans/constants/loans.constants';
@@ -71,7 +71,7 @@ export function LoanApplicationsTable() {
 
   const handleExportCsv = () => {
     if (!rows.length) return;
-    const headers = ['Application ID', 'Applicant', 'Phone', 'Loan Product', 'Amount', 'Status', 'Date'];
+    const headers = ['Application ID', 'Applicant', 'Phone', 'Loan Product', 'Amount (ETB)', 'Status', 'Date'];
     const csvContent = [
       headers.join(','),
       ...rows.map(r => [
@@ -106,35 +106,37 @@ export function LoanApplicationsTable() {
               Farmers who applied against your published loan products – via OAN Farmer Profiling System
             </p>
           </div>
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full lg:w-auto mt-2 lg:mt-0 shrink-0">
             {/* Search Toggle Button */}
             <button
               type="button"
               onClick={() => setIsSearchOpen(!isSearchOpen)}
-              className={`w-[42px] h-[42px] rounded-xl border flex items-center justify-center transition-all shadow-2xs ${isSearchOpen || searchInput
+              className={`flex-1 sm:flex-none sm:w-[42px] h-[42px] rounded-xl border flex items-center justify-center gap-2 transition-all shadow-2xs ${isSearchOpen || searchInput
                   ? 'bg-gray-100 border-gray-300 text-gray-800'
                   : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:bg-gray-50'
                 }`}
               title="Toggle Search"
             >
               <Search className="w-5 h-5" />
+              <span className="sm:hidden text-sm font-semibold">Search</span>
             </button>
 
             {/* Export CSV */}
             <button
               type="button"
               onClick={handleExportCsv}
-              className="px-4 py-2.5 text-sm font-semibold text-[#4B5563] bg-white border border-[#E5E7EB] rounded-xl hover:bg-gray-50 transition-colors flex items-center gap-2 shadow-2xs"
+              className="flex-1 sm:flex-none justify-center px-4 py-2.5 text-sm font-semibold text-[#4B5563] bg-white border border-[#E5E7EB] rounded-xl hover:bg-gray-50 transition-colors flex items-center gap-2 shadow-2xs"
             >
-              <Download className="w-4 h-4 text-[#6B7280]" />
-              <span>Export CSV</span>
+              <FileOutput className="w-4 h-4 text-[#6B7280]" />
+              <span className="hidden sm:inline">Export CSV</span>
+              <span className="sm:hidden">Export</span>
             </button>
 
             {/* Advanced Filters */}
             <button
               type="button"
               onClick={() => setIsFilterOpen(true)}
-              className="px-4 py-2.5 text-sm font-semibold text-[#4B5563] bg-white border border-[#E5E7EB] rounded-xl hover:bg-gray-50 transition-colors flex items-center gap-2 shadow-2xs"
+              className="w-full sm:w-auto justify-center px-4 py-2.5 text-sm font-semibold text-[#4B5563] bg-white border border-[#E5E7EB] rounded-xl hover:bg-gray-50 transition-colors flex items-center gap-2 shadow-2xs"
             >
               <SlidersHorizontal className="w-4 h-4 text-[#6B7280]" />
               <span>Advanced Filters</span>
@@ -146,7 +148,7 @@ export function LoanApplicationsTable() {
       {/* Expandable Search Input Bar (Placed on top of table columns) */}
       {isSearchOpen && (
         <div className="p-4 bg-white border-b border-[#E5E7EB] animate-in fade-in slide-in-from-top-2 duration-200">
-          <form onSubmit={handleSearchSubmit} className="flex items-center gap-3">
+          <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <div className="relative flex-1">
               <Search className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
@@ -159,7 +161,7 @@ export function LoanApplicationsTable() {
             </div>
             <button
               type="submit"
-              className="bg-[#16A34A] hover:bg-[#15803d] text-white px-7 py-3 rounded-xl text-sm font-bold transition-all shadow-sm shrink-0"
+              className="bg-[#16A34A] hover:bg-[#15803d] text-white px-7 py-3 rounded-xl text-sm font-bold transition-all shadow-sm shrink-0 w-full sm:w-auto"
             >
               Search
             </button>
@@ -209,7 +211,7 @@ export function LoanApplicationsTable() {
           </div>
         ) : (
           /* Table of applications */
-          <div className="p-4 overflow-x-auto">
+          <div className="p-4 overflow-x-auto custom-scrollbar">
             <LoanTable onView={(row) => setSelectedRow(row)} totalCount={totalCount} />
           </div>
         )}

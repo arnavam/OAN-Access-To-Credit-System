@@ -17,6 +17,8 @@ body {
   @apply font-body;
   background: #f7f8fb;
   isolation: isolate;
+  scrollbar-color: #16A34A #f1f5f9;
+  scrollbar-width: thin;
 }
 
 #root {
@@ -88,7 +90,7 @@ input[type='checkbox']:disabled {
  * Add your custom SCSS overrides, mixins, and classes here 
  */
 
-// Example: Custom scrollbar styles using SCSS
+// Custom scrollbar styles using SCSS
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -100,10 +102,10 @@ input[type='checkbox']:disabled {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #16A34A;
   border-radius: 4px;
   
   &:hover {
-    background: #94a3b8;
+    background: #15803d;
   }
 }

@@ -100,7 +100,7 @@ export function BaseLoanProductModal({
 
   const labelClass = mode === 'add' ? 'text-xs text-gray-900' : 'text-[14px] text-[#1F2937]';
   const textareaClass = mode === 'add'
-    ? 'border-gray-300 px-3.5 py-2 text-xs text-gray-900 focus:border-[#16A34A] focus:ring-[#16A34A]/20'
+    ? 'border-gray-300 px-3.5 py-2 text-sm text-gray-900 focus:border-[#16A34A] focus:ring-[#16A34A]/20'
     : 'border-[#D1D5DB] px-4 py-2.5 text-[14px] focus:border-[#00C48C] focus:ring-[#00C48C]';
 
   return (
@@ -120,7 +120,7 @@ export function BaseLoanProductModal({
           ) : (
             <>
               {/* Header */}
-              <div className="flex items-center justify-between border-b border-[#E5E7EB] p-6">
+              <div className="flex items-center justify-between border-b border-gray-200 p-6">
                 <div className="flex items-center space-x-3">
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#E6F9F3]">
                     <Package className="h-6 w-6 text-[#00C48C]" />
