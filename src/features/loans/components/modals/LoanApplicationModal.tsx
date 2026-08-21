@@ -282,7 +282,12 @@ export default function LoanApplicationModal({ isOpen, onClose, data, onStatusCh
                   <div className="flex justify-end gap-3 pt-2">
                     <button
                       type="button"
-                      onClick={() => { setIsRejecting(false); setIsApproving(false); }}
+                      onClick={() => {
+                        setIsRejecting(false);
+                        setIsApproving(false);
+                        setDecisionReason('');
+                        setDecisionNote('');
+                      }}
                       className="px-5 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold rounded-xl text-sm transition-colors"
                     >
                       Cancel
