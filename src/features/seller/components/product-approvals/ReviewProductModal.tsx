@@ -161,7 +161,10 @@ export function ReviewProductModal({ isOpen, onClose, product, initialMode = nul
           <>
             <button
               type="button"
-              onClick={() => setActionMode(null)}
+              onClick={() => {
+                setActionMode(null);
+                setReason('');
+              }}
               disabled={isMutating}
               className="rounded-lg border border-[#D1D5DB] bg-white px-6 py-2.5 text-[14px] font-bold text-[#374151] transition-colors hover:bg-gray-50 disabled:opacity-50"
             >

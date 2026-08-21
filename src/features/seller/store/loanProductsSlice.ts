@@ -218,7 +218,7 @@ export const archiveProduct = createAsyncThunk(
   async (input: string | ArchiveLoanProductInput, { dispatch, rejectWithValue }) => {
     try {
       const productId = typeof input === 'string' ? input : input.productId;
-      const reason = typeof input === 'string' ? DEFAULT_ARCHIVE_REASON : (input.reason ?? DEFAULT_ARCHIVE_REASON);
+      const reason = typeof input === 'string' ? DEFAULT_ARCHIVE_REASON : (input.reason?.trim() || DEFAULT_ARCHIVE_REASON);
       const refetchParams = typeof input === 'string' ? undefined : input.refetchParams;
       const response = await loanProductsService.archiveProduct(productId, reason);
       await dispatch(fetchProducts(refetchParams));

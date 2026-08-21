@@ -1,5 +1,3 @@
-* [ ]  ****
-
 # Loan Marketplace Seller — Frontend Integration Plan
 
 > **Audience:** Frontend engineers implementing the Seller (Bank Admin & Bank Agent) API integration.
