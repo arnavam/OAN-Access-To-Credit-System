@@ -9,6 +9,8 @@ import type {
   CreateLoanProductPayload, ListProductsParams, UpdateLoanProductPayload
 } from '../types/loan-products.types';
 
+const DEFAULT_ARCHIVE_REASON = 'Archived by seller';
+
 export const loanProductsService = {
   async listProducts(params?: ListProductsParams): Promise<ApiResponse<LoanProductSummary[]>> {
     const query = new URLSearchParams();
@@ -78,14 +80,15 @@ export const loanProductsService = {
   },
 
   async setProductStatus(productId: string, status: 'Active' | 'Archived' | 'Rejected' | 'Pending Approval', reason?: string): Promise<ApiResponse<null>> {
+    const finalReason = reason ?? (status === 'Archived' ? DEFAULT_ARCHIVE_REASON : undefined);
     return fetchApi('oan_a2c.api.v1.seller.loan_products.set_product_status', {
       method: 'POST',
-      body: JSON.stringify({ product_id: productId, status, reason }),
+      body: JSON.stringify({ product_id: productId, status, reason: finalReason }),
     }) as Promise<ApiResponse<null>>;
   },
 
-  async archiveProduct(productId: string): Promise<ApiResponse<null>> {
-    return this.setProductStatus(productId, 'Archived');
+  async archiveProduct(productId: string, reason = DEFAULT_ARCHIVE_REASON): Promise<ApiResponse<null>> {
+    return this.setProductStatus(productId, 'Archived', reason);
   },
 
   async getDashboardStats(bankCode?: string): Promise<ApiResponse<SellerDashboardStats>> {
@@ -137,3 +140,5 @@ function cleanText(value: unknown): string | null {
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;
 }
+
+export { DEFAULT_ARCHIVE_REASON };

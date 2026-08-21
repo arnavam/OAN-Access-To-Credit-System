@@ -1,7 +1,9 @@
+* [ ]  ****
+
 # Loan Marketplace Seller — Frontend Integration Plan
 
-> **Audience:** Frontend engineers implementing the Seller (Bank Admin & Bank Agent) API integration.  
-> **Source of truth for endpoints:** [`docs/seller-backend.md`](file:///Users/arnav/Code/OAN-Access-To-Credit-System/docs/seller-backend.md) (backend API contract).  
+> **Audience:** Frontend engineers implementing the Seller (Bank Admin & Bank Agent) API integration.
+> **Source of truth for endpoints:** [`docs/seller-backend.md`](file:///Users/arnav/Code/OAN-Access-To-Credit-System/docs/seller-backend.md) (backend API contract).
 > **Scope:** Replace all mock/stub data on the seller surface (loan products, dashboard stats, KYC/onboarding, team management, seller registration) with real API calls, wired through Redux Toolkit, Zod-validated, with strict error handling and full adherence to `AGENTS.md` engineering standards.
 
 ---
@@ -54,39 +56,40 @@ Portal pages in `src/app/(bank-admin)/` and `src/app/(bank-agent)/` act as thin 
 
 ## 0.3 Complete Endpoint Coverage Matrix
 
-| Endpoint | Method | Phase | Service Method | Target Slice | Scope / Notes |
-|---|---|---|---|---|---|
-| `auth.login` | POST | — | `authApi.loginUser` | `authSlice` | ✅ Existing |
-| `auth.refresh` | POST | — | `authApi.refreshToken` | `authSlice` | ✅ Existing (`fetchApi` interceptor) |
-| `auth.logout` | POST | — | `authApi.logoutUser` | `authSlice` | ✅ Existing |
-| `auth.get_me` | GET | — | `authApi.getMe` | `authSlice` | ✅ Existing |
-| `auth.forgot_password` | POST | ❌ | Deferred | — | Separate authentication recovery task |
-| `auth.reset_password` | POST | ❌ | Deferred | — | Separate authentication recovery task |
-| `onboarding.register_seller` | POST | A | `onboardingService.registerSeller` | `onboardingSlice` | Guest accessible; used on `/create-account` |
-| `onboarding.register_bank` | POST | ❌ | Deferred | — | Out of scope for seller integration |
-| `onboarding.save_org_contacts` | POST | B | `onboardingService.saveOrgContacts` | `onboardingSlice` | Bank Admin KYC page |
-| `onboarding.upload_kyc_document` | POST | B | `onboardingService.uploadKycDocument` | `onboardingSlice` | Bank Admin KYC page (validated PDF Base64) |
-| `onboarding.get_bank_status` | GET | B | `onboardingService.getBankStatus` | `onboardingSlice` | Bank Admin KYC page & status banner |
-| `onboarding.update_bank_status` | POST | B | `onboardingService.updateBankStatus` | `onboardingSlice` | Triggered when KYC requirements met |
-| `onboarding.list_users` | GET | C | `teamService.listUsers` | `teamSlice` | Bank Admin team management page |
-| `onboarding.invite_team_member` | POST | C | `teamService.inviteTeamMember` | `teamSlice` | Bank Admin invite modal |
-| `onboarding.deactivate_user` | POST | C | `teamService.deactivateUser` | `teamSlice` | Bank Admin team member actions |
-| `onboarding.update_user_profile` | POST | C | `teamService.updateUserProfile` | `teamSlice` | Bank Admin edit team member modal |
-| `dashboard.get_stats` | GET | D | `loanProductsService.getDashboardStats` | `loanProductsSlice` | Both Bank Admin & Bank Agent dashboards |
-| `loan_products.list_products` | GET | E | `loanProductsService.listProducts` | `loanProductsSlice` | Shared product list for Admin & Agent |
-| `loan_products.get_product` | GET | E | `loanProductsService.getProduct` | `loanProductsSlice` | Populates Edit Loan Product modal |
-| `loan_products.create_product` | POST | E | `loanProductsService.createProduct` | `loanProductsSlice` | Shared Add Product modal |
-| `loan_products.update_product` | POST | E | `loanProductsService.updateProduct` | `loanProductsSlice` | Shared Edit Product modal |
-| `loan_products.set_product_status` | POST | E | `loanProductsService.setProductStatus` | `loanProductsSlice` | Status transition & archiving |
-| `taxonomy.get_categories` | GET | E | `taxonomyService.getCategories` | `loanProductsSlice` | Populates product category selector |
-| `taxonomy.get_tags` | GET | E | `taxonomyService.getTags` | `loanProductsSlice` | Populates product tag selector |
-| `taxonomy.get_attributes` | GET | E | `taxonomyService.getAttributes` | `loanProductsSlice` | Populates eligibility criteria selector |
-| `taxonomy.set_product_categories` | POST | E | `taxonomyService.setProductCategories` | `loanProductsSlice` | Assigns category terms to product |
-| `taxonomy.set_product_tags` | POST | E | `taxonomyService.setProductTags` | `loanProductsSlice` | Assigns tag terms to product |
-| `taxonomy.set_product_attributes` | POST | E | `taxonomyService.setProductAttributes` | `loanProductsSlice` | Assigns eligibility criteria dictionary |
-| `taxonomy.create_category` | POST | ⛔ | N/A | — | A2C Platform Admin only |
-| `taxonomy.create_tag` | POST | ⛔ | N/A | — | A2C Platform Admin only |
-| `taxonomy.create_attribute_term` | POST | ⛔ | N/A | — | A2C Platform Admin only |
+
+| Endpoint                           | Method | Phase | Service Method                          | Target Slice        | Scope / Notes                              |
+| ------------------------------------ | -------- | ------- | ----------------------------------------- | --------------------- | -------------------------------------------- |
+| `auth.login`                       | POST   | —    | `authApi.loginUser`                     | `authSlice`         | ✅ Existing                                |
+| `auth.refresh`                     | POST   | —    | `authApi.refreshToken`                  | `authSlice`         | ✅ Existing (`fetchApi` interceptor)       |
+| `auth.logout`                      | POST   | —    | `authApi.logoutUser`                    | `authSlice`         | ✅ Existing                                |
+| `auth.get_me`                      | GET    | —    | `authApi.getMe`                         | `authSlice`         | ✅ Existing                                |
+| `auth.forgot_password`             | POST   | ❌    | Deferred                                | —                  | Separate authentication recovery task      |
+| `auth.reset_password`              | POST   | ❌    | Deferred                                | —                  | Separate authentication recovery task      |
+| `onboarding.register_seller`       | POST   | A     | `onboardingService.registerSeller`      | `onboardingSlice`   | Guest accessible; used on`/create-account` |
+| `onboarding.register_bank`         | POST   | ❌    | Deferred                                | —                  | Out of scope for seller integration        |
+| `onboarding.save_org_contacts`     | POST   | B     | `onboardingService.saveOrgContacts`     | `onboardingSlice`   | Bank Admin KYC page                        |
+| `onboarding.upload_kyc_document`   | POST   | B     | `onboardingService.uploadKycDocument`   | `onboardingSlice`   | Bank Admin KYC page (validated PDF Base64) |
+| `onboarding.get_bank_status`       | GET    | B     | `onboardingService.getBankStatus`       | `onboardingSlice`   | Bank Admin KYC page & status banner        |
+| `onboarding.update_bank_status`    | POST   | B     | `onboardingService.updateBankStatus`    | `onboardingSlice`   | Triggered when KYC requirements met        |
+| `onboarding.list_users`            | GET    | C     | `teamService.listUsers`                 | `teamSlice`         | Bank Admin team management page            |
+| `onboarding.invite_team_member`    | POST   | C     | `teamService.inviteTeamMember`          | `teamSlice`         | Bank Admin invite modal                    |
+| `onboarding.deactivate_user`       | POST   | C     | `teamService.deactivateUser`            | `teamSlice`         | Bank Admin team member actions             |
+| `onboarding.update_user_profile`   | POST   | C     | `teamService.updateUserProfile`         | `teamSlice`         | Bank Admin edit team member modal          |
+| `dashboard.get_stats`              | GET    | D     | `loanProductsService.getDashboardStats` | `loanProductsSlice` | Both Bank Admin & Bank Agent dashboards    |
+| `loan_products.list_products`      | GET    | E     | `loanProductsService.listProducts`      | `loanProductsSlice` | Shared product list for Admin & Agent      |
+| `loan_products.get_product`        | GET    | E     | `loanProductsService.getProduct`        | `loanProductsSlice` | Populates Edit Loan Product modal          |
+| `loan_products.create_product`     | POST   | E     | `loanProductsService.createProduct`     | `loanProductsSlice` | Shared Add Product modal                   |
+| `loan_products.update_product`     | POST   | E     | `loanProductsService.updateProduct`     | `loanProductsSlice` | Shared Edit Product modal                  |
+| `loan_products.set_product_status` | POST   | E     | `loanProductsService.setProductStatus`  | `loanProductsSlice` | Status transition & archiving              |
+| `taxonomy.get_categories`          | GET    | E     | `taxonomyService.getCategories`         | `loanProductsSlice` | Populates product category selector        |
+| `taxonomy.get_tags`                | GET    | E     | `taxonomyService.getTags`               | `loanProductsSlice` | Populates product tag selector             |
+| `taxonomy.get_attributes`          | GET    | E     | `taxonomyService.getAttributes`         | `loanProductsSlice` | Populates eligibility criteria selector    |
+| `taxonomy.set_product_categories`  | POST   | E     | `taxonomyService.setProductCategories`  | `loanProductsSlice` | Assigns category terms to product          |
+| `taxonomy.set_product_tags`        | POST   | E     | `taxonomyService.setProductTags`        | `loanProductsSlice` | Assigns tag terms to product               |
+| `taxonomy.set_product_attributes`  | POST   | E     | `taxonomyService.setProductAttributes`  | `loanProductsSlice` | Assigns eligibility criteria dictionary    |
+| `taxonomy.create_category`         | POST   | ⛔    | N/A                                     | —                  | A2C Platform Admin only                    |
+| `taxonomy.create_tag`              | POST   | ⛔    | N/A                                     | —                  | A2C Platform Admin only                    |
+| `taxonomy.create_attribute_term`   | POST   | ⛔    | N/A                                     | —                  | A2C Platform Admin only                    |
 
 ---
 
@@ -591,14 +594,15 @@ The central `fetchApi` function handles standard session refreshes on `401` and 
 
 ### 2.1 Error Mapping Matrix
 
-| Backend Code | HTTP | Cause | Frontend Handling Strategy |
-|---|---|---|---|
-| `VALIDATION_ERROR` | 400 | Schema regex/range violation or duplicate | Extract `error.responseData.details` object and map directly onto field errors in forms (e.g., password, email, phone). |
-| `AUTHENTICATION_ERROR` | 401 | Invalid or expired token | Automatically handled by `fetchApi` single retry; if unresolvable, triggers logout via `unauthenticatedMiddleware`. |
-| `PERMISSION_DENIED` | 403 | Role violation / cross-bank access | Display non-blocking inline "Access Denied" notification or trigger route protection boundary. |
-| `BANK_NOT_ONBOARDED` | 403 | User has no assigned bank binding | Redirect caller to onboarding KYC workflow or present Bank Setup Banner. |
-| `NOT_FOUND` | 404 | Missing resource | Surface clear resource-not-found notification; reset active detail state. |
-| `INTERNAL_ERROR` | 500 | Database transaction or server error | Log full context (`logger.error`) and surface non-technical retry banner. |
+
+| Backend Code           | HTTP | Cause                                     | Frontend Handling Strategy                                                                                             |
+| ------------------------ | ------ | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `VALIDATION_ERROR`     | 400  | Schema regex/range violation or duplicate | Extract`error.responseData.details` object and map directly onto field errors in forms (e.g., password, email, phone). |
+| `AUTHENTICATION_ERROR` | 401  | Invalid or expired token                  | Automatically handled by`fetchApi` single retry; if unresolvable, triggers logout via `unauthenticatedMiddleware`.     |
+| `PERMISSION_DENIED`    | 403  | Role violation / cross-bank access        | Display non-blocking inline "Access Denied" notification or trigger route protection boundary.                         |
+| `BANK_NOT_ONBOARDED`   | 403  | User has no assigned bank binding         | Redirect caller to onboarding KYC workflow or present Bank Setup Banner.                                               |
+| `NOT_FOUND`            | 404  | Missing resource                          | Surface clear resource-not-found notification; reset active detail state.                                              |
+| `INTERNAL_ERROR`       | 500  | Database transaction or server error      | Log full context (`logger.error`) and surface non-technical retry banner.                                              |
 
 ---
 
@@ -745,12 +749,14 @@ export async function validateAndEncodePdf(file: File): Promise<{ filename: stri
 ## 5. Phase-by-Phase Task List
 
 ### Phase 0 — Base Infrastructure & Setup
+
 1. Create `src/features/seller/` subdirectories (`api/`, `store/`, `types/`, `components/`, `utils/`).
 2. Add Zod schemas to `src/lib/api/api.schemas.ts`.
 3. Register `sellerProducts`, `sellerTeam`, and `sellerOnboarding` reducers in `src/store/index.ts`.
 4. Implement `pdf-validation.ts` unit utility.
 
 ### Phase A — Guest Seller Registration (`/create-account`)
+
 1. Create `onboardingService.registerSeller` method in `src/features/seller/api/onboarding.service.ts`.
 2. Rewire `CreateAccountForm` (`src/app/(auth)/create-account/page.tsx`):
    - Replace dummy timers with `dispatch(registerSeller(payload))`.
@@ -759,6 +765,7 @@ export async function validateAndEncodePdf(file: File): Promise<{ filename: stri
    - On success, redirect to `/login` with success banner.
 
 ### Phase B — Bank Admin KYC Compliance & Onboarding
+
 1. Implement `onboardingService` methods (`saveOrgContacts`, `uploadKycDocument`, `getBankStatus`, `updateBankStatus`).
 2. Create `onboardingSlice.ts` to manage status, contact forms, and uploaded document state.
 3. Update `KycComplianceContent` component:
@@ -767,17 +774,20 @@ export async function validateAndEncodePdf(file: File): Promise<{ filename: stri
    - Implement automatic transition: when both contacts are saved AND at least one KYC PDF is uploaded, dispatch `updateBankStatus(bankCode, 'Active')`.
 
 ### Phase C — Bank Admin Team Management
+
 1. Create new Bank Admin team page at `src/app/(bank-admin)/team/page.tsx`.
 2. Implement `team.service.ts` and `teamSlice.ts` (`listUsers`, `inviteTeamMember`, `deactivateUser`, `updateUserProfile`).
 3. Build responsive UI components: `TeamListTable`, `InviteUserModal`, `EditUserModal`, `DeactivateUserModal`.
 4. Restrict role select dropdown options strictly to `A2C Bank Admin` and `A2C Bank Agent`.
 
 ### Phase D — Unified Seller Dashboard Stats
+
 1. Wire `loanProductsService.getDashboardStats` and `fetchDashboardStats` thunk.
 2. Update dashboard components in `(bank-admin)/dashboard` and `(bank-agent)/dashboard` to consume `selectSellerStats`.
 3. Render `MetricCards` directly from verified API numerical data with formatting helpers (no hardcoded/fake stats).
 
 ### Phase E — Shared Loan Products & Taxonomy Management
+
 1. Implement `loanProductsService` and `taxonomyService`.
 2. Rewire `LoanProductsList`: render distinct UI states for `loading`, `failed` (with retry button), `empty`, and `succeeded`.
 3. Retype `LoanProductCard` to accept `LoanProductSummary`; format interest rates, amounts, and tenure inside the component.
@@ -797,11 +807,13 @@ export async function validateAndEncodePdf(file: File): Promise<{ filename: stri
 Every seller component, thunk, and service must be rigorously verified without live network calls.
 
 ### 6.1 Unit Tests (Vitest)
+
 - **Services**: Mock `fetchApi` to verify correct query formatting, JSON payload construction, and Zod response validation.
 - **PDF Validator**: Unit test `validateAndEncodePdf` against invalid extensions, oversize files, corrupt magic headers, and valid PDF buffers.
 - **Slices**: Test thunk lifecycle transitions (`pending`, `fulfilled`, `rejected`) and state mutations.
 
 ### 6.2 Component & Integration Tests (React Testing Library + MSW)
+
 - Intercept all 31 seller API endpoints using MSW handlers in `src/mocks/handlers.ts`.
 - Test modal error banners, input validation state, loading skeletons, and success toast notifications.
 - Run automated accessibility assertions (`axe-core`) on all newly integrated modals and tables.

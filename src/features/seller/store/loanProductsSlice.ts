@@ -6,7 +6,7 @@ import { extractFieldErrors } from '@/lib/api/fetchApi';
 import { logger } from '@/lib/logger';
 import type { RootState } from '@/store';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { loanProductsService } from '../api/loan-products.service';
+import { loanProductsService, DEFAULT_ARCHIVE_REASON } from '../api/loan-products.service';
 import { taxonomyService } from '../api/taxonomy.service';
 import type {
     ArchiveLoanProductInput, CreateLoanProductCompoundInput, ListProductsParams, SetLoanProductStatusInput, UpdateLoanProductCompoundInput
@@ -226,8 +226,9 @@ export const archiveProduct = createAsyncThunk(
   async (input: string | ArchiveLoanProductInput, { dispatch, rejectWithValue }) => {
     try {
       const productId = typeof input === 'string' ? input : input.productId;
+      const reason = typeof input === 'string' ? DEFAULT_ARCHIVE_REASON : (input.reason ?? DEFAULT_ARCHIVE_REASON);
       const refetchParams = typeof input === 'string' ? undefined : input.refetchParams;
-      const response = await loanProductsService.archiveProduct(productId);
+      const response = await loanProductsService.archiveProduct(productId, reason);
       await dispatch(fetchProducts(refetchParams));
       dispatch(fetchDashboardStats());
       return response.data;
