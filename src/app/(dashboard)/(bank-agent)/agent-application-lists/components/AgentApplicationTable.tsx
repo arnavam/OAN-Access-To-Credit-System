@@ -15,9 +15,12 @@ import {
   setBankPage,
   setBankPageSize,
   setBankSearchQuery,
+  selectBankSortBy,
+  selectBankSortOrder,
+  setBankSort,
 } from '@/features/loans/store/bankApplicationsSlice';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { ChevronDown, Eye, Inbox, Loader2, Phone, Search, SlidersHorizontal } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronDown, Eye, Inbox, Loader2, Phone, Search, SlidersHorizontal } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import AdvancedFiltersDrawer, { AdvancedFiltersState } from './filters/AdvancedFilters';
 import LoanAmountFilter from './filters/LoanAmountFilter';
@@ -138,6 +141,8 @@ export default function AgentApplicationTable({ onView }: AgentApplicationTableP
   const appliedSearchQuery = useAppSelector(selectBankSearchQuery);
   const filters = useAppSelector(selectBankFilters);
   const loanTypeOptions = useAppSelector(selectBankLoanTypeOptions);
+  const sortBy = useAppSelector(selectBankSortBy);
+  const sortOrder = useAppSelector(selectBankSortOrder);
 
   const [searchInput, setSearchInput] = useState(appliedSearchQuery);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -171,6 +176,14 @@ export default function AgentApplicationTable({ onView }: AgentApplicationTableP
 
   const applySearch = () => {
     dispatch(setBankSearchQuery(searchInput.trim()));
+  };
+
+  const handleSortToggle = () => {
+    if (sortBy === 'creation') {
+      dispatch(setBankSort({ sortBy: 'creation', sortOrder: sortOrder === 'desc' ? 'asc' : 'desc' }));
+    } else {
+      dispatch(setBankSort({ sortBy: 'creation', sortOrder: 'desc' }));
+    }
   };
 
   const displayOptions = [10, 20, 50, 100];
@@ -282,7 +295,21 @@ export default function AgentApplicationTable({ onView }: AgentApplicationTableP
                   onChange={(amounts) => dispatch(setBankFilters({ ...filters, loanAmount: amounts }))}
                 />
               </th>
-              <th className="px-6 py-4 font-semibold text-center">Applied On</th>
+              <th 
+                className="px-6 py-4 font-semibold text-center cursor-pointer hover:bg-gray-100 transition-colors select-none group"
+                onClick={handleSortToggle}
+              >
+                <div className="flex items-center justify-center gap-1.5">
+                  Applied On
+                  <span className="flex items-center justify-center text-gray-400 group-hover:text-gray-600 transition-colors">
+                    {sortBy === 'creation' ? (
+                      sortOrder === 'asc' ? <ArrowUp size={14} className="text-[#16A34A]" /> : <ArrowDown size={14} className="text-[#16A34A]" />
+                    ) : (
+                      <ArrowUpDown size={14} />
+                    )}
+                  </span>
+                </div>
+              </th>
               <th className="px-6 py-4 font-semibold text-center">Status</th>
               <th className="px-6 py-4 font-semibold text-center">Actions</th>
             </tr>

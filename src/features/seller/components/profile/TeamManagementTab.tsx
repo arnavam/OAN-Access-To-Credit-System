@@ -6,7 +6,7 @@ import { toast } from '@/lib/toast';
 import { ResetMemberPasswordModal } from '@/features/seller/components/profile/ResetMemberPasswordModal';
 import { generateTemporaryPassword } from '@/features/seller/utils/team.utils';
 import { useModalA11y } from '@/hooks/useModalA11y';
-import { CheckCircle2, KeyRound, Search, Trash2, UserPlus, XCircle } from 'lucide-react';
+import { CheckCircle2, KeyRound, Search, Trash2, UserPlus, XCircle, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 // fetchApi unwraps one layer of the raw response (see fetchApi.ts), so depending
@@ -296,14 +296,25 @@ export default function TeamManagementTab() {
                 <label htmlFor="invite-temp-password" className="block text-sm font-medium text-gray-900 mb-1.5">
                   Temporary Password
                 </label>
-                <input
-                  id="invite-temp-password"
-                  type="text"
-                  readOnly
-                  value={inviteForm.password}
-                  aria-describedby="invite-temp-password-hint"
-                  className={`w-full px-3 py-2 bg-gray-50 border ${inviteErrors.password ? 'border-red-500' : 'border-gray-200'} rounded-lg text-sm font-mono text-gray-700 cursor-default focus:outline-none focus:ring-2 focus:ring-brand-green/20`}
-                />
+                <div className="flex gap-2">
+                  <input
+                    id="invite-temp-password"
+                    type="text"
+                    readOnly
+                    value={inviteForm.password}
+                    aria-describedby="invite-temp-password-hint"
+                    className={`w-full px-3 py-2 bg-gray-50 border ${inviteErrors.password ? 'border-red-500' : 'border-gray-200'} rounded-lg text-sm font-mono text-gray-700 cursor-default focus:outline-none focus:ring-2 focus:ring-green-500/20`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setInviteForm(f => ({ ...f, password: generateTemporaryPassword() }))}
+                    className="flex shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white px-3 py-2 text-gray-600 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500/20"
+                    title="Regenerate password"
+                    aria-label="Regenerate temporary password"
+                  >
+                    <RefreshCw className="w-4 h-4" aria-hidden="true" />
+                  </button>
+                </div>
                 <p id="invite-temp-password-hint" className="mt-1 text-xs text-gray-500">
                   Generated automatically and emailed to the member. They must set their own password
                   the first time they sign in.

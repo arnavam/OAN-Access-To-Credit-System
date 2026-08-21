@@ -250,6 +250,7 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
                   </button>
                   {statusFilterOpen && (
                     <div
+                      ref={statusDialogRef}
                       className="absolute left-0 top-full mt-2 z-[99] w-64 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 normal-case font-normal text-sm text-gray-800"
                       onClick={(e) => e.stopPropagation()}
                     >
@@ -316,6 +317,7 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
                   </button>
                   {loanTypeFilterOpen && (
                     <div
+                      ref={loanTypeDialogRef}
                       className="absolute left-0 top-full mt-2 z-[99] w-72 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 normal-case font-normal text-sm text-gray-800"
                       onClick={(e) => e.stopPropagation()}
                     >
@@ -385,6 +387,7 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
                   </button>
                   {amountFilterOpen && (
                     <div
+                      ref={amountDialogRef}
                       className="absolute left-0 top-full mt-2 z-[99] w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 p-5 normal-case font-normal text-sm text-gray-800"
                       onClick={(e) => e.stopPropagation()}
                     >
@@ -468,6 +471,7 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
                   </button>
                   {dateFilterOpen && (
                     <div
+                      ref={dateDialogRef}
                       className="absolute right-0 top-full mt-2 z-[99] w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 normal-case font-normal text-sm text-gray-800"
                       onClick={(e) => e.stopPropagation()}
                     >
@@ -556,7 +560,7 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
               <TableEmptyState
                 hasFilters={hasFilters}
                 onClearFilters={handleClearFilters}
-                colSpan={8}
+                colSpan={7}
                 emptyTitle="No loans yet"
                 emptyDescription="Create your first loan to get started with the pipeline."
                 filteredTitle="No loans match your filters"

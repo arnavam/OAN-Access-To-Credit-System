@@ -87,6 +87,42 @@ export default function RegisterPage() {
     return null;
   }
 
+  const parsedErrors: Record<string, string> = {};
+  if (registrationError) {
+    const regex = /([^:.]+):\s([^.]+)\./g;
+    let match;
+    while ((match = regex.exec(registrationError)) !== null) {
+      // Both groups are non-optional in the pattern, so a match always has them
+      // — but `noUncheckedIndexedAccess` types the lookup as possibly undefined
+      // and cannot know that. Skipping is the honest read: a group that somehow
+      // came back empty has no field name to attribute the message to anyway.
+      const field = match[1]?.trim();
+      const errorMsg = match[2]?.trim();
+      if (!field || !errorMsg) continue;
+
+
+      switch (field) {
+        case 'Bank Name': parsedErrors.bank_name = errorMsg; break;
+        case 'Bank Code': parsedErrors.bank_code = errorMsg; break;
+        case 'Entity Type': parsedErrors.entity_type = errorMsg; break;
+        case 'Registered Street': parsedErrors.registered_street = errorMsg; break;
+        case 'Registered Zone': parsedErrors.registered_zone = errorMsg; break;
+        case 'Registered Region': parsedErrors.registered_region = errorMsg; break;
+        case 'Registered Country': parsedErrors.registered_country = errorMsg; break;
+        case 'Registered Postal Code': parsedErrors.registered_postal_code = errorMsg; break;
+        case 'Registered Email': parsedErrors.registered_email = errorMsg; break;
+        case 'Registered Phone': 
+          parsedErrors.registered_phone = errorMsg.replace('Value error, ', ''); 
+          break;
+        case 'Website': parsedErrors.website = errorMsg; break;
+      }
+    }
+    
+    if (Object.keys(parsedErrors).length === 0) {
+      parsedErrors.global = registrationError;
+    }
+  }
+
   return (
     <div className="flex-1 w-full flex flex-col bg-[#F8F9FA]">
       <div className="max-w-5xl mx-auto w-full pb-12 pt-8 px-4 sm:px-6">
@@ -103,19 +139,22 @@ export default function RegisterPage() {
           <OrganisationSection
             fields={orgFields}
             onChange={(partial) => setOrgFields((prev) => ({ ...prev, ...partial }))}
+            errors={parsedErrors}
           />
           <RegisteredAddressSection
             fields={addressFields}
             onChange={(partial) => setAddressFields((prev) => ({ ...prev, ...partial }))}
+            errors={parsedErrors}
           />
           <ContactDetailsSection
             fields={contactFields}
             onChange={(partial) => setContactFields((prev) => ({ ...prev, ...partial }))}
             isAgreed={isAgreed}
             setIsAgreed={setIsAgreed}
+            errors={parsedErrors}
           />
-          {registrationError && (
-            <p className="text-sm text-red-600 px-1">{registrationError}</p>
+          {parsedErrors.global && (
+            <p className="text-sm text-red-600 px-1">{parsedErrors.global}</p>
           )}
           <RegisterFooterCard
             isLoading={isLoading}

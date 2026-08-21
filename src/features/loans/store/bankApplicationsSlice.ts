@@ -144,6 +144,8 @@ interface BankApplicationsState {
   pageSize: number;
   searchQuery: string;
   filters: BankApplicationFilters;
+  sortBy?: 'creation' | 'loan_amount';
+  sortOrder?: 'asc' | 'desc';
 }
 
 const DEFAULT_FILTERS: BankApplicationFilters = {
@@ -171,6 +173,8 @@ const initialState: BankApplicationsState = {
   pageSize: 10,
   searchQuery: '',
   filters: { ...DEFAULT_FILTERS },
+  sortBy: 'creation',
+  sortOrder: 'desc',
 };
 
 export const fetchBankApplications = createAsyncThunk(
@@ -227,6 +231,11 @@ const bankApplicationsSlice = createSlice({
       state.searchQuery = '';
       state.page = 1;
     },
+    setBankSort: (state, action: PayloadAction<{ sortBy: 'creation' | 'loan_amount'; sortOrder: 'asc' | 'desc' }>) => {
+      state.sortBy = action.payload.sortBy;
+      state.sortOrder = action.payload.sortOrder;
+      state.page = 1;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -274,6 +283,7 @@ export const {
   setBankSearchQuery,
   setBankFilters,
   clearBankFilters,
+  setBankSort,
 } = bankApplicationsSlice.actions;
 
 // --- Basic selectors ---
@@ -284,6 +294,8 @@ export const selectBankPage = (state: RootState) => state.bankApplications.page;
 export const selectBankPageSize = (state: RootState) => state.bankApplications.pageSize;
 export const selectBankSearchQuery = (state: RootState) => state.bankApplications.searchQuery;
 export const selectBankFilters = (state: RootState) => state.bankApplications.filters;
+export const selectBankSortBy = (state: RootState) => state.bankApplications.sortBy;
+export const selectBankSortOrder = (state: RootState) => state.bankApplications.sortOrder;
 const selectSummary = (state: RootState) => state.bankApplications.summary;
 
 function toneFor(status: string): BankApplicationRow['statusTone'] {
@@ -384,8 +396,8 @@ export const selectBankMetrics = createSelector([selectSummary], (summary) => {
 });
 
 export const selectBankQueryParams = createSelector(
-  [selectBankPage, selectBankPageSize, selectBankSearchQuery, selectBankFilters],
-  (page, pageSize, searchQuery, filters): GetLoansParams => {
+  [selectBankPage, selectBankPageSize, selectBankSearchQuery, selectBankFilters, selectBankSortBy, selectBankSortOrder],
+  (page, pageSize, searchQuery, filters, sortBy, sortOrder): GetLoansParams => {
     const params: GetLoansParams = { page, page_size: pageSize };
 
     if (searchQuery) params.search_query = searchQuery;
@@ -411,6 +423,9 @@ export const selectBankQueryParams = createSelector(
         );
       }
     }
+
+    if (sortBy) params.sort_by = sortBy;
+    if (sortOrder) params.sort_order = sortOrder;
 
     return params;
   }

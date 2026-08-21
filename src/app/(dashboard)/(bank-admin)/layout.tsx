@@ -12,6 +12,7 @@ import { useEffect, useMemo } from 'react';
 // Only for paths with no nav item of their own; a matching nav item's label wins.
 const PAGE_TITLES: Record<string, string> = {
   '/profile': 'My Profile',
+  '/kyc-compliance': 'KYC & Compliance',
 };
 
 export default function BankAdminLayout({ children }: { children: React.ReactNode }) {
@@ -49,7 +50,7 @@ export default function BankAdminLayout({ children }: { children: React.ReactNod
   const navigationSections: NavSection[] = useMemo(() => {
     const pendingApprovals = sellerStats
       ? Math.max(0, (sellerStats.total_products ?? 0) - (sellerStats.active_products ?? 0))
-      : 0;
+      : undefined;
 
     return [
       {

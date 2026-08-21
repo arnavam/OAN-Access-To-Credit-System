@@ -8,6 +8,10 @@ import React, { useEffect } from 'react';
 
 import '@/styles/main-layout.scss';
 
+// Re-export so existing layout imports (e.g. `from '@/components/layout/DashboardShell'`)
+// keep working without touching every call site.
+export { resolveActiveNavItem, resolvePageTitle } from '@/lib/navUtils';
+
 interface DashboardShellProps {
   /** Nav for this portal. Build it per role; the chrome around it is the same. */
   sections: NavSection[];
@@ -92,35 +96,3 @@ export function DashboardShell({
 }
 
 export default DashboardShell;
-
-/**
- * Picks the title for the current path: the label of the deepest-matching nav
- * item, then an explicit override for paths that have no nav item of their own,
- * then a fallback.
- *
- * Each layout resolved this inline, matching `activePaths` by exact equality
- * only — so a detail route like `/leads/123` fell through to the generic
- * "Dashboard" even though the sidebar (which does match by prefix) correctly
- * highlighted Leads. Same matcher as `Sidebar` now, so the highlighted nav item
- * and the header title can no longer disagree.
- */
-export function resolvePageTitle(
-  sections: NavSection[],
-  pathname: string,
-  overrides: Record<string, string> = {},
-  fallback = 'Dashboard',
-): string {
-  let best: string | null = null;
-  let bestLen = -1;
-  for (const section of sections) {
-    for (const item of section.items) {
-      for (const candidate of item.activePaths ?? [item.path]) {
-        if ((pathname === candidate || pathname.startsWith(candidate + '/')) && candidate.length > bestLen) {
-          bestLen = candidate.length;
-          best = item.label;
-        }
-      }
-    }
-  }
-  return best ?? overrides[pathname] ?? fallback;
-}

@@ -51,8 +51,7 @@ export function TablePagination({
     };
   }, [isDropdownOpen]);
 
-  // Nothing to paginate and nothing the page-size control could reveal.
-  if (totalPages <= 1 && totalCount <= pageSize) return null;
+  // Guard removed: the footer must always render so the page-size dropdown remains accessible.
 
   const pages = Array.from({ length: Math.min(3, totalPages) }, (_, i) => i + 1);
 

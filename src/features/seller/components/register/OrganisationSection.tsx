@@ -11,9 +11,10 @@ export interface OrganisationFields {
 interface OrganisationSectionProps {
   fields: OrganisationFields;
   onChange: (fields: Partial<OrganisationFields>) => void;
+  errors?: Record<string, string>;
 }
 
-export function OrganisationSection({ fields, onChange }: OrganisationSectionProps) {
+export function OrganisationSection({ fields, onChange, errors = {} }: OrganisationSectionProps) {
   return (
     <FormCard title="Organisation" bodyClassName="space-y-5">
       <InputField
@@ -22,6 +23,7 @@ export function OrganisationSection({ fields, onChange }: OrganisationSectionPro
         placeholder="Enter Legal entity name"
         value={fields.bank_name}
         onChange={(e) => onChange({ bank_name: e.target.value })}
+        error={errors.bank_name}
       />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         <InputField
@@ -30,6 +32,7 @@ export function OrganisationSection({ fields, onChange }: OrganisationSectionPro
           hint="If different from legal name"
           value={fields.brand_name}
           onChange={(e) => onChange({ brand_name: e.target.value })}
+          error={errors.brand_name}
         />
         <InputField
           label="Entity type"
@@ -37,6 +40,7 @@ export function OrganisationSection({ fields, onChange }: OrganisationSectionPro
           placeholder="Enter Entity type"
           value={fields.entity_type}
           onChange={(e) => onChange({ entity_type: e.target.value })}
+          error={errors.entity_type}
         />
         <InputField
           label="Tax registration number"
@@ -45,6 +49,7 @@ export function OrganisationSection({ fields, onChange }: OrganisationSectionPro
           hint="Tax Identification number (9-10 characters)"
           value={fields.bank_code}
           onChange={(e) => onChange({ bank_code: e.target.value })}
+          error={errors.bank_code}
         />
       </div>
     </FormCard>

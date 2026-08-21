@@ -15,9 +15,10 @@ interface ContactDetailsSectionProps {
   onChange: (fields: Partial<ContactFields>) => void;
   isAgreed: boolean;
   setIsAgreed: (agreed: boolean) => void;
+  errors?: Record<string, string>;
 }
 
-export function ContactDetailsSection({ fields, onChange, isAgreed, setIsAgreed }: ContactDetailsSectionProps) {
+export function ContactDetailsSection({ fields, onChange, isAgreed, setIsAgreed, errors = {} }: ContactDetailsSectionProps) {
   const [isPhoneDropdownOpen, setIsPhoneDropdownOpen] = useState(false);
   const [selectedPhoneCode, setSelectedPhoneCode] = useState('+255');
   // Keep local digits separate so switching the country code dropdown never
@@ -53,9 +54,13 @@ export function ContactDetailsSection({ fields, onChange, isAgreed, setIsAgreed 
             value={fields.registered_email}
             onChange={(e) => onChange({ registered_email: e.target.value })}
             placeholder="Enter email address"
-            className="w-full px-3 py-2.5 bg-white border border-[#D1D5DB] rounded-lg text-[14px] text-[#1F2937] focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] transition-all placeholder:text-[#9CA3AF]"
+            className={`w-full px-3 py-2.5 bg-white border ${errors.registered_email ? 'border-red-500' : 'border-[#D1D5DB]'} rounded-lg text-[14px] text-[#1F2937] focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] transition-all placeholder:text-[#9CA3AF]`}
           />
-          <span className="text-[12px] text-[#6B7280]">Use your work email — this will be your portal login</span>
+          {errors.registered_email ? (
+            <span className="text-[12px] text-red-500">{errors.registered_email}</span>
+          ) : (
+            <span className="text-[12px] text-[#6B7280]">Use your work email — this will be your portal login</span>
+          )}
         </div>
 
         <div className="space-y-1.5">
@@ -112,9 +117,12 @@ export function ContactDetailsSection({ fields, onChange, isAgreed, setIsAgreed 
                 setLocalPhoneDigits(digits);
                 propagatePhone(selectedPhoneCode, digits);
               }}
-              className="flex-1 px-3 py-2.5 bg-white border border-[#D1D5DB] rounded-lg text-[14px] text-[#1F2937] focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] transition-all placeholder:text-[#9CA3AF]"
+              className={`flex-1 px-3 py-2.5 bg-white border ${errors.registered_phone ? 'border-red-500' : 'border-[#D1D5DB]'} rounded-lg text-[14px] text-[#1F2937] focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] transition-all placeholder:text-[#9CA3AF]`}
             />
           </div>
+          {errors.registered_phone && (
+            <span className="text-[12px] text-red-500 block mt-1">{errors.registered_phone}</span>
+          )}
         </div>
       </div>
 
