@@ -135,8 +135,8 @@ function buildCsp(nonce: string): string {
     : "script-src 'self' 'unsafe-eval' 'unsafe-inline'";
 
   const styleSrc = isProd
-    ? `style-src 'self' 'nonce-${nonce}' https://fonts.googleapis.com`
-    : "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com";
+    ? `style-src 'self' 'nonce-${nonce}'`
+    : "style-src 'self' 'unsafe-inline'";
 
   return [
     "default-src 'self'",
@@ -145,7 +145,7 @@ function buildCsp(nonce: string): string {
     "object-src 'none'",
     "img-src 'self' data: blob:",
     `connect-src 'self' ${apiBaseUrl}`.trim(),
-    "font-src 'self' https://fonts.gstatic.com",
+    "font-src 'self'",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
