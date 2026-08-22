@@ -3,12 +3,19 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useMemo } from 'react';
+import { resolveActiveNavItem } from '@/lib/navUtils';
 
 export interface NavItem {
   path: string;
   activePaths?: string[];
   label: string;
   icon: LucideIcon;
+  /**
+   * Count pill on the right of the item (e.g. products awaiting approval).
+   * Hidden while the rail is collapsed, since there is no room for it there.
+   * Omit — or pass 0 — for no pill.
+   */
+  badge?: number | undefined;
 }
 
 export interface NavSection {
@@ -28,25 +35,7 @@ function Sidebar({ isCollapsed, isMobileOpen = false, sections = [] }: SidebarPr
   // Find the single most-specifically matched nav item for the current path.
   // Longer prefix wins, so /leads/lead beats /leads when visiting /leads/lead.
   const activeItem = useMemo(() => {
-    let best = null;
-    let bestLen = -1;
-    for (const section of sections) {
-      for (const item of section.items) {
-        const paths = item.activePaths ?? [item.path];
-        for (const ap of paths) {
-          if (
-            pathname === ap ||
-            pathname.startsWith(ap + '/')
-          ) {
-            if (ap.length > bestLen) {
-              bestLen = ap.length;
-              best = item;
-            }
-          }
-        }
-      }
-    }
-    return best;
+    return resolveActiveNavItem(sections, pathname);
   }, [sections, pathname]);
 
   return (
@@ -186,6 +175,17 @@ function Sidebar({ isCollapsed, isMobileOpen = false, sections = [] }: SidebarPr
                     >
                       {item.label}
                     </span>
+                    {item.badge !== undefined && item.badge !== null ? (
+                      <span
+                        className={[
+                          'flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full px-1',
+                          'bg-[#EA580C] text-[11px] font-bold text-white shadow-sm',
+                          isCollapsed ? 'min-[900px]:hidden' : '',
+                        ].join(' ')}
+                      >
+                        {item.badge}
+                      </span>
+                    ) : null}
                   </Link>
                 );
               })}

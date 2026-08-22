@@ -31,11 +31,26 @@ export interface LoanApplication {
   formData?: LoanFormData;
 }
 
+/**
+ * The shape `get_loan_summary` actually returns.
+ *
+ * It previously declared required `processing` / `approved` / `rejected` fields
+ * that the endpoint has never sent — names left over from the status model the
+ * archetype refactor replaced. Because the type asserted they were there, every
+ * consumer type-checked cleanly while reading `undefined` at runtime.
+ */
 export interface LoanSummaryMetrics {
   total: number;
-  processing: number;
-  approved: number;
-  rejected: number;
+  /**
+   * Counts per archetype state — platform constants, so safe to key on across
+   * banks. Seeded server-side with every state, so a quiet one reads 0.
+   */
+  by_status: Record<string, number>;
+  /**
+   * Counts per *bank-defined* stage label, falling back to the archetype when a
+   * loan sits on no named stage. Tenant free text: never key on a literal here.
+   */
+  stages: Record<string, number>;
   tab_counts?: {
     all: number;
     my: number;

@@ -1,19 +1,39 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
-interface LeadPaginationProps {
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
+
+export interface TablePaginationProps {
+  /** Rows rendered on the current page. */
   visibleCount: number;
-  filteredCount: number;
-  safePage: number;
+  /** Rows matching the current filters, across all pages. */
+  totalCount: number;
+  currentPage: number;
   totalPages: number;
-  pageNums: (number | string)[];
-  onPageChange: (page: number) => void;
   pageSize: number;
+  onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
 }
 
-function LeadPagination({ visibleCount, filteredCount, safePage, totalPages, onPageChange, pageSize, onPageSizeChange }: LeadPaginationProps) {
-  const pages = Array.from({ length: Math.min(3, totalPages) }, (_, i) => i + 1);
+/**
+ * Footer bar for the dashboard tables — record count, page-size dropdown and
+ * page navigation.
+ *
+ * Leads and loans each had their own copy: identical markup, one props-driven
+ * and one wired straight into the loan slice, which is why they had already
+ * drifted on the record-count wording and on whether the bar hides itself.
+ * This is the props-driven one; store-connected callers wrap it (see
+ * features/loans/components/LoanPagination.tsx).
+ */
+export function TablePagination({
+  visibleCount,
+  totalCount,
+  currentPage,
+  totalPages,
+  pageSize,
+  onPageChange,
+  onPageSizeChange,
+}: TablePaginationProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -31,11 +51,14 @@ function LeadPagination({ visibleCount, filteredCount, safePage, totalPages, onP
     };
   }, [isDropdownOpen]);
 
+  // Guard removed: the footer must always render so the page-size dropdown remains accessible.
+
+  const pages = Array.from({ length: Math.min(3, totalPages) }, (_, i) => i + 1);
+
   return (
     <div className="flex flex-col xl:flex-row items-center justify-center xl:justify-between gap-4 md:gap-6 border-t border-[#F1F3F4] bg-white px-4 sm:px-8 py-5">
       {/* Left: record count & page size dropdown */}
       <div className="text-sm sm:text-base text-gray-400 font-medium flex flex-wrap items-center justify-center shrink-0 gap-4">
-
         <div className="relative" ref={dropdownRef}>
           <button
             type="button"
@@ -50,7 +73,7 @@ function LeadPagination({ visibleCount, filteredCount, safePage, totalPages, onP
 
           {isDropdownOpen && (
             <div className="absolute left-0 bottom-[calc(100%+4px)] z-50 w-full min-w-[80px] rounded-md border border-gray-200 bg-white shadow-lg origin-bottom animate-in fade-in slide-in-from-bottom-2 duration-200 overflow-hidden">
-              {[10, 20, 50, 100].map((size) => (
+              {PAGE_SIZE_OPTIONS.map((size) => (
                 <button
                   key={size}
                   type="button"
@@ -66,15 +89,18 @@ function LeadPagination({ visibleCount, filteredCount, safePage, totalPages, onP
             </div>
           )}
         </div>
-        <span className="whitespace-nowrap">Showing <span className="font-semibold text-gray-700">{visibleCount}</span> of <span className="font-semibold text-gray-700">{filteredCount.toLocaleString()}</span> records</span>
+        <span className="whitespace-nowrap">
+          Showing <span className="font-semibold text-gray-700">{visibleCount}</span> of{' '}
+          <span className="font-semibold text-gray-700">{totalCount.toLocaleString()}</span> records
+        </span>
       </div>
 
       {/* Right: page navigation */}
       <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 w-full xl:w-auto">
         <button
           type="button"
-          disabled={safePage === 1}
-          onClick={() => onPageChange(Math.max(1, safePage - 1))}
+          disabled={currentPage === 1}
+          onClick={() => onPageChange(Math.max(1, currentPage - 1))}
           className="inline-flex h-10 items-center justify-center rounded-md bg-white px-3 text-base font-semibold text-gray-400 transition-colors hover:bg-gray-50 disabled:opacity-40"
         >
           <ChevronLeft size={18} className="mr-1" />
@@ -86,7 +112,7 @@ function LeadPagination({ visibleCount, filteredCount, safePage, totalPages, onP
             key={pg}
             type="button"
             onClick={() => onPageChange(pg)}
-            className={`inline-flex h-10 w-10 items-center justify-center rounded-md text-base font-semibold transition-colors ${safePage === pg
+            className={`inline-flex h-10 w-10 items-center justify-center rounded-md text-base font-semibold transition-colors ${currentPage === pg
               ? 'bg-[#16A34A] text-white shadow-sm'
               : 'bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-900 border border-transparent'
               }`}
@@ -101,7 +127,7 @@ function LeadPagination({ visibleCount, filteredCount, safePage, totalPages, onP
             <button
               type="button"
               onClick={() => onPageChange(totalPages)}
-              className={`inline-flex h-10 w-10 items-center justify-center rounded-md text-base font-semibold transition-colors ${totalPages === safePage
+              className={`inline-flex h-10 w-10 items-center justify-center rounded-md text-base font-semibold transition-colors ${totalPages === currentPage
                 ? 'bg-[#16A34A] text-white shadow-sm'
                 : 'bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-900 border border-transparent'
                 }`}
@@ -113,8 +139,8 @@ function LeadPagination({ visibleCount, filteredCount, safePage, totalPages, onP
 
         <button
           type="button"
-          disabled={safePage === totalPages}
-          onClick={() => onPageChange(Math.min(totalPages, safePage + 1))}
+          disabled={currentPage === totalPages}
+          onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
           className="inline-flex h-10 items-center justify-center rounded-md bg-white px-3 text-base font-semibold text-gray-400 transition-colors hover:bg-gray-50 disabled:opacity-40"
         >
           Next
@@ -125,4 +151,4 @@ function LeadPagination({ visibleCount, filteredCount, safePage, totalPages, onP
   );
 }
 
-export default LeadPagination;
+export default TablePagination;

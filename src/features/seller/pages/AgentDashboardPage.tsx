@@ -1,5 +1,5 @@
 'use client';
-import { DashboardHeader } from '@/features/seller/components/dashboard/DashboardHeader';
+import { BankHeaderCard } from '@/features/seller/components/loan-products/BankHeaderCard';
 import { LoanApplicationsTable } from '@/features/seller/components/dashboard/LoanApplicationsTable';
 import { MetricCards } from '@/features/seller/components/dashboard/MetricCards';
 import { fetchDashboardStats, selectSellerStats } from '@/features/seller/store/loanProductsSlice';
@@ -15,18 +15,17 @@ export default function AgentDashboardPage() {
   }, [dispatch]);
 
   return (
-    <div className="w-full h-full p-0">
-      <div className="w-full mx-auto space-y-6">
-        <DashboardHeader portalLabel="Bank Agent Portal - Loan Product Management" />
-        <MetricCards
-          totalProducts={stats?.total_products ?? 0}
-          activeProducts={stats?.active_products ?? 0}
-          totalApplicants={stats?.total_applications ?? 0}
-          pendingLabel="Awaiting Admin Approvals"
-          pendingValue={String(stats?.pending_applications ?? 0)}
-        />
-        <LoanApplicationsTable />
-      </div>
+    <div className="w-full mx-auto space-y-6">
+      <BankHeaderCard portalLabel="Bank Agent Portal - Loan Product Management" />
+      <MetricCards
+        totalProducts={stats?.total_products ?? 0}
+        activeProducts={stats?.active_products ?? 0}
+        totalApplications={stats?.total_applications ?? 0}
+        totalApplicants={stats?.total_applicants ?? 0}
+        pendingLabel="Awaiting Admin Approvals"
+        pendingValue={String(stats?.pending_applications ?? 0)}
+      />
+      <LoanApplicationsTable />
     </div>
   );
 }

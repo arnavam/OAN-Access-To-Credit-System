@@ -61,12 +61,22 @@ export interface KpiStat {
 }
 export interface LeadSummaryResponse {
   total: number;
+  /**
+   * Keyed by A2C Lead status. These six are the doctype's entire Select list and
+   * the backend seeds all of them, so each is present even at zero.
+   *
+   * The named keys here used to be Open / Initiated / Qualified / Not Interested
+   * — none of which are lead statuses. The index signature meant that read
+   * cleanly and returned `undefined` forever; it is kept only for forward
+   * compatibility, not as licence to invent keys.
+   */
   by_status: {
-    Open?: number;
-    Initiated?: number;
-    Qualified?: number;
-    'Not Interested'?: number;
+    Active?: number;
+    Verified?: number;
     Processed?: number;
+    Granted?: number;
+    Rejected?: number;
+    Dormant?: number;
     [key: string]: number | undefined;
   };
   tab_counts?: {

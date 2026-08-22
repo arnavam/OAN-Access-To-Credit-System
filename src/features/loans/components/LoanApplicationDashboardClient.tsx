@@ -22,11 +22,16 @@ const LoanApplicationModal = dynamic(() => import('@/features/loans/components/m
   ssr: false,
 });
 
+// Labelled by archetype rather than outcome. "Granted" and "Rejected" cannot be
+// shown honestly today: the `Rejected` archetype in the workflow plan was never
+// implemented, so an approved loan and a declined one both end at `Completed`
+// and nothing distinguishes them except the owning bank's own stage label. Those
+// two cards read a key the API never returned and showed a permanent '—'.
 const METRIC_CONFIG: MetricConfig[] = [
   { key: 'total', label: <span className="font-medium text-gray-500"><strong className="font-bold text-gray-700">Overall</strong> Applications</span>, icon: Users, tone: 'blue' },
-  { key: 'processing', label: 'Processing', icon: FileText, tone: 'cyan' },
-  { key: 'approved', label: 'Granted', icon: Award, tone: 'green' },
-  { key: 'rejected', label: 'Rejected', icon: XCircle, tone: 'red' },
+  { key: 'in_transition', label: 'In Progress', icon: FileText, tone: 'cyan' },
+  { key: 'completed', label: 'Completed', icon: Award, tone: 'green' },
+  { key: 'cancelled', label: 'Cancelled', icon: XCircle, tone: 'red' },
 ];
 
 export function LoanApplicationDashboardClient() {

@@ -144,6 +144,8 @@ interface BankApplicationsState {
   pageSize: number;
   searchQuery: string;
   filters: BankApplicationFilters;
+  sortBy?: 'creation' | 'loan_amount';
+  sortOrder?: 'asc' | 'desc';
 }
 
 const DEFAULT_FILTERS: BankApplicationFilters = {
@@ -171,6 +173,8 @@ const initialState: BankApplicationsState = {
   pageSize: 10,
   searchQuery: '',
   filters: { ...DEFAULT_FILTERS },
+  sortBy: 'creation',
+  sortOrder: 'desc',
 };
 
 export const fetchBankApplications = createAsyncThunk(
@@ -227,6 +231,11 @@ const bankApplicationsSlice = createSlice({
       state.searchQuery = '';
       state.page = 1;
     },
+    setBankSort: (state, action: PayloadAction<{ sortBy: 'creation' | 'loan_amount'; sortOrder: 'asc' | 'desc' }>) => {
+      state.sortBy = action.payload.sortBy;
+      state.sortOrder = action.payload.sortOrder;
+      state.page = 1;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -274,6 +283,7 @@ export const {
   setBankSearchQuery,
   setBankFilters,
   clearBankFilters,
+  setBankSort,
 } = bankApplicationsSlice.actions;
 
 // --- Basic selectors ---
@@ -284,6 +294,8 @@ export const selectBankPage = (state: RootState) => state.bankApplications.page;
 export const selectBankPageSize = (state: RootState) => state.bankApplications.pageSize;
 export const selectBankSearchQuery = (state: RootState) => state.bankApplications.searchQuery;
 export const selectBankFilters = (state: RootState) => state.bankApplications.filters;
+export const selectBankSortBy = (state: RootState) => state.bankApplications.sortBy;
+export const selectBankSortOrder = (state: RootState) => state.bankApplications.sortOrder;
 const selectSummary = (state: RootState) => state.bankApplications.summary;
 
 function toneFor(status: string): BankApplicationRow['statusTone'] {
@@ -362,19 +374,30 @@ export const selectBankLoanTypeOptions = createSelector(
   (known, filters) => Array.from(new Set([...known, ...filters.loanType])).sort()
 );
 
+/**
+ * Bank-side KPI figures, bucketed by archetype state.
+ *
+ * `processing` / `approved` / `rejected` were read here for a long time and the
+ * endpoint has never returned them — they are names from the status model the
+ * archetype refactor replaced. With `?? 0` behind them the three tiles showed a
+ * confident, permanent zero, which reads as real data rather than as missing.
+ *
+ * `by_status` is keyed on the archetype constants, so it means the same thing
+ * for every bank; a stage label does not.
+ */
 export const selectBankMetrics = createSelector([selectSummary], (summary) => {
-  const data = summary?.data;
+  const byStatus = summary?.data?.by_status;
   return {
-    total: data?.total ?? 0,
-    processing: data?.processing ?? 0,
-    approved: data?.approved ?? 0,
-    rejected: data?.rejected ?? 0,
+    total: summary?.data?.total ?? 0,
+    inTransition: byStatus?.['In Transition'] ?? 0,
+    completed: byStatus?.['Completed'] ?? 0,
+    cancelled: byStatus?.['Cancelled'] ?? 0,
   };
 });
 
 export const selectBankQueryParams = createSelector(
-  [selectBankPage, selectBankPageSize, selectBankSearchQuery, selectBankFilters],
-  (page, pageSize, searchQuery, filters): GetLoansParams => {
+  [selectBankPage, selectBankPageSize, selectBankSearchQuery, selectBankFilters, selectBankSortBy, selectBankSortOrder],
+  (page, pageSize, searchQuery, filters, sortBy, sortOrder): GetLoansParams => {
     const params: GetLoansParams = { page, page_size: pageSize };
 
     if (searchQuery) params.search_query = searchQuery;
@@ -400,6 +423,9 @@ export const selectBankQueryParams = createSelector(
         );
       }
     }
+
+    if (sortBy) params.sort_by = sortBy;
+    if (sortOrder) params.sort_order = sortOrder;
 
     return params;
   }

@@ -214,11 +214,20 @@ export type LoanProductDetail = z.infer<typeof loanProductDetailSchema>;
 export const sellerDashboardStatsSchema = z.object({
   total_products: z.number(),
   active_products: z.number(),
+  // Volume vs reach: one farmer with three applications is 3 and 1 respectively.
   total_applications: z.number(),
+  total_applicants: z.number(),
+  // Everything still awaiting the bank — the `In Transition` archetype, which
+  // spans every stage a bank defines inside its own pipeline.
   pending_applications: z.number(),
-  approved_applications: z.number(),
-  total_approved_amount: z.number(),
   pending_products: z.number().optional(),
+  // Optional because the backend cannot honestly produce either one yet. The
+  // `Rejected` archetype in docs/loan-status-workflow-plan.md was never built, so
+  // approvals and rejections both land on `Completed` and are indistinguishable,
+  // and no code path writes `approved_amount`. Requiring them here failed the
+  // entire dashboard for two fields nothing renders.
+  approved_applications: z.number().optional(),
+  total_approved_amount: z.number().optional(),
 });
 export type SellerDashboardStats = z.infer<typeof sellerDashboardStatsSchema>;
 

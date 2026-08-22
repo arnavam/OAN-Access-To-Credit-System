@@ -1,21 +1,6 @@
 'use client';
-import { DashboardHeader } from '@/components/header/DashboardHeader';
-import BankAdminSidebar from '@/components/siderbar/bankAdminSidebar';
 import { KycComplianceContent } from '@/features/seller/components/kyc-compliance/KycComplianceContent';
-import { useState } from 'react';
 
 export default function KycCompliancePage() {
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
-
-  return (
-    <div className="min-h-screen bg-[#F8F9FA] flex">
-      <BankAdminSidebar isExpanded={isSidebarExpanded} setIsExpanded={setIsSidebarExpanded} />
-      <div className="flex-1 flex flex-col min-w-0">
-        <DashboardHeader onMenuClick={() => setIsSidebarExpanded(!isSidebarExpanded)} title="KYC & Compliance" />
-        <main id="main-content" className="flex-1 p-8 overflow-y-auto">
-          <KycComplianceContent />
-        </main>
-      </div>
-    </div>
-  );
+  return <KycComplianceContent />;
 }

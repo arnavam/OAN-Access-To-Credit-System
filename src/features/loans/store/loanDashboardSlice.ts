@@ -369,25 +369,34 @@ export const selectPagedRows = createSelector([selectPagedRowsData], (data) => d
 export const selectTotalPages = createSelector([selectPagedRowsData], (data) => data.totalPages);
 export const selectTotalCount = createSelector([selectPagedRowsData], (data) => data.totalCount);
 
+/**
+ * KPI figures for the loan dashboard, bucketed by archetype state.
+ *
+ * These used to read `processing` / `approved` / `rejected` off the summary —
+ * names from the status model that the archetype refactor replaced. The endpoint
+ * never returned them, so three of the four cards rendered a permanent '—'.
+ *
+ * They key on `by_status` now: platform constants, identical across every bank.
+ * Bucketing on `stages` instead would look richer and be wrong, because a stage
+ * label is tenant-defined free text — this dashboard spans banks, and two of them
+ * can call the same step different things.
+ *
+ * `0` is a real answer and must render as "0"; only a genuinely absent summary
+ * (not yet fetched, or the request failed) shows a dash.
+ */
 export const selectLiveMetrics = createSelector(
   [selectRawSummaryData],
   (rawSummaryData) => {
     // fetchApi automatically unwraps the "message" envelope
-    const summaryData = rawSummaryData?.data || { total: 0, processing: 0, approved: 0, rejected: 0 };
+    const summaryData = rawSummaryData?.data;
+    const byStatus = summaryData?.by_status;
+    const show = (value: number | undefined) => (typeof value === 'number' ? value.toString() : '—');
 
     return {
-      total: {
-        value: summaryData.total?.toString() || '—',
-      },
-      processing: {
-        value: summaryData.processing?.toString() || '—',
-      },
-      approved: {
-        value: summaryData.approved?.toString() || '—',
-      },
-      rejected: {
-        value: summaryData.rejected?.toString() || '—',
-      },
+      total: { value: show(summaryData?.total) },
+      in_transition: { value: show(byStatus?.['In Transition']) },
+      completed: { value: show(byStatus?.['Completed']) },
+      cancelled: { value: show(byStatus?.['Cancelled']) },
     };
   }
 );

@@ -74,7 +74,13 @@ const eslintConfig = defineConfig([
           // app-wide state through the typed hooks in src/store. It was already
           // doing so; listing it stops that being reported as drift while the
           // genuine check below — features reaching into each other — still is.
-          { from: ["shared"], allow: ["lib", "hooks", "types", "feature", "app", "store"] },
+          //
+          // `shared` is listed for itself because composition inside
+          // src/components is the point of the directory — DashboardShell is
+          // built from Sidebar + DashboardHeader. The plugin treats two
+          // subdirectories of src/components as separate elements, so without
+          // this a shared component may not use another one.
+          { from: ["shared"], allow: ["shared", "lib", "hooks", "types", "feature", "app", "store"] },
           // lib is a leaf for runtime deps, but mocks (under src/lib/mocks)
           // legitimately need feature payload/response types for realistic typing
           { from: ["lib"], allow: ["types", "feature"] },

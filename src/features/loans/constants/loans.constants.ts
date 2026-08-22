@@ -121,3 +121,34 @@ export const AGRONOMIC_FARMLAND_OPTIONS = ['Capacity for production', 'Good', 'A
 export const LAND_OWNERSHIP_OPTIONS     = ['Security of access', 'Owned', 'Leased', 'Shared'];
 export const SOIL_FERTILITY_OPTIONS     = ['Future yield potential', 'High', 'Medium', 'Low'];
 export const MOISTURE_LEVEL_OPTIONS     = ['Irrigation / drought risks', 'Well-irrigated', 'Rain-fed', 'Drought-prone'];
+
+// ─── Advanced-filter status options ──────────────────────────────────────────
+// Both bank portals and the dev-agent dashboard open the same <LoanAdvancedFilters/>
+// drawer over the same slice; only the slice of the lifecycle each one can act on
+// differs. Keeping the two lists here — instead of a private copy of the whole
+// drawer per portal — is what stops them drifting apart again: previously the
+// seller copy had picked up two fixes (Clear-all refreshing the table, and the
+// active-filter count) that the dev-agent copy never received.
+export interface FilterStatusOption {
+  /** What the business calls the status. */
+  label: string;
+  /** The status value the API filters on. */
+  value: string;
+  dot: string;
+}
+
+/** Dev-agent loan dashboard: the post-submission lifecycle only. */
+export const LOAN_FILTER_STATUS_OPTIONS: readonly FilterStatusOption[] = [
+  { label: 'Processing', value: 'Processing', dot: 'bg-teal-500' },
+  { label: 'Approved', value: 'Approved', dot: 'bg-teal-500' },
+  { label: 'Rejected', value: 'Rejected', dot: 'bg-red-500' },
+];
+
+/** Bank portals: the admin dashboard also sees the pre-decision stages. */
+export const SELLER_FILTER_STATUS_OPTIONS: readonly FilterStatusOption[] = [
+  { label: 'In Underwriting', value: 'Processing', dot: 'bg-emerald-500' },
+  { label: 'Approved', value: 'Approved', dot: 'bg-emerald-500' },
+  { label: 'Review', value: 'Pending Review', dot: 'bg-blue-500' },
+  { label: 'Rejected', value: 'Rejected', dot: 'bg-red-500' },
+  { label: 'Pending', value: 'Draft', dot: 'bg-orange-500' },
+];

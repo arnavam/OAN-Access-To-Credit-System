@@ -29,12 +29,17 @@ const baseFilters = {
 };
 
 describe('selectBankQueryParams', () => {
-  it('sends nothing but paging when no filter is set', () => {
+  it('sends nothing but paging and the default sort when no filter is set', () => {
     const store = createTestStore();
 
+    // Sort is not a filter: newest-first is the list's resting order, so it is
+    // sent even with nothing selected. Asserted explicitly rather than allowing
+    // extra keys, so a real filter leaking into the default request still fails.
     expect(selectBankQueryParams(asRootState(store.getState()))).toEqual({
       page: 1,
       page_size: 10,
+      sort_by: 'creation',
+      sort_order: 'desc',
     });
   });
 
@@ -126,9 +131,14 @@ describe('paging resets', () => {
 
     store.dispatch(clearBankFilters());
 
+    // Back to the resting request: paging and the default sort, nothing else.
+    // Clearing filters must not clear the sort — that is a display preference,
+    // not something the person set in the filter drawer.
     expect(selectBankQueryParams(asRootState(store.getState()))).toEqual({
       page: 1,
       page_size: 10,
+      sort_by: 'creation',
+      sort_order: 'desc',
     });
   });
 });

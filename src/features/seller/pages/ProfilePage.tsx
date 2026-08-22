@@ -2,7 +2,6 @@
 
 import { selectUserKind } from '@/features/auth/store/authSlice';
 import { useAppSelector } from '@/store/hooks';
-import { DashboardHeader as DashboardTopNav } from '@/components/header/DashboardHeader';
 import { ArrowLeft, Building2, UsersRound } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -22,11 +21,11 @@ function ProfilePageInner() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] flex flex-col">
-      <DashboardTopNav title="My Profile" />
-
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-8 space-y-6">
-        {/* Back Link */}
+    // Header and sidebar come from the bank-admin layout — this page used to
+    // render its own top nav and no sidebar at all, which made it the one screen
+    // in the portal you couldn't navigate away from except by the back link.
+    <div className="max-w-5xl w-full mx-auto space-y-6">
+      {/* Back Link */}
         <div>
           <Link
             href="/dashboard"
@@ -85,7 +84,6 @@ function ProfilePageInner() {
         ) : (
           <TeamManagementTab />
         )}
-      </main>
     </div>
   );
 }

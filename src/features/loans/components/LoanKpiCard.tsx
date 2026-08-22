@@ -7,7 +7,11 @@ export interface MetricConfig {
   icon: LucideIcon;
   tone: string;
   label: React.ReactNode;
-  key: 'total' | 'processing' | 'approved' | 'rejected';
+  /**
+   * Archetype buckets, matching `by_status` from get_loan_summary. Not stage
+   * labels — those are defined per bank and this dashboard spans all of them.
+   */
+  key: 'total' | 'in_transition' | 'completed' | 'cancelled';
 }
 
 interface LoanKpiCardProps {

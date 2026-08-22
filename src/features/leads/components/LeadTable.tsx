@@ -3,7 +3,7 @@ import { ArrowDown, ArrowUp, ArrowUpDown, Filter, Phone } from 'lucide-react';
 import { useRef } from 'react';
 import LeadActionCell, { getLeadRoute } from './LeadActionCell';
 import { LeadColFilterPopup } from './LeadColFilterPopup';
-import LeadEmptyState from './LeadEmptyState';
+import { TableEmptyState } from '@/components/ui/TableEmptyState';
 import { LeadStatusBadge } from './LeadStatusBadge';
 
 type Align = 'left' | 'center' | 'right';
@@ -339,7 +339,14 @@ function LeadTable({
               );
             })
           ) : (
-            <LeadEmptyState hasFilters={hasFilters} onClearFilters={onClearFilters} />
+            <TableEmptyState
+              hasFilters={hasFilters}
+              onClearFilters={onClearFilters}
+              colSpan={8}
+              emptyTitle="No leads yet"
+              emptyDescription="Create your first lead to get started with the pipeline."
+              filteredTitle="No leads match your filters"
+            />
           )}
         </tbody>
       </table>

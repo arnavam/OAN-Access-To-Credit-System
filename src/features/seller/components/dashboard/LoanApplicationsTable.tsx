@@ -19,7 +19,8 @@ import {
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { AlertCircle, FileOutput, Inbox, Loader2, RefreshCw, Search, SlidersHorizontal } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import SellerAdvancedFilters from './SellerAdvancedFilters';
+import LoanAdvancedFilters from '@/features/loans/components/LoanAdvancedFilters';
+import { SELLER_FILTER_STATUS_OPTIONS } from '@/features/loans/constants/loans.constants';
 export function LoanApplicationsTable() {
   const dispatch = useAppDispatch();
   const rows = useAppSelector(selectPagedRows);
@@ -232,9 +233,10 @@ export function LoanApplicationsTable() {
       )}
 
       {/* Advanced Filters Sidebar */}
-      <SellerAdvancedFilters
+      <LoanAdvancedFilters
         isOpen={isFilterOpen}
         onClose={() => setIsFilterOpen(false)}
+        statusOptions={SELLER_FILTER_STATUS_OPTIONS}
       />
     </div>
   );
