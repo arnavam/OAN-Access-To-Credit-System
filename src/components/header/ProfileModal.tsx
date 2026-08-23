@@ -316,47 +316,49 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
               </section>
 
               {/* Account Information Section */}
-              <section className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-                <h3 className="text-lg font-bold text-gray-800 mb-6">Account Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-900 mb-1.5">User Role</label>
-                    <input 
-                      type="text" 
-                      value={profile?.account_information.user_role || role}
-                      disabled
-                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600"
-                    />
+              {(profile?.account_information.user_role !== 'Farmer' && role !== 'Farmer') && (
+                <section className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+                  <h3 className="text-lg font-bold text-gray-800 mb-6">Account Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-900 mb-1.5">User Role</label>
+                      <input 
+                        type="text" 
+                        value={profile?.account_information.user_role || role}
+                        disabled
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-900 mb-1.5">Organization</label>
+                      <input 
+                        type="text" 
+                        value={profile?.account_information.organization || organization}
+                        disabled
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-900 mb-1.5">Employee Email Address</label>
+                      <input 
+                        type="text" 
+                        value={profile?.account_information.employee_id || 'N/A'}
+                        disabled
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-900 mb-1.5">Member Since</label>
+                      <input 
+                        type="text" 
+                        value={profile?.account_information.member_since || 'N/A'}
+                        disabled
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-900 mb-1.5">Organization</label>
-                    <input 
-                      type="text" 
-                      value={profile?.account_information.organization || organization}
-                      disabled
-                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-900 mb-1.5">Employee Email Address</label>
-                    <input 
-                      type="text" 
-                      value={profile?.account_information.employee_id || 'N/A'}
-                      disabled
-                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-900 mb-1.5">Member Since</label>
-                    <input 
-                      type="text" 
-                      value={profile?.account_information.member_since || 'N/A'}
-                      disabled
-                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600"
-                    />
-                  </div>
-                </div>
-              </section>
+                </section>
+              )}
 
               {/* Security Section */}
               <section className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">

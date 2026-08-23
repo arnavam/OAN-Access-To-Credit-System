@@ -7,9 +7,10 @@ import type {
   CatalogSortKey,
   FarmerDashboardSummary,
   FarmerLoanProduct,
+  DetailedLoanProduct,
+  BankDetails,
   PaginatedResponse,
   UpdateApplicationPayload,
-  FarmerConsentContext,
   ApiResponse,
 } from '../types';
 
@@ -100,6 +101,13 @@ export async function getMyApplications(
 }
 
 /**
+ * Retrieves a single application by application_id.
+ */
+export async function getApplication(application_id: string): Promise<ApiResponse<FarmerLoanApplication>> {
+  return fetchApi(`oan_a2c.api.v1.farmer.applications.get_application?application_id=${encodeURIComponent(application_id)}`);
+}
+
+/**
  * Creates a new Draft application.
  */
 export async function startApplication(
@@ -141,36 +149,17 @@ export async function getDashboardSummary(): Promise<ApiResponse<FarmerDashboard
 }
 
 /**
- * Shared in-flight promise, so overlapping callers await one request instead of
- * racing. React invokes effects twice in development, which sent two of these
- * concurrently — and on a farmer's first ever call both would try to create the
- * lead. The server serialises that safely now, but making the loser wait out a
- * lock to be told what the winner already knew is pure latency.
- *
- * Deliberately not a cache: it is cleared as soon as the request settles, so a
- * later visit still re-reads consent status rather than trusting a stale one.
+ * Retrieves detailed information for a loan product.
  */
-let inFlightConsentStart: Promise<ApiResponse<FarmerConsentContext>> | null = null;
+export async function getProduct(productId: string): Promise<ApiResponse<{ product: DetailedLoanProduct }>> {
+  return fetchApi(`oan_a2c.api.v1.seller.loan_products.get_product?product_id=${encodeURIComponent(productId)}`);
+}
 
 /**
- * Resolves (creating on first call) the lead the farmer's consent runs against.
- *
- * Idempotent server-side too: repeat calls return the same lead, so revisiting
- * the apply page does not strand a trail of empty leads or re-request consent
- * that is already approved and still valid.
+ * Retrieves bank storefront details and branding.
  */
-export async function startConsent(): Promise<ApiResponse<FarmerConsentContext>> {
-  if (inFlightConsentStart) return inFlightConsentStart;
-
-  const request = fetchApi('oan_a2c.api.v1.farmer.consent.start_consent', {
-    method: 'POST',
-    body: JSON.stringify({}),
-  }) as Promise<ApiResponse<FarmerConsentContext>>;
-
-  inFlightConsentStart = request;
-  try {
-    return await request;
-  } finally {
-    inFlightConsentStart = null;
-  }
+export async function getBankDetails(bank: string): Promise<ApiResponse<BankDetails>> {
+  return fetchApi(`oan_a2c.api.v1.farmer.catalog.get_bank_details?bank=${encodeURIComponent(bank)}`);
 }
+
+

@@ -7,7 +7,7 @@ import type { FarmerLoanApplication } from '../types';
 import ApplicationList from './components/ApplicationList';
 import ApplicationSummary from './components/ApplicationSummary';
 
-export type TabType = 'total' | 'Draft' | 'Processing' | 'Approved' | 'Rejected';
+export type TabType = 'total' | 'Draft' | 'Under Review' | 'Disbursed' | 'Rejected';
 
 export default function MyApplicationsPage() {
     const [activeTab, setActiveTab] = useState<TabType>('total');
@@ -74,6 +74,7 @@ export default function MyApplicationsPage() {
                         activeTab={activeTab} 
                         onTabChange={(tab: string) => setActiveTab(tab as TabType)} 
                         applications={applications}
+                        onRefresh={retry}
                     />
                 </>
             )}

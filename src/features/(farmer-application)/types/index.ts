@@ -22,19 +22,50 @@ export interface FarmerLoanProduct {
   product_name: string;
   slug: string;
   bank: string;
+  bank_name?: string;
+  bank_logo?: string | null;
   min_interest_rate?: number;
   max_interest_rate?: number;
   min_amount?: number;
   max_amount?: number;
   tenure_months?: number;
+  image?: string | null;
+  image_url?: string | null;
+  categories?: string[];
   /** Whether the calling farmer has bookmarked this product. Sent by the catalog
    *  endpoint so a reload does not reset every card to un-bookmarked. */
   is_saved?: boolean;
 }
 
+export interface DetailedLoanProduct extends FarmerLoanProduct {
+  status?: string;
+  description?: string;
+  image?: string;
+  creation?: string;
+  modified?: string;
+  product_meta?: {
+    meta_key: string;
+    meta_value: string;
+  }[];
+  categories?: string[];
+  tags?: string[];
+  attributes?: Record<string, string[]>;
+}
+
+export interface BankDetails {
+  bank_name: string;
+  bank_code: string;
+  brand_name?: string;
+  entity_type?: string;
+  website?: string;
+  logo_url?: string;
+  region?: string;
+  country?: string;
+}
+
 export interface FarmerLoanApplication {
   application_id: string;
-  status: 'Draft' | 'Processing' | 'Approved' | 'Rejected';
+  status: 'Draft' | 'Under Review' | 'Disbursed' | 'Rejected';
   loan_amount: number;
   requested_amount: number;
   loan_product: string;
