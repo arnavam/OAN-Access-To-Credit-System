@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 // 1. consent.verify_otp
 export const verifyOtpResponseSchema = z.object({
-  lead_id: z.string(),
+  lead_id: z.string().nullable().optional(),
   consent_request: z.string(),
   transaction_id: z.string(),
   status: z.string(),
@@ -12,17 +12,12 @@ export type VerifyOtpResponse = z.infer<typeof verifyOtpResponseSchema>;
 
 // 2. consent.submit_consent
 export const submitConsentResponseSchema = z.object({
-  lead_id: z.string().optional(),
-  consent_request: z.string().optional(),
-  status: z.string().optional(),
-  openg2p_consent_id: z.union([z.number(), z.string()]).optional(),
-  consent_receipt: z.string().optional(),
-  farmer_preview: z.object({
-    given_name: z.string().default(''),
-    family_name: z.string().default(''),
-    email: z.string().nullish().transform(val => val ?? ''),
-    phone_no: z.array(z.string()).default([]),
-  }).optional(),
+  lead_id: z.string().nullable().optional(),
+  consent_request: z.string().nullable().optional(),
+  status: z.string().nullable().optional(),
+  openg2p_consent_id: z.union([z.number(), z.string()]).nullable().optional(),
+  consent_receipt: z.string().nullable().optional(),
+  farmer_preview: z.record(z.string(), z.unknown()).nullable().optional(),
 }).nullable().optional();
 export type SubmitConsentResponse = z.infer<typeof submitConsentResponseSchema>;
 

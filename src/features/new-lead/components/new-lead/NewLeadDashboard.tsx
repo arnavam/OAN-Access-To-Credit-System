@@ -4,13 +4,12 @@ import { LeadLayoutGrid } from '@/features/leads/components/LeadLayoutGrid';
 import { useLeadInitialization } from '@/features/leads/hooks/useLeadInitialization';
 import { selectLeads } from '@/features/leads/store/leadSlice';
 import {
-    fetchActivitiesThunk, fetchLeadDetailsThunk, fetchLeadMetadataThunk, fetchLeadProfileThunk, fetchVisitSchedulesThunk, selectConsentState, selectDetailsError, selectFarmerState, selectLeadFirstName,
+    fetchActivitiesThunk, fetchLeadDetailsThunk, fetchLeadMetadataThunk, fetchLeadProfileThunk, fetchVisitSchedulesThunk, selectDetailsError, selectFarmerState, selectLeadFirstName,
     selectLeadLastName, selectLeadPhoneNumber, selectLeadStatus, selectVisitState
 } from '@/features/new-lead';
 import { ActivitySection } from '@/features/new-lead/components/ActivitySection';
 import { CallDetailsSection } from '@/features/new-lead/components/CallDetailsSection';
-import { ConsentFinalizationSection } from '@/features/new-lead/components/ConsentFinalizationSection';
-import { ConsentManagementSection } from '@/features/new-lead/components/ConsentManagementSection';
+import { ConsentFinalizationSection, ConsentManagementSection, selectConsentState } from '@/features/consent';
 import { CreditInformationSection } from '@/features/new-lead/components/CreditInformationSection';
 import { FarmerDetailsSection } from '@/features/new-lead/components/FarmerDetailsSection';
 import { InteractionTimelineCard } from '@/features/new-lead/components/InteractionTimelineCard';

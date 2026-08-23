@@ -3,9 +3,9 @@ import { toast } from '@/lib/toast';
 import { AlertCircle, Calendar, CheckSquare, Eye, FileText, Folder, Loader2, Sparkles, Square, Upload, X } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { ChangeEvent, useEffect, useRef, useState } from 'react';
-import { AllowedDataField, ConsentReason, newLeadService } from '../api/newLead.service';
+import { AllowedDataField, ConsentReason, consentService } from '../api/consent.service';
 import { selectConsentState, submitConsentThunk, type ConsentAudience } from '../store/consentSlice';
-import { selectFarmerState, selectIsPollingLong } from '../store/farmerSlice';
+import { selectFarmerState, selectIsPollingLong } from '@/features/new-lead/store/farmerSlice';
 import { ProfileSyncLoadingModal } from './modals/ProfileSyncLoadingModal';
 
 const MAX_FILE_SIZE_MB = 10;
@@ -24,7 +24,7 @@ interface ConsentFinalizationSectionProps {
 export function ConsentFinalizationSection({ leadId: leadIdProp, audience = 'agent' }: ConsentFinalizationSectionProps = {}) {
   const dispatch = useAppDispatch();
   const params = useParams();
-  const leadId = leadIdProp || (params?.id as string) || '';
+  const leadId = leadIdProp || (audience === 'agent' ? (params?.id as string) : undefined) || '';
   const isFarmer = audience === 'farmer';
 
   const { isOtpVerified, consentDate, isSubmittingConsent, consentError } = useAppSelector(selectConsentState);
@@ -58,6 +58,14 @@ export function ConsentFinalizationSection({ leadId: leadIdProp, audience = 'age
     };
   }, []);
 
+  const isApproved =
+    farmerDetails?.consent_request_status === 'Approved' ||
+    (farmerDetails?.farmer_profile_created === true && !!farmerDetails?.firstName) ||
+    !!consentDate;
+
+  const isOtpVerifiedReady =
+    isOtpVerified || farmerDetails?.consent_request_otp_verified === true;
+
   // Fetch metadata options on mount if OTP is verified
   useEffect(() => {
     let active = true;
@@ -66,8 +74,8 @@ export function ConsentFinalizationSection({ leadId: leadIdProp, audience = 'age
         setIsLoadingMetadata(true);
         setMetadataError(null);
         const [reasons, fields] = await Promise.all([
-          newLeadService.get_consent_reasons(),
-          newLeadService.get_consent_allowed_fields(),
+          consentService.get_consent_reasons(),
+          consentService.get_consent_allowed_fields(),
         ]);
         if (active) {
           setConsentReasons(reasons);
@@ -84,14 +92,14 @@ export function ConsentFinalizationSection({ leadId: leadIdProp, audience = 'age
       }
     };
 
-    if (isOtpVerified && !consentDate) {
+    if (isOtpVerifiedReady && !isApproved) {
       fetchMetadata();
     }
 
     return () => {
       active = false;
     };
-  }, [isOtpVerified, consentDate]);
+  }, [isOtpVerifiedReady, isApproved]);
 
   useEffect(() => {
     if (consentFile) {
@@ -107,7 +115,7 @@ export function ConsentFinalizationSection({ leadId: leadIdProp, audience = 'age
   }, [consentFile]);
 
   // Only display if OTP is verified but final consent has not yet been submitted/approved
-  if (!isOtpVerified || !!consentDate) {
+  if (!isOtpVerifiedReady || isApproved) {
     return null;
   }
 
@@ -199,7 +207,7 @@ export function ConsentFinalizationSection({ leadId: leadIdProp, audience = 'age
       setLocalError('At least one registry field must be permitted.');
       return;
     }
-    if (!leadId) {
+    if (audience === 'agent' && !leadId) {
       setLocalError('Missing Lead ID.');
       return;
     }
@@ -215,7 +223,7 @@ export function ConsentFinalizationSection({ leadId: leadIdProp, audience = 'age
     try {
       const base64Data = await convertToBase64(consentFile);
       const request = dispatch(submitConsentThunk({
-        leadId,
+        leadId: leadId || undefined,
         consent_type: consentType,
         consent_reason_id: selectedReasonId,
         validity_months: selectedDuration,
