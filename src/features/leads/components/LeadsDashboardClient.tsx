@@ -23,7 +23,7 @@ import { ConnectionError } from '@/components/ConnectionError';
 import { selectOfficerName } from '@/features/auth/store/authSlice';
 import {
     fetchLeads,
-    fetchLeadSummary, resetFilters, selectActiveTab, selectAdvFilters, selectColCallTimeFilter, selectColStatusFilter, selectDateFilter, selectIsLeadsLoading, selectLeads, selectLeadsError, selectLeadSummary,
+    fetchLeadSummary, resetFilters, selectActiveTab, selectAdvFilters, selectColCallTimeFilter, selectColStatusFilter, selectDateFilter, selectHasActiveLeadFilters, selectIsLeadsLoading, selectLeads, selectLeadsError, selectLeadSummary,
     selectSearch, selectTotalCount, setActiveTab, setColCallTimeFilter, setColStatusFilter, setSearch, setSort
 } from '@/features/leads/store/leadSlice';
 // eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
@@ -49,6 +49,7 @@ export function LeadsDashboardClient() {
   const colStatusFilter = useAppSelector(selectColStatusFilter);
   const colCallTimeFilter = useAppSelector(selectColCallTimeFilter);
   const advFilters = useAppSelector(selectAdvFilters);
+  const hasActiveFilters = useAppSelector(selectHasActiveLeadFilters);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -95,11 +96,11 @@ export function LeadsDashboardClient() {
     const allStatuses = advFilters.statuses.flatMap(id => LEAD_STATUS_MAP[id.toLowerCase()] || [id]);
     const statusParam = allStatuses.length > 0 ? allStatuses.join(',') : undefined;
 
-    // Combine Search
-    let finalSearch = search;
-    if (advFilters.location?.trim()) {
-      finalSearch = finalSearch ? `${finalSearch} ${advFilters.location.trim()}` : advFilters.location.trim();
-    }
+    // The region goes out as its own filter. It used to be appended to the search
+    // box's text, but `search_query` only ORs over name/phone/external_id — so a
+    // search plus a region became one string that matched neither, and the page
+    // came back empty every time both were set.
+    const region = advFilters.region.trim() || undefined;
 
     const min_amount = advFilters.minAmount !== null ? advFilters.minAmount : undefined;
     const max_amount = advFilters.maxAmount !== null ? advFilters.maxAmount : undefined;
@@ -116,13 +117,14 @@ export function LeadsDashboardClient() {
     return dispatch(fetchLeads({
       start: (page - 1) * pageSize,
       page_length: pageSize,
-      search_query: finalSearch,
+      search_query: search,
       status: statusParam,
       start_date,
       end_date,
       min_amount,
       max_amount,
       loan_type,
+      region,
       lead_source,
       assigned_to,
       sort_by: advFilters.sortBy,
@@ -320,7 +322,11 @@ export function LeadsDashboardClient() {
           colStatusFilter={colStatusFilter}
           colCallTimeFilter={colCallTimeFilter}
           navigate={router.push}
-          hasFilters={!!(search.trim() || colStatusFilter.length || colCallTimeFilter.length)}
+          // Every filter surface, not just search + the two column filters: a date
+          // range, an amount bucket, a lead source or a region left this false, so a
+          // filtered-empty table claimed there were no leads at all and hid the
+          // "Clear Filters" affordance that was the only way back.
+          hasFilters={hasActiveFilters}
           onToggleAll={toggleAll}
           onToggleRow={toggleRow}
           onSetOpenColFilter={setOpenColFilter}

@@ -101,8 +101,10 @@ export type LoanApplicationFull = z.infer<typeof loanApplicationFullSchema>;
 
 export const loanApplicationSummarySchema = z.object({
   application_id: z.string(),
+  /** Archetype state: Active | In Transition | Completed | Cancelled. */
   status: z.string(),
   stage_id: z.string().nullable().optional(),
+  /** The owning bank's label for the current step; absent until a stage is applied. */
   stage_label: z.string().nullable().optional(),
   step: z.number(),
   lead_id: z.string().nullable().optional(),
@@ -110,7 +112,13 @@ export const loanApplicationSummarySchema = z.object({
   loan_type: z.string().nullish().transform((val) => val ?? undefined),
   loan_product: z.string().nullish().transform((val) => val ?? undefined),
   loan_product_name: z.string().nullish().transform((val) => val ?? undefined),
-  location: z.string().nullish().transform((val) => val ?? ''),
+  // Location is the three hierarchy fields, not one `location` string. `location`
+  // was declared here and defaulted to '' — the endpoint selected a column that
+  // does not exist on the doctype, Frappe dropped it from the SELECT silently, and
+  // the default turned the missing field into a blank cell on every row.
+  region: z.string().nullish().transform((val) => val ?? undefined),
+  woreda: z.string().nullish().transform((val) => val ?? undefined),
+  kebele: z.string().nullish().transform((val) => val ?? undefined),
   phone_number: z.string().nullish().transform((val) => val ?? ''),
   creation: z.string(),
   first_name: z.string().nullish().transform((val) => val ?? undefined),

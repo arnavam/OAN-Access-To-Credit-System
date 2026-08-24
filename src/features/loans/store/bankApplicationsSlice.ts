@@ -10,21 +10,20 @@ import type { LoanStage } from '@/lib/api/api.schemas';
 import type { ApiResponse } from '@/types/api';
 import { createAsyncThunk, createSelector, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import type { RootState } from '../../../store';
+import { BANK_FILTER_STATUS_OPTIONS } from '../constants/loans.constants';
 
 // The bank-side Applications List reads the same `get_all_loans` endpoint as the
 // Development Agent's dashboard, but it is deliberately NOT the loanDashboard
 // slice:
 //
-//  - loanDashboard defaults `dateRange` to 'last30' and owns the "All / My /
-//    Unassigned" officer tabs. Both are Development Agent concepts; a bank has
-//    no officer queue, and a silent 30-day window on a list with no date control
-//    would hide applications with nothing on screen to explain why.
+//  - loanDashboard owns the "All / My / Unassigned" officer tabs, which are a
+//    Development Agent concept; a bank has no officer queue.
 //  - Two dashboards sharing one slice means one role's filters survive into the
 //    other's screen for anyone holding both roles.
 //
 // Tenant isolation itself is NOT done here. `get_all_loans` goes through
 // `frappe.get_list`, which applies the backend's `loan_application_scope_query`
-// hook: a bank user only ever receives their own bank's non-Draft applications.
+// hook: a bank user only ever receives their own bank's non-Active applications.
 // Nothing on this page can widen that, and nothing here should try to enforce it
 // — the client just renders what the scoped endpoint returned.
 
@@ -46,12 +45,21 @@ export function bankStatusLabel(status: string, stages?: readonly LoanStage[]): 
 
 /**
  * Fallback statuses for a bank if dynamic stages have not yet resolved.
+ *
+ * Derived from the one archetype list in loans.constants so this fallback cannot
+ * drift from what the workflow actually defines. It used to name Processing /
+ * Approved / Rejected / Draft, none of which are workflow states any more.
+ *
+ * `Active` is excluded there, not here: it is the Development Agent's (or the
+ * farmer's) private drafting stage and `loan_application_scope_query` withholds it
+ * from every bank user.
  */
-export const BANK_STATUS_OPTIONS: ReadonlyArray<{ value: string; label: string; color: string }> = [
-  { value: 'Processing', label: 'Processing', color: 'bg-cyan-500' },
-  { value: 'Approved', label: 'Granted', color: 'bg-emerald-500' },
-  { value: 'Rejected', label: 'Rejected', color: 'bg-red-500' },
-];
+export const BANK_STATUS_OPTIONS: ReadonlyArray<{ value: string; label: string; color: string }> =
+  BANK_FILTER_STATUS_OPTIONS.map((opt) => ({
+    value: opt.value,
+    label: opt.label,
+    color: opt.dot,
+  }));
 
 /** Amount buckets offered by LoanAmountFilter / AdvancedFilters, in ETB. */
 const AMOUNT_BUCKETS: Record<string, { min: number; max: number | null }> = {
@@ -85,7 +93,12 @@ export interface BankApplicationFilters {
   loanType: string[];
   /** Bucket labels from AMOUNT_BUCKETS; translated to min/max for the API. */
   loanAmount: string[];
-  location: string;
+  /**
+   * Matched as a prefix against `region` on the application. Named for the field
+   * it filters: this was `location`, a column that exists on no doctype, so every
+   * request carrying it failed with a database error instead of filtering.
+   */
+  region: string;
   dateFrom: string;
   dateTo: string;
 }
@@ -106,9 +119,9 @@ export interface BankApplicationRow {
   type: string;
   productName: string;
   loanAmount: string;
-  /** Raw backend status — what filters and the API speak. */
+  /** Raw archetype status — what filters and the API speak. */
   status: string;
-  /** What the badge shows (`Approved` reads as "Granted"). */
+  /** What the badge shows: the bank's own stage label, or the archetype behind it. */
   statusLabel: string;
   statusTone: 'success' | 'danger' | 'neutral' | 'info';
   appliedDate: string;
@@ -159,7 +172,7 @@ const DEFAULT_FILTERS: BankApplicationFilters = {
   status: [],
   loanType: [],
   loanAmount: [],
-  location: '',
+  region: '',
   dateFrom: '',
   dateTo: '',
 };
@@ -347,6 +360,11 @@ export const selectBankStageOptions = createSelector([selectBankStages], (stages
   return toStageFilterOptions(stages);
 });
 
+/** "Region · Woreda", skipping whichever levels the record has not reached yet. */
+function formatLocation(row: LoanApplicationSummary): string {
+  return [row.region, row.woreda].filter(Boolean).join(' · ');
+}
+
 // --- Derived selectors ---
 const selectRowsData = createSelector([selectRaw, selectBankStages], (raw, stages) => {
   const rows = raw?.data ?? [];
@@ -363,9 +381,12 @@ const selectRowsData = createSelector([selectRaw, selectBankStages], (raw, stage
       year: 'numeric',
     });
     const appliedTime = created.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-    const rawStatus = row.status || 'Processing';
+    // 'In Transition' is the first archetype state a bank ever sees, so it is the
+    // safer fallback than the pre-archetype 'Processing' that stood here.
+    const rawStatus = row.status || 'In Transition';
     const displayLabel = row.stage_label || bankStatusLabel(rawStatus, stages);
     const stageStyle = getStageStyle(row.stage_label || rawStatus, stages);
+    const location = formatLocation(row);
 
     return {
       id: row.application_id,
@@ -373,8 +394,8 @@ const selectRowsData = createSelector([selectRaw, selectBankStages], (raw, stage
       applicant: applicant || 'Unknown Applicant',
       initials: initials || '—',
       initialsColor: tintFor(row.application_id),
-      location: row.location || '—',
-      region: row.location || '',
+      location: location || '—',
+      region: row.region ?? '',
       phone: row.phone_number || '—',
       // `type` is what the LOAN TYPE column shows *and* what its filter sends, so
       // it has to be the `loan_type` field the API filters on — not the product
@@ -461,7 +482,7 @@ export const selectBankQueryParams = createSelector(
     if (searchQuery) params.search_query = searchQuery;
     if (filters.status.length > 0) params.status = filters.status.join(',');
     if (filters.loanType.length > 0) params.loan_type = filters.loanType.join(',');
-    if (filters.location) params.location = filters.location;
+    if (filters.region) params.region = filters.region;
     if (filters.dateFrom) params.from_date = filters.dateFrom;
     if (filters.dateTo) params.to_date = filters.dateTo;
 

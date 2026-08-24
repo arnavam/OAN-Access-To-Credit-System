@@ -153,10 +153,12 @@ export interface CatalogFacets {
 
 export interface CatalogFilters {
   category?: string;
-  /** Exact tenures, one per chip the farmer selected. The catalog endpoint
-   *  matches these exactly; as an upper bound, picking the longest tenure on
-   *  offer matched the whole catalog and read as the filter being ignored. */
-  tenure_months?: number[];
+  /** One exact tenure, sent as both bounds of the endpoint's tenure range.
+   *
+   *  Single-valued, not a set: `list_catalog` filters tenure as a min/max span, so
+   *  a multi-select of non-adjacent tenures cannot be expressed — the span between
+   *  them would drag in every tenure the farmer did not tick. */
+  tenure_months?: number;
   /** Amount bounds are the farmer's borrowing range, not the product's. The
    *  endpoint keeps any product whose own range overlaps this one. */
   min_amount?: number;

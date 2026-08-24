@@ -1,24 +1,135 @@
 export interface StatusConfig {
   dot: string;
   badge: string;
-  tone: 'success' | 'info' | 'danger' | 'neutral';
+  tone: LoanStatusTone;
 }
 
-export const STATUS_CFG: Record<string, StatusConfig> = {
-  'Approved':        { dot: 'bg-green-500',  badge: 'bg-green-50 text-green-700 border-green-200',   tone: 'success' },
-  'Pending Review':  { dot: 'bg-blue-500',   badge: 'bg-blue-50 text-blue-700 border-blue-200',     tone: 'info'    },
-  'Action Required': { dot: 'bg-red-500',    badge: 'bg-red-50 text-red-600 border-red-200',        tone: 'danger'  },
-  'Draft':           { dot: 'bg-slate-400',  badge: 'bg-slate-50 text-slate-600 border-slate-200',  tone: 'neutral' },
+export type LoanStatusTone = 'success' | 'info' | 'danger' | 'neutral';
+
+/**
+ * The dot and pill classes for each tone — the one place these colours are written.
+ *
+ * `badge` deliberately omits the `border` utility: every consumer adds it alongside
+ * its own radius and padding.
+ */
+export const TONE_CFG: Record<LoanStatusTone, { dot: string; badge: string }> = {
+  neutral: { dot: 'bg-slate-400', badge: 'bg-slate-50 text-slate-600 border-slate-200' },
+  info:    { dot: 'bg-blue-500',  badge: 'bg-blue-50 text-blue-700 border-blue-200'    },
+  success: { dot: 'bg-green-500', badge: 'bg-green-50 text-green-700 border-green-200' },
+  danger:  { dot: 'bg-red-500',   badge: 'bg-red-50 text-red-600 border-red-200'       },
 };
 
-// All tabs including "All"
-export const LOAN_STATUSES = ['All', 'Pending Review', 'Action Required', 'Approved', 'Draft'] as const;
+/**
+ * The four states `A2C Loan Application.status` can hold, in lifecycle order.
+ *
+ * These are the A2C Loan Application Workflow's states — platform constants,
+ * identical for every bank. What the *business* calls each step lives separately in
+ * `stage_label` (A2C Loan Status Stage), which is tenant free text.
+ *
+ * `get_all_loans` validates `status` against exactly this list and answers 400 for
+ * anything else, so no other value may ever be used as a filter value. The names
+ * this file used to carry — Processing / Approved / Pending Review / Action Required
+ * / Draft — are from the model the archetype refactor replaced, and every list that
+ * offered them filtered the dashboard into a validation error.
+ */
+export const LOAN_ARCHETYPE_STATUSES = ['Active', 'In Transition', 'Completed', 'Cancelled'] as const;
 
-// Statuses an agent can transition a loan to
-export const UPDATABLE_STATUSES = ['Pending Review', 'Action Required', 'Approved', 'Draft'] as const;
+export type LoanArchetypeStatus = (typeof LOAN_ARCHETYPE_STATUSES)[number];
+
+export const STATUS_CFG: Record<string, StatusConfig> = {
+  'Active':        { ...TONE_CFG.neutral, tone: 'neutral' },
+  'In Transition': { ...TONE_CFG.info,    tone: 'info'    },
+  'Completed':     { ...TONE_CFG.success, tone: 'success' },
+  'Cancelled':     { ...TONE_CFG.danger,  tone: 'danger'  },
+};
+
+/** Dot + pill classes for a row, from the tone its mapper already computed. */
+export function loanToneCfg(tone: string | undefined): { dot: string; badge: string } {
+  return TONE_CFG[(tone ?? '') as LoanStatusTone] ?? TONE_CFG.neutral;
+}
+
+/** Tone for a row, from its archetype status. Unknown values read as neutral. */
+export function loanStatusTone(status: string | undefined): LoanStatusTone {
+  return STATUS_CFG[status ?? '']?.tone ?? 'neutral';
+}
+
+/**
+ * What a row's badge should say.
+ *
+ * The bank's own label for the step wins when it has one; the archetype is the
+ * fallback for an application no bank stage has been applied to yet.
+ */
+export function loanStageLabel(
+  row: { stage_label?: string | null | undefined; status?: string | null | undefined }
+): string {
+  return row.stage_label || row.status || '—';
+}
 
 // ─── Pagination ───────────────────────────────────────────────────────────────
 export const PAGE_SIZE = 10;
+
+// ─── Loan amount buckets ──────────────────────────────────────────────────────
+/**
+ * The amount ranges every loan filter offers, in ETB.
+ *
+ * One list, because there were three: the table's column filter, the advanced-filters
+ * drawer and bankApplicationsSlice each had their own copy, with different labels for
+ * the same bucket and — in the table's case — a `display` of 'ETB 350000' on a bucket
+ * whose real ceiling was 10,000,000.
+ *
+ * `max: null` on the top bucket means "no ceiling". The old 10,000,000 cap silently
+ * excluded anything larger, and the backend accepts amounts far above it.
+ */
+export const LOAN_AMOUNT_RANGES = [
+  { label: '0 - 25,000',          min: 0,      max: 25000,  display: 'ETB 0 - 25,000'        },
+  { label: '25,001 - 50,000',     min: 25001,  max: 50000,  display: 'ETB 25,001 - 50,000'   },
+  { label: '50,001 - 1,00,000',   min: 50001,  max: 100000, display: 'ETB 50,001 - 1,00,000' },
+  { label: '1,00,000 and above',  min: 100001, max: null,   display: 'ETB 100,000+'          },
+  { label: 'All Amounts',         min: null,   max: null,   display: 'All Amounts'           },
+] as const;
+
+/** The last entry — "All Amounts" — is the no-filter position, not a range. */
+export const ALL_AMOUNTS_INDEX = LOAN_AMOUNT_RANGES.length - 1;
+
+export const loanAmountRange = (index: number) =>
+  LOAN_AMOUNT_RANGES[index] ?? LOAN_AMOUNT_RANGES[ALL_AMOUNTS_INDEX]!;
+
+/**
+ * Which bucket an already-applied min/max pair came from, or ALL_AMOUNTS_INDEX.
+ *
+ * Derived from the list rather than re-listing the bounds at each call site: the
+ * copies that did that had drifted, so reopening a filter could show a different
+ * bucket than the one being applied.
+ */
+export function loanAmountRangeIndex(min: number | null, max: number | null): number {
+  const found = LOAN_AMOUNT_RANGES.findIndex((r) => r.min === min && r.max === max);
+  return found === -1 ? ALL_AMOUNTS_INDEX : found;
+}
+
+/**
+ * Just the real buckets' labels.
+ *
+ * For the multi-select amount filters, which express "all amounts" as every bucket
+ * being ticked rather than as a fifth option — so they must not offer the trailing
+ * "All Amounts" entry as something to tick.
+ */
+export const LOAN_AMOUNT_BUCKET_LABELS: readonly string[] = LOAN_AMOUNT_RANGES
+  .slice(0, ALL_AMOUNTS_INDEX)
+  .map((range) => range.label);
+
+/**
+ * The figure at the right-hand end of a bucket slider covering `count` buckets.
+ *
+ * The top bucket has no ceiling, so the widest selection reads "100,000+". Each of
+ * the three sliders used to close its own scale at a flat 1,000,000 — a cap the
+ * endpoint does not apply, which made the control claim a limit that did not exist.
+ */
+export function loanAmountCeilingLabel(count: number): string {
+  if (count <= 0) return '0';
+  const range = LOAN_AMOUNT_RANGES[count - 1];
+  if (!range || range.max === null) return '100,000+';
+  return range.max.toLocaleString();
+}
 
 // ─── Loan metadata options ────────────────────────────────────────────────────
 export const LOAN_TYPES = [
@@ -38,47 +149,12 @@ export const LOAN_TERMS = [
   '36 Months (3 Years)',
 ] as const;
 
-// ─── Reason options per target status ────────────────────────────────────────
-export const STATUS_UPDATE_REASONS: Record<string, string[]> = {
-  'Approved': [
-    'Meets all criteria',
-    'Collateral verified',
-    'Credit score passed',
-    'Field visit confirmed',
-    'Other',
-  ],
-  'Pending Review': [
-    'Awaiting documents',
-    'Under credit review',
-    'Referred for second opinion',
-    'Field visit scheduled',
-    'Other',
-  ],
-  'Action Required': [
-    'Missing documents',
-    'Incomplete application',
-    'Collateral insufficient',
-    'Signature required',
-    'Other',
-  ],
-  'Draft': [
-    'Returned for corrections',
-    'Incomplete submission',
-    'Withdrawn by applicant',
-    'Other',
-  ],
-};
-
 // ─── Dashboard date range options ─────────────────────────────────────────────
-export const DATE_RANGE_OPTIONS = [
-  { label: 'Today',         value: 'today'     },
-  { label: 'Yesterday',     value: 'yesterday' },
-  { label: 'Last 7 Days',   value: 'last7'     },
-  { label: 'Last 30 Days',  value: 'last30'    },
-  { label: 'Last 3 Months', value: 'last3m'    },
-  { label: 'Last 6 Months', value: 'last6m'    },
-  { label: 'Last Year',     value: 'last1y'    },
-] as const;
+// Deliberately absent. A preset-window dropdown used to be declared here, never
+// rendered, while loanDashboardSlice defaulted to 'last30' — so applications older
+// than a month were unreachable with nothing on screen to explain the gap. The
+// From/To + quick-date control inside <LoanAdvancedFilters/> is the one date filter,
+// and it shows what it is doing.
 
 export const STEP_META = [
   { title: 'Loan Details',               subtitle: 'Capture information about the requested loan and farming activities.' },
@@ -125,7 +201,7 @@ export const MOISTURE_LEVEL_OPTIONS     = ['Irrigation / drought risks', 'Well-i
 // ─── Advanced-filter status options ──────────────────────────────────────────
 // Both bank portals and the dev-agent dashboard open the same <LoanAdvancedFilters/>
 // drawer over the same slice; only the slice of the lifecycle each one can act on
-// differs. Keeping the two lists here — instead of a private copy of the whole
+// differs. Keeping these lists here — instead of a private copy of the whole
 // drawer per portal — is what stops them drifting apart again: previously the
 // seller copy had picked up two fixes (Clear-all refreshing the table, and the
 // active-filter count) that the dev-agent copy never received.
@@ -137,18 +213,32 @@ export interface FilterStatusOption {
   dot: string;
 }
 
-/** Dev-agent loan dashboard: the post-submission lifecycle only. */
-export const LOAN_FILTER_STATUS_OPTIONS: readonly FilterStatusOption[] = [
-  { label: 'Processing', value: 'Processing', dot: 'bg-teal-500' },
-  { label: 'Approved', value: 'Approved', dot: 'bg-teal-500' },
-  { label: 'Rejected', value: 'Rejected', dot: 'bg-red-500' },
-];
+const statusOption = (status: LoanArchetypeStatus): FilterStatusOption => ({
+  label: status,
+  value: status,
+  dot: STATUS_CFG[status]?.dot ?? 'bg-slate-400',
+});
 
-/** Bank portals: the admin dashboard also sees the pre-decision stages. */
-export const SELLER_FILTER_STATUS_OPTIONS: readonly FilterStatusOption[] = [
-  { label: 'In Underwriting', value: 'Processing', dot: 'bg-emerald-500' },
-  { label: 'Approved', value: 'Approved', dot: 'bg-emerald-500' },
-  { label: 'Review', value: 'Pending Review', dot: 'bg-blue-500' },
-  { label: 'Rejected', value: 'Rejected', dot: 'bg-red-500' },
-  { label: 'Pending', value: 'Draft', dot: 'bg-orange-500' },
-];
+/**
+ * Status options for lists that can see the whole lifecycle — the development-agent
+ * dashboard and the farmer's own applications.
+ *
+ * Derived from the archetype list rather than hand-written: the two lists that used to
+ * live here differed only in which pre-archetype names they guessed at, and both made
+ * `get_all_loans` answer 400.
+ */
+export const LOAN_FILTER_STATUS_OPTIONS: readonly FilterStatusOption[] =
+  LOAN_ARCHETYPE_STATUSES.map(statusOption);
+
+/**
+ * Status options for the bank-side lists (bank admin, bank agent, seller dashboard).
+ *
+ * `Active` is omitted because `loan_application_scope_query` appends
+ * `status != 'Active'` for every bank user: an Active application is still private to
+ * the Development Agent or the farmer who is drafting it. Offering it here would be a
+ * filter that is guaranteed to return nothing — which is the one thing this file
+ * exists to prevent.
+ */
+export const BANK_FILTER_STATUS_OPTIONS: readonly FilterStatusOption[] =
+  LOAN_ARCHETYPE_STATUSES.filter((status) => status !== 'Active').map(statusOption);
+

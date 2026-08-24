@@ -73,7 +73,8 @@ export interface CreateLoanApplicationResponse {
   application_id: string;
   application: {
     name: string;
-    status: 'Draft';
+    /** `create_loan_application` stamps 'Active' — the first archetype state, not 'Draft'. */
+    status: string;
     farmer_profile: string;
     first_name: string;
     last_name: string;
@@ -88,7 +89,15 @@ export interface GetLoansParams {
   page?: number;
   page_size?: number;
   search_query?: string; // free-text search by Application ID, Lead ID, or Phone Number
-  status?: string; // stringified array or comma-separated statuses e.g. 'Draft,Approved'
+  /**
+   * One or more archetype states, comma-separated — 'Active' | 'In Transition' |
+   * 'Completed' | 'Cancelled'. `GetAllLoansSchema` validates every member against the
+   * workflow's states and answers 400 for anything else, so this is never a display
+   * label and never a bank stage name.
+   */
+  status?: string;
+  /** A bank's own stage label (A2C Loan Status Stage). Tenant free text, comma-separated. */
+  stage_label?: string;
   min_loan_amount?: string;
   max_loan_amount?: string;
   loan_type?: string;
@@ -96,7 +105,12 @@ export interface GetLoansParams {
   loan_officer?: string; // user email, or the literal 'unassigned' (get_all_loans filter)
   from_date?: string;
   to_date?: string;
-  location?: string;
+  // Location is three fields, matched as a prefix on each. There is no `location`
+  // column on A2C Loan Application; sending one used to put a nonexistent column in
+  // the WHERE clause and fail the whole query.
+  region?: string;
+  woreda?: string;
+  kebele?: string;
   lead_id?: string;
   sort_by?: 'loan_amount' | 'creation';
   sort_order?: 'asc' | 'desc';
@@ -201,9 +215,13 @@ export const loanService = {
   },
 
   async submitApplication(application_id: string): Promise<ApiResponse<null>> {
+    // 'In Transition' is the workflow's Submit target for a Development Agent or a
+    // farmer. It used to post 'Processing', which resolve_bank_stage matches against
+    // neither the archetype states nor any bank stage — so submitting threw a
+    // ValidationError on every application.
     return fetchApi('oan_a2c.api.v1.loan_applications.update_loan_status', {
       method: 'POST',
-      body: JSON.stringify({ application_id, status: 'Processing' }),
+      body: JSON.stringify({ application_id, status: 'In Transition' }),
     }) as Promise<ApiResponse<null>>;
   },
 

@@ -26,7 +26,6 @@ import { AlertCircle, FileOutput, Inbox, Loader2, RefreshCw, Search, SlidersHori
 import { useCallback, useEffect, useState } from 'react';
 // eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
 import LoanAdvancedFilters from '@/features/loans/components/LoanAdvancedFilters';
-
 export function LoanApplicationsTable() {
   const dispatch = useAppDispatch();
   const rows = useAppSelector(selectPagedRows);
@@ -39,16 +38,39 @@ export function LoanApplicationsTable() {
   const tableTypeFilters = useAppSelector(selectTableTypeFilters);
   const advancedFilters = useAppSelector(selectAdvancedFilters);
   const stageOptions = useAppSelector(selectLoanStageOptions);
-  // Same active-filters check LoanTable itself uses (plus search) — keeps the
-  // "no data at all" empty state from also covering "filters just match nothing",
-  // which would otherwise hide the table header along with the illustration.
-  const hasActiveFilters = Boolean(searchQuery) || tableStatusFilters.length > 0 || tableTypeFilters.length > 0
-    || advancedFilters.minLoan !== null || Boolean(advancedFilters.dateFrom);
+  // Every filter surface, not a subset — the same list LoanTable's own `hasFilters`
+  // checks, plus the search box this component owns. Keeps the "no data at all"
+  // empty state from also covering "filters just match nothing", which would
+  // otherwise hide the table header along with the illustration.
+  const hasActiveFilters = Boolean(searchQuery)
+    || tableStatusFilters.length > 0
+    || tableTypeFilters.length > 0
+    || advancedFilters.status.length > 0
+    || advancedFilters.type.length > 0
+    || advancedFilters.minLoan !== null
+    || advancedFilters.maxLoan !== null
+    || Boolean(advancedFilters.region)
+    || Boolean(advancedFilters.dateFrom)
+    || Boolean(advancedFilters.dateTo);
 
   const [selectedRow, setSelectedRow] = useState<LoanTableRow | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [searchInput, setSearchInput] = useState('');
+  // Seeded from the store, not '' — a search term already applied (a remount, or a
+  // filter set elsewhere) must be visible in the box that claims to hold it.
+  const [searchInput, setSearchInput] = useState(searchQuery);
+
+  // The drawer's Clear-all resets searchQuery in the store; without this the box
+  // kept showing the term it had just stopped filtering by.
+  //
+  // Adjusted during render against the previous store value rather than in an effect:
+  // an effect would overwrite whatever had been typed on every unrelated re-render
+  // that changed nothing, and setState in an effect body cascades a second render.
+  const [lastSearchQuery, setLastSearchQuery] = useState(searchQuery);
+  if (searchQuery !== lastSearchQuery) {
+    setLastSearchQuery(searchQuery);
+    setSearchInput(searchQuery);
+  }
 
   // Re-fetch whenever the derived query params change (advanced filters, search,
   // pagination, etc.). Filtering is server-side, so the params must be passed to
@@ -82,15 +104,18 @@ export function LoanApplicationsTable() {
 
   const handleExportCsv = () => {
     if (!rows.length) return;
-    const headers = ['Application ID', 'Applicant', 'Phone', 'Loan Product', 'Amount (ETB)', 'Status', 'Date'];
+    const headers = ['Application ID', 'Applicant', 'Phone', 'Loan Type', 'Loan Product', 'Amount (ETB)', 'Status', 'Date'];
     const csvContent = [
       headers.join(','),
       ...rows.map(r => [
         `"${r.id}"`,
         `"${r.applicant}"`,
         `"${r.phone}"`,
-        `"${r.productName || r.type}"`,
+        `"${r.type}"`,
+        `"${r.productName || ''}"`,
         `"${r.loanAmount}"`,
+        // The archetype, not the bank's stage label: a CSV is read outside the
+        // portal, where a tenant-defined label means nothing on its own.
         `"${r.status}"`,
         `"${r.updated}"`
       ].join(','))

@@ -1,6 +1,7 @@
 'use client';
 
 import { Portal } from '@/components/Portal';
+import { LOAN_AMOUNT_BUCKET_LABELS, loanAmountCeilingLabel } from '@/features/loans/constants/loans.constants';
 import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
 import { selectBankStageOptions } from '@/features/loans/store/bankApplicationsSlice';
 import { useAppSelector } from '@/store/hooks';
@@ -11,7 +12,14 @@ export interface AdvancedFiltersState {
   status: string[];
   loanAmount: string[];
   loanType: string[];
-  location: string;
+  /**
+   * Prefix-matched against `region` on the application.
+   *
+   * Was `location`, sent through to a `location` query param — a column that exists
+   * on no doctype, so Frappe put it in the WHERE clause and the request came back a
+   * database error rather than a filtered list.
+   */
+  region: string;
   quickDate?: string;
   dateRange: {
     from: string;
@@ -28,12 +36,15 @@ interface AdvancedFiltersDrawerProps {
   statusOptions?: ReadonlyArray<{ value: string; label: string; color: string }>;
 }
 
-const loanAmountOptions = [
-  '0 - 25,000',
-  '25,001 - 50,000',
-  '50,001 - 1,00,000',
-  '1,00,000 and above'
-];
+// The shared buckets, minus the trailing "All Amounts" entry which this drawer
+// expresses as "everything selected" instead. Was a private copy of the same four
+// labels — one of four, which had already drifted apart.
+const loanAmountOptions = LOAN_AMOUNT_BUCKET_LABELS;
+
+// The widest the scale ever reads. The top bucket is open-ended, so this is
+// "100,000+" — not the flat 1,000,000 that used to close it, which was a cap the
+// endpoint does not apply.
+const OPEN_ENDED_LABEL = loanAmountCeilingLabel(loanAmountOptions.length);
 
 export default function AdvancedFiltersDrawer({
   isOpen,
@@ -97,7 +108,7 @@ export default function AdvancedFiltersDrawer({
       status: [],
       loanAmount: [],
       loanType: [],
-      location: '',
+      region: '',
       dateRange: { from: '', to: '' }
     });
   };
@@ -130,7 +141,7 @@ export default function AdvancedFiltersDrawer({
     if (filters.loanAmount.length === loanAmountOptions.length) {
       setFilters(prev => ({ ...prev, loanAmount: [] }));
     } else {
-      setFilters(prev => ({ ...prev, loanAmount: loanAmountOptions }));
+      setFilters(prev => ({ ...prev, loanAmount: [...loanAmountOptions] }));
     }
   };
 
@@ -138,19 +149,14 @@ export default function AdvancedFiltersDrawer({
     if (!sliderRef.current) return;
     const rect = sliderRef.current.getBoundingClientRect();
     const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    let newMaxIndex = Math.round(percent * 4);
+    let newMaxIndex = Math.round(percent * loanAmountOptions.length);
 
     if (newMaxIndex === 0) newMaxIndex = 1;
 
-    if (newMaxIndex === 4) {
-      setFilters(prev => ({ ...prev, loanAmount: loanAmountOptions }));
-    } else {
-      setFilters(prev => ({ ...prev, loanAmount: loanAmountOptions.slice(0, newMaxIndex) }));
-    }
+    setFilters(prev => ({ ...prev, loanAmount: loanAmountOptions.slice(0, newMaxIndex) }));
   };
 
-  const stepValues = [0, 25000, 50000, 100000, 1000000];
-  let displayMaxIndex = 4;
+  let displayMaxIndex = loanAmountOptions.length;
 
   if (filters.loanAmount.length > 0) {
     const selectedIndices = filters.loanAmount.map(opt => loanAmountOptions.indexOf(opt)).filter(i => i !== -1);
@@ -159,8 +165,8 @@ export default function AdvancedFiltersDrawer({
     }
   }
 
-  const maxPercent = displayMaxIndex * 25;
-  const maxLabel = (stepValues[displayMaxIndex] ?? 0).toLocaleString();
+  const maxPercent = (displayMaxIndex / loanAmountOptions.length) * 100;
+  const maxLabel = loanAmountCeilingLabel(displayMaxIndex);
 
   const toggleLoanType = (type: string) => {
     setFilters(prev => {
@@ -307,7 +313,7 @@ export default function AdvancedFiltersDrawer({
 
                       <div className="flex flex-col items-end min-w-[50px]">
                         <span className="text-[11px] font-bold text-[#64748B] uppercase">ETB</span>
-                        <span className="text-[14px] font-bold text-[#1E293B]">1,000,000</span>
+                        <span className="text-[14px] font-bold text-[#1E293B]">{OPEN_ENDED_LABEL}</span>
                       </div>
                     </div>
                   </div>
@@ -378,16 +384,20 @@ export default function AdvancedFiltersDrawer({
             </div>
           </div>
 
-          {/* Location */}
+          {/* Region */}
           <div className="space-y-3">
-            <h3 className="text-[14px] font-bold text-gray-700">Location</h3>
+            <h3 className="text-[14px] font-bold text-gray-700">Region</h3>
             <input
               type="text"
-              value={filters.location}
-              onChange={(e) => setFilters(prev => ({ ...prev, location: e.target.value }))}
-              placeholder="Enter Region, Woreda or Kebele"
-              className="w-full p-3 rounded-lg border border-gray-200 text-[14px] text-gray-700 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+              value={filters.region}
+              onChange={(e) => setFilters(prev => ({ ...prev, region: e.target.value }))}
+              placeholder="Enter Region"
+              className="w-full p-3 rounded-lg border border-gray-200 text-[14px] text-gray-700 focus:outline-none focus:border-[#16A34A] focus:ring-1 focus:ring-[#16A34A]"
             />
+            {/* Region only. The old placeholder invited a Woreda or Kebele and sent it
+                as one free-text `location` — there is no such column, and no single
+                field the three levels could all be matched against. */}
+            <p className="text-[12px] text-gray-400">Matched from the start of the region name.</p>
           </div>
 
           <div className="pt-2">
@@ -435,9 +445,9 @@ export default function AdvancedFiltersDrawer({
             className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-[#16A34A] mb-3 py-3 text-sm font-semibold text-white transition hover:bg-[#10883c]"
           >
             Apply Filters
-            {(filters.status.length > 0 || filters.loanAmount.length > 0 || filters.loanType.length > 0 || filters.location || filters.dateRange.from || filters.dateRange.to) && (
+            {(filters.status.length > 0 || filters.loanAmount.length > 0 || filters.loanType.length > 0 || filters.region || filters.dateRange.from || filters.dateRange.to) && (
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/25 text-xs">
-                {filters.status.length + filters.loanAmount.length + filters.loanType.length + (filters.location ? 1 : 0) + (filters.dateRange.from || filters.dateRange.to ? 1 : 0)}
+                {filters.status.length + filters.loanAmount.length + filters.loanType.length + (filters.region ? 1 : 0) + (filters.dateRange.from || filters.dateRange.to ? 1 : 0)}
               </span>
             )}
           </button>

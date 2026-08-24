@@ -48,13 +48,53 @@ export interface AdvFilters {
   quickDate: string;
   dateFrom: string;
   dateTo: string;
-  location: string;
+  /** Region only — see `region` on GetLeadsParams for why one field, not three. */
+  region: string;
   minAmount: number | null;
   maxAmount: number | null;
   loanType: string[];
   leadSources: string[];
   sortBy?: 'loan_amount' | 'creation' | undefined;
   sortOrder?: 'asc' | 'desc' | undefined;
+}
+
+/** The filter half of `AdvFilters`, with the sort deliberately excluded. */
+export type AdvFilterValues = Omit<AdvFilters, 'sortBy' | 'sortOrder'>;
+
+/**
+ * The filter half of the current state, ready to hand back to `setAdvFilters`
+ * with one field changed.
+ *
+ * Fields are listed out rather than rest-destructured so adding one to `AdvFilters`
+ * is a type error here instead of a value that silently stops being sent.
+ */
+export function advFilterValues(filters: AdvFilters): AdvFilterValues {
+  return {
+    statuses: filters.statuses,
+    quickDate: filters.quickDate,
+    dateFrom: filters.dateFrom,
+    dateTo: filters.dateTo,
+    region: filters.region,
+    minAmount: filters.minAmount,
+    maxAmount: filters.maxAmount,
+    loanType: filters.loanType,
+    leadSources: filters.leadSources,
+  };
+}
+
+/**
+ * Re-attach the sort the user already picked to a fresh set of filter values.
+ *
+ * The drawer's Apply built an object literal with no `sortBy`/`sortOrder` and
+ * `setAdvFilters` assigned it wholesale, so applying any filter silently reset the
+ * table to "newest first" — a column header the user had just clicked kept its
+ * arrow while the rows underneath came back in a different order.
+ */
+function withCurrentSort(values: AdvFilterValues, current: AdvFilters): AdvFilters {
+  const next: AdvFilters = { ...values };
+  if (current.sortBy !== undefined) next.sortBy = current.sortBy;
+  if (current.sortOrder !== undefined) next.sortOrder = current.sortOrder;
+  return next;
 }
 
 interface LeadState {
@@ -78,7 +118,7 @@ const initialFilters: AdvFilters = {
   quickDate: '',
   dateFrom: '',
   dateTo: '',
-  location: '',
+  region: '',
   minAmount: null,
   maxAmount: null,
   loanType: [],
@@ -131,8 +171,8 @@ const leadSlice = createSlice({
     setColCallTimeFilter(state, action: PayloadAction<string[]>) {
       state.advFilters.loanType = action.payload;
     },
-    setAdvFilters(state, action: PayloadAction<AdvFilters>) {
-      state.advFilters = action.payload;
+    setAdvFilters(state, action: PayloadAction<AdvFilterValues>) {
+      state.advFilters = withCurrentSort(action.payload, state.advFilters);
     },
     setSort(state, action: PayloadAction<{ sortBy?: 'loan_amount' | 'creation' | undefined; sortOrder?: 'asc' | 'desc' | undefined }>) {
       state.advFilters.sortBy = action.payload.sortBy;
@@ -142,7 +182,10 @@ const leadSlice = createSlice({
       state.search = '';
       state.activeTab = 'all';
       state.dateFilter = 'All Time';
-      state.advFilters = initialFilters;
+      // The sort survives a filter reset, the same way it does on the loans
+      // dashboard: it is a view preference, not a filter, and the column header
+      // keeps showing its arrow either way.
+      state.advFilters = withCurrentSort(initialFilters, state.advFilters);
     },
   },
   extraReducers: (builder) => {
@@ -263,6 +306,26 @@ export const selectColCallTimeFilter = (state: RootState) => state.leads.advFilt
 export const selectAdvFilters = (state: RootState) => state.leads.advFilters;
 export const selectSortBy = (state: RootState) => state.leads.advFilters.sortBy;
 export const selectSortOrder = (state: RootState) => state.leads.advFilters.sortOrder;
+
+/**
+ * Whether any filter is narrowing the list — every surface, not a subset.
+ *
+ * The toolbar used to check only search + the two column filters, so a date range,
+ * an amount bucket, a lead source or a region left the "Clear Filters" affordance
+ * hidden and the empty state claiming there were no leads at all.
+ */
+export const selectHasActiveLeadFilters = (state: RootState) => {
+  const { search, advFilters } = state.leads;
+  return Boolean(search.trim())
+    || advFilters.statuses.length > 0
+    || advFilters.loanType.length > 0
+    || advFilters.leadSources.length > 0
+    || Boolean(advFilters.region.trim())
+    || Boolean(advFilters.dateFrom)
+    || Boolean(advFilters.dateTo)
+    || advFilters.minAmount !== null
+    || advFilters.maxAmount !== null;
+};
 
 // ── Backend Filter Pass-Through ──
 

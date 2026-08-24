@@ -31,9 +31,14 @@ export async function getCatalog(
   if (params.min_amount !== undefined) query.append('min_amount', params.min_amount.toString());
   if (params.max_amount !== undefined) query.append('max_amount', params.max_amount.toString());
   if (params.max_interest_rate !== undefined) query.append('max_interest_rate', params.max_interest_rate.toString());
-  // Comma-separated: the sidebar's tenure chips are a multi-select and the
-  // endpoint matches the listed months exactly.
-  if (params.tenure_months?.length) query.append('tenure_months', params.tenure_months.join(','));
+  // `min_tenure_months`/`max_tenure_months` — the only tenure params
+  // ListCatalogSchema accepts. This used to send a comma-separated `tenure_months`,
+  // which the schema has no field for, so pydantic dropped it and the chips filtered
+  // nothing. One exact tenure is the same value on both bounds.
+  if (params.tenure_months !== undefined) {
+    query.append('min_tenure_months', params.tenure_months.toString());
+    query.append('max_tenure_months', params.tenure_months.toString());
+  }
   if (params.category) query.append('category', params.category);
   if (params.sort_by) query.append('sort_by', params.sort_by);
   if (params.limit !== undefined) query.append('limit', params.limit.toString());

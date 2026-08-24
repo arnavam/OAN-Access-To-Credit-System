@@ -78,7 +78,7 @@ export default function SidebarFilters({ facets, hasFailed = false, onRetry, fil
         {onRetry && (
           <button
             onClick={onRetry}
-            className="self-start text-sm font-bold text-[#16A34A] hover:text-green-700 transition-colors"
+            className="self-start text-sm font-bold text-[#16A34A] hover:text-[#10883c] transition-colors"
           >
             Try again
           </button>
@@ -99,11 +99,16 @@ export default function SidebarFilters({ facets, hasFailed = false, onRetry, fil
   const amountMin = facets.amount_range?.min ?? 0;
   const hasAmountRange = amountMax > amountMin;
   const rateCeiling = facets.max_interest_rate;
+  // Defaulted, not read straight off the payload. `facets` is whatever the endpoint
+  // returned — there is no schema parse between the two — so a backend that stops
+  // sending this key took the whole page down with a TypeError rather than dropping
+  // one section. Every other field here is already read defensively.
+  const tenures = facets.tenures ?? [];
 
   // A catalog with nothing in it has nothing to filter by. Saying so beats
   // rendering empty controls that look broken.
   const hasAnyFacet =
-    hasAmountRange || rateCeiling !== null || facets.tenures.length > 0 || facets.categories.length > 0;
+    hasAmountRange || rateCeiling !== null || tenures.length > 0 || facets.categories.length > 0;
 
   return (
     <div className="h-fit bg-white rounded-2xl border border-gray-200 p-6 flex flex-col gap-5 border-[#F1F3F4] shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.05),0px_2px_4px_-1px_rgba(0,0,0,0.03)] hover:-translate-y-1 hover:shadow-lg transition-all">
@@ -114,7 +119,7 @@ export default function SidebarFilters({ facets, hasFailed = false, onRetry, fil
             setDraft({});
             onReset();
           }}
-          className="text-sm font-bold text-[#16A34A] hover:text-green-700 transition-colors"
+          className="text-sm font-bold text-[#16A34A] hover:text-[#10883c] transition-colors"
         >
           Reset All
         </button>
@@ -180,29 +185,26 @@ export default function SidebarFilters({ facets, hasFailed = false, onRetry, fil
         </Section>
       )}
 
-      {facets.tenures.length > 0 && (
+      {tenures.length > 0 && (
         <Section title="Tenure">
           <div className="flex flex-wrap gap-2">
-            {facets.tenures.map((months) => {
-              const selected = draft.tenure_months?.includes(months) ?? false;
+            {tenures.map((months) => {
+              const selected = draft.tenure_months === months;
               return (
                 <button
                   key={months}
                   onClick={() => {
-                    // Chips toggle independently, so the filter is a set of exact
-                    // tenures. Clearing the last one removes the key rather than
-                    // leaving an empty array: exactOptionalPropertyTypes treats
-                    // absent and undefined as different, and an empty array would
-                    // still be serialised into the query string.
-                    const current = draft.tenure_months ?? [];
-                    const nextTenures = selected
-                      ? current.filter((m) => m !== months)
-                      : [...current, months].sort((a, b) => a - b);
+                    // One chip at a time — the endpoint takes a tenure *span*, so a
+                    // multi-select of non-adjacent tenures cannot be sent honestly.
+                    // Clicking the selected chip clears it, which is the only way
+                    // back to "any tenure" without Reset All. The key is deleted
+                    // rather than set to undefined: exactOptionalPropertyTypes
+                    // treats absent and undefined as different types.
                     const next = { ...draft };
-                    if (nextTenures.length === 0) {
+                    if (selected) {
                       delete next.tenure_months;
                     } else {
-                      next.tenure_months = nextTenures;
+                      next.tenure_months = months;
                     }
                     setDraft(next);
                   }}
