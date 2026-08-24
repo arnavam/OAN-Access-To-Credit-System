@@ -163,14 +163,6 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
   const dateDialogRef = useModalA11y<HTMLDivElement>(dateFilterOpen, () => setDateFilterOpen(false));
 
   useEffect(() => {
-    if (statusFilterOpen) setLocalStatuses(selectedStatuses);
-  }, [statusFilterOpen, selectedStatuses]);
-
-  useEffect(() => {
-    if (loanTypeFilterOpen) setLocalLoanTypes(selectedLoanTypes);
-  }, [loanTypeFilterOpen, selectedLoanTypes]);
-
-  useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       const target = e.target as Node;
       if ((target as Element).closest?.('.loan-filter-popup')) return;
@@ -243,7 +235,11 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
                   <button
                     ref={statusRef}
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); setStatusFilterOpen(!statusFilterOpen); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!statusFilterOpen) setLocalStatuses(selectedStatuses);
+                      setStatusFilterOpen(!statusFilterOpen);
+                    }}
                     className={`p-1 rounded transition hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-1 ${statusFilterOpen || selectedStatuses.length > 0 ? 'text-emerald-600' : 'text-gray-400'}`}
                   >
                     <Filter size={15} strokeWidth={2} />
@@ -310,7 +306,11 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
                   <button
                     ref={loanTypeRef}
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); setLoanTypeFilterOpen(!loanTypeFilterOpen); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!loanTypeFilterOpen) setLocalLoanTypes(selectedLoanTypes);
+                      setLoanTypeFilterOpen(!loanTypeFilterOpen);
+                    }}
                     className={`p-1 rounded transition hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-1 ${loanTypeFilterOpen || selectedLoanTypes.length > 0 ? 'text-emerald-600' : 'text-gray-400'}`}
                   >
                     <Filter size={15} strokeWidth={2} />

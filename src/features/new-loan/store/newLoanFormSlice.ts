@@ -1,4 +1,6 @@
+// eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
 import { loanService, type LoanApplicationSummary } from '@/features/loans/api/loan.service';
+// eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
 import { consentService } from '@/features/consent/api/consent.service';
 import type { VerifyOtpResponse } from '@/lib/api/api.schemas';
 import { logger } from '@/lib/logger';

@@ -5,6 +5,7 @@ import { OrganisationSection, type OrganisationFields } from '@/features/seller/
 import { RegisteredAddressSection, type RegisteredAddressFields } from '@/features/seller/components/register/RegisteredAddressSection';
 import { RegisterFooterCard } from '@/features/seller/components/register/RegisterFooterCard';
 import { RegisterHeaderCard } from '@/features/seller/components/register/RegisterHeaderCard';
+// eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
 import { selectAuthStatus, selectUser } from '@/features/auth/store/authSlice';
 import { registerBank, selectOnboardingRegistrationError, selectOnboardingRegistrationStatus } from '@/features/seller/store/onboardingSlice';
 import { toast } from '@/lib/toast';

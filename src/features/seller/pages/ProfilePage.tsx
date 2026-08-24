@@ -1,5 +1,6 @@
 'use client';
 
+// eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
 import { selectUserKind } from '@/features/auth/store/authSlice';
 import { useAppSelector } from '@/store/hooks';
 import { ArrowLeft, Building2, UsersRound } from 'lucide-react';

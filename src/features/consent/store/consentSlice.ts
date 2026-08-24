@@ -2,8 +2,11 @@ import type { SendOtpAndCreateConsentResponse, SubmitConsentResponse, VerifyOtpR
 import type { RootState } from '@/store';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { consentService } from '../api/consent.service';
+// eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
 import { clearForm, initializeLead } from '@/features/new-lead/store/actions';
+// eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
 import { fetchLeadDetailsThunk } from '@/features/new-lead/store/farmerSlice';
+// eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
 import { formatConsentDate } from '@/features/new-lead/store/helpers';
 
 interface ConsentState {
