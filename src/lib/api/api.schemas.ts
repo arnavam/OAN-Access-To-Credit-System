@@ -34,6 +34,8 @@ export const loanApplicationFullSchema = z.object({
   application_id: z.string(),
   lead_id: z.string().nullable().optional(),
   status: z.string(),
+  stage_id: z.string().nullable().optional(),
+  stage_label: z.string().nullable().optional(),
   current_step: z.number().nullable().optional(),
   creation: z.string().nullable().optional(),
   farmer_profile: z.string().nullish().transform(val => val ?? undefined),
@@ -42,7 +44,7 @@ export const loanApplicationFullSchema = z.object({
   region: z.string().nullable().optional(),
   farmer_id: z.string().nullable().optional(),
   consent_id: z.string().nullable().optional(),
-  loan_type: z.string(),
+  loan_type: z.string().nullish().transform(val => val ?? undefined),
   loan_amount: z.number(),
   loan_product_name: z.string().nullish().transform(val => val ?? undefined),
   loan_reason: z.string().nullish().transform(val => val ?? ''),
@@ -97,21 +99,24 @@ export const loanApplicationFullSchema = z.object({
 });
 export type LoanApplicationFull = z.infer<typeof loanApplicationFullSchema>;
 
-// 5. loan_applications.get_all_loans
 export const loanApplicationSummarySchema = z.object({
   application_id: z.string(),
   status: z.string(),
+  stage_id: z.string().nullable().optional(),
+  stage_label: z.string().nullable().optional(),
   step: z.number(),
   lead_id: z.string().nullable().optional(),
-  loan_amount: z.number(),
-  loan_type: z.string(),
+  loan_amount: z.number().nullish().transform((val) => val ?? 0),
+  loan_type: z.string().nullish().transform((val) => val ?? undefined),
   loan_product: z.string().nullish().transform((val) => val ?? undefined),
   loan_product_name: z.string().nullish().transform((val) => val ?? undefined),
   location: z.string().nullish().transform((val) => val ?? ''),
-  phone_number: z.string(),
+  phone_number: z.string().nullish().transform((val) => val ?? ''),
   creation: z.string(),
   first_name: z.string().nullish().transform((val) => val ?? undefined),
   last_name: z.string().nullish().transform((val) => val ?? undefined),
+  stage: z.string().nullable().optional(),
+  archetype_state: z.string().nullable().optional(),
 });
 export type LoanApplicationSummary = z.infer<typeof loanApplicationSummarySchema>;
 
@@ -316,5 +321,27 @@ export const registerSellerSchema = z.object({
   phone_number: z.string().min(8, 'Mobile number must be at least 8 digits.'),
 });
 export type RegisterSellerSchemaPayload = z.infer<typeof registerSellerSchema>;
+
+export const loanStageSchema = z.object({
+  name: z.string(),
+  bank: z.string(),
+  stage_id: z.string(),
+  label: z.string(),
+  archetype_state: z.string(),
+  sequence: z.number(),
+  external_code: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
+  application_count: z.number().nullish().transform((val) => val ?? 0),
+  creation: z.string().nullable().optional(),
+  modified: z.string().nullable().optional(),
+});
+export type LoanStage = z.infer<typeof loanStageSchema>;
+
+export const loanStagesDataSchema = z.object({
+  bank: z.string().nullable().optional(),
+  stages: z.array(loanStageSchema),
+});
+export type LoanStagesData = z.infer<typeof loanStagesDataSchema>;
+
 
 

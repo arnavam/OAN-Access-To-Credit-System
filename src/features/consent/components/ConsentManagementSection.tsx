@@ -7,6 +7,7 @@ import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { searchFarmerConsent, selectConsentState, type ConsentAudience } from '../store/consentSlice';
+import { isConsentApproved } from '../utils/isConsentApproved';
 // eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
 import { searchFarmerThunk, selectFarmerState, setFarmerId } from '@/features/new-lead/store/farmerSlice';
 // eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
@@ -43,10 +44,7 @@ export function ConsentManagementSection({ leadId: leadIdProp, audience = 'agent
   const [isRedoingConsent, setIsRedoingConsent] = useState(false);
   const [maskedPhone, setMaskedPhone] = useState<string>('');
 
-  const isApproved =
-    farmerDetails?.consent_request_status === 'Approved' ||
-    (farmerDetails?.farmer_profile_created === true && !!farmerDetails?.firstName) ||
-    !!consentDate;
+  const isApproved = isConsentApproved(farmerDetails, consentDate);
 
   const isOtpVerifiedReady =
     isOtpVerified || farmerDetails?.consent_request_otp_verified === true;

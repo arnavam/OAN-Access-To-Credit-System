@@ -5,7 +5,7 @@ import { logger } from '@/lib/logger';
 import { AlertCircle, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { getCatalog } from '../../api/farmerApi';
+import { getProduct } from '../../api/farmerApi';
 import ApplicationHeader from './ApplicationHeader';
 import ConsentManagement from './ConsentManagement';
 import CreditInformation from './CreditInformation';
@@ -27,10 +27,8 @@ export default function ApplyLoanClient({ productId }: ApplyLoanClientProps) {
       setIsLoadingProduct(true);
       setLoadFailed(false);
       try {
-        const res = await getCatalog({ loan_product: productId });
-        // Read the element once and narrow it: under noUncheckedIndexedAccess a
-        // length check does not tell the compiler that [0] is present.
-        const product = res.data?.products?.[0] as DetailedLoanProduct;
+        const res = await getProduct(productId);
+        const product = res.data?.product;
         if (!isMounted) return;
         if (product) {
           setLoanProduct(product);

@@ -1,6 +1,8 @@
 'use client';
+
 import {
   BankApplicationRow,
+  clearBankFilters,
   selectBankApplicationRows,
   selectBankApplicationsLoading,
   selectBankFilters,
@@ -8,17 +10,19 @@ import {
   selectBankPage,
   selectBankPageSize,
   selectBankSearchQuery,
+  selectBankSortBy,
+  selectBankSortOrder,
+  selectBankStageOptions,
+  selectBankStages,
   selectBankTotalCount,
   selectBankTotalPages,
-  clearBankFilters,
   setBankFilters,
   setBankPage,
   setBankPageSize,
   setBankSearchQuery,
-  selectBankSortBy,
-  selectBankSortOrder,
   setBankSort,
 } from '@/features/loans/store/bankApplicationsSlice';
+import { getStageStyle } from '@/features/loans/utils/stageStyles';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { ArrowDown, ArrowUp, ArrowUpDown, ChevronDown, Eye, Inbox, Loader2, Phone, Search, SlidersHorizontal } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -26,35 +30,13 @@ import AdvancedFiltersDrawer, { AdvancedFiltersState } from './filters/AdvancedF
 import LoanAmountFilter from './filters/LoanAmountFilter';
 import LoanTypeFilter from './filters/LoanTypeFilter';
 
-interface StatusStyle {
-  badge: string;
-  dot: string;
-}
-
-// Held outside the lookup rather than as an 'Unknown' key in it. `Record<string, T>`
-// under `noUncheckedIndexedAccess` types *every* read as `T | undefined`, including
-// the fallback one — so `STATUS_STYLES['Unknown']` was no safer than the lookup it
-// was covering for, and both reads below were possibly-undefined errors.
-const UNKNOWN_STATUS_STYLE: StatusStyle = {
-  badge: 'bg-gray-50 text-gray-700 border border-gray-200',
-  dot: 'bg-gray-500',
-};
-
-// Keyed by the backend status, not by the label shown in the badge — the label is
-// display only and a bank sees "Granted" for an Approved application.
-const STATUS_STYLES: Record<string, StatusStyle> = {
-  Processing: { badge: 'bg-cyan-50 text-cyan-700 border border-cyan-200', dot: 'bg-cyan-500' },
-  Approved: { badge: 'bg-emerald-50 text-emerald-700 border border-emerald-200', dot: 'bg-emerald-500' },
-  Rejected: { badge: 'bg-red-50 text-red-700 border border-red-200', dot: 'bg-red-500' },
-  Draft: { badge: 'bg-gray-50 text-gray-600 border border-gray-200', dot: 'bg-gray-400' },
-};
-
 function StatusBadge({ status, label }: { status: string; label: string }) {
-  const style = STATUS_STYLES[status] ?? UNKNOWN_STATUS_STYLE;
+  const stages = useAppSelector(selectBankStages);
+  const style = getStageStyle(label || status, stages);
   return (
     <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-[13px] font-semibold select-none ${style.badge}`}>
       <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${style.dot}`} />
-      {label}
+      {label || style.label}
     </span>
   );
 }
@@ -141,6 +123,7 @@ export default function AgentApplicationTable({ onView }: AgentApplicationTableP
   const appliedSearchQuery = useAppSelector(selectBankSearchQuery);
   const filters = useAppSelector(selectBankFilters);
   const loanTypeOptions = useAppSelector(selectBankLoanTypeOptions);
+  const stageOptions = useAppSelector(selectBankStageOptions);
   const sortBy = useAppSelector(selectBankSortBy);
   const sortOrder = useAppSelector(selectBankSortOrder);
 
@@ -501,6 +484,7 @@ export default function AgentApplicationTable({ onView }: AgentApplicationTableP
         onApply={handleApplyAdvancedFilters}
         initialFilters={drawerFilters}
         availableLoanTypes={loanTypeOptions}
+        statusOptions={stageOptions}
       />
     </div >
   );

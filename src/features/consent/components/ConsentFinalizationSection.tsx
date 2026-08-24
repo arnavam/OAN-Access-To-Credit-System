@@ -5,12 +5,12 @@ import { useParams } from 'next/navigation';
 import { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { AllowedDataField, ConsentReason, consentService } from '../api/consent.service';
 import { selectConsentState, submitConsentThunk, type ConsentAudience } from '../store/consentSlice';
+import { isConsentApproved } from '../utils/isConsentApproved';
 // eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
 import { selectFarmerState, selectIsPollingLong } from '@/features/new-lead/store/farmerSlice';
+// eslint-disable-next-line boundaries/dependencies -- reuses the shared magic-header PDF validator rather than duplicating a weaker check here
+import { PdfValidationError, validateAndEncodePdf } from '@/features/seller/utils/pdf-validation';
 import { ProfileSyncLoadingModal } from './modals/ProfileSyncLoadingModal';
-
-const MAX_FILE_SIZE_MB = 10;
-const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 interface ConsentFinalizationSectionProps {
   /**
@@ -48,6 +48,8 @@ export function ConsentFinalizationSection({ leadId: leadIdProp, audience = 'age
   // Signed Consent Form State
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [consentFile, setConsentFile] = useState<File | null>(null);
+  // Base64 payload produced once, at validation time, so submit doesn't re-read the file.
+  const [consentFileData, setConsentFileData] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   // Handle to the in-flight consent submission (which chains a demographic-sync
@@ -59,10 +61,7 @@ export function ConsentFinalizationSection({ leadId: leadIdProp, audience = 'age
     };
   }, []);
 
-  const isApproved =
-    farmerDetails?.consent_request_status === 'Approved' ||
-    (farmerDetails?.farmer_profile_created === true && !!farmerDetails?.firstName) ||
-    !!consentDate;
+  const isApproved = isConsentApproved(farmerDetails, consentDate);
 
   const isOtpVerifiedReady =
     isOtpVerified || farmerDetails?.consent_request_otp_verified === true;
@@ -138,52 +137,36 @@ export function ConsentFinalizationSection({ leadId: leadIdProp, audience = 'age
     );
   }
 
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
+  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-      // MIME type check (LC-032)
-      const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-      if (!isPdf) {
-        const errorMsg = 'Invalid file type. Please upload a PDF document (.pdf).';
-        setLocalError(errorMsg);
-        toast.error(errorMsg);
-        if (fileInputRef.current) fileInputRef.current.value = '';
-        return;
-      }
-
-      // Size limit check (LC-033)
-      if (file.size > MAX_FILE_SIZE_BYTES) {
-        const errorMsg = `File size exceeds the ${MAX_FILE_SIZE_MB}MB limit. Please upload a smaller PDF file.`;
-        setLocalError(errorMsg);
-        toast.error(errorMsg);
-        if (fileInputRef.current) fileInputRef.current.value = '';
-        return;
-      }
-
+    try {
+      // Extension/MIME are just a quick UX hint — the real check is the %PDF-
+      // magic-header + size/encoding validation below, which a renamed or
+      // MIME-spoofed non-PDF file cannot pass.
+      const { filedata } = await validateAndEncodePdf(file);
       setConsentFile(file);
+      setConsentFileData(filedata);
       if (localError) setLocalError(null);
+    } catch (err) {
+      const errorMsg = err instanceof PdfValidationError
+        ? err.message
+        : 'Failed to validate the selected PDF file.';
+      setLocalError(errorMsg);
+      toast.error(errorMsg);
+      setConsentFile(null);
+      setConsentFileData(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
   const handleRemoveConsentFile = () => {
     setConsentFile(null);
+    setConsentFileData(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-  };
-
-  const convertToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => {
-        const result = reader.result as string;
-        const base64Data = result.split(',')[1] || '';
-        resolve(base64Data);
-      };
-      reader.onerror = (error) => reject(error);
-    });
   };
 
   const handleToggleField = (fieldId: number) => {
@@ -200,7 +183,7 @@ export function ConsentFinalizationSection({ leadId: leadIdProp, audience = 'age
     setLocalError(null);
     const activeFields = consentType === 'baseline' ? allowedFieldsList.map(f => f.id) : selectedFieldIds;
 
-    if (!consentFile) {
+    if (!consentFile || !consentFileData) {
       setLocalError('Please upload the signed consent form PDF.');
       return;
     }
@@ -222,7 +205,6 @@ export function ConsentFinalizationSection({ leadId: leadIdProp, audience = 'age
     }
 
     try {
-      const base64Data = await convertToBase64(consentFile);
       const request = dispatch(submitConsentThunk({
         leadId: leadId || undefined,
         consent_type: consentType,
@@ -230,7 +212,7 @@ export function ConsentFinalizationSection({ leadId: leadIdProp, audience = 'age
         validity_months: selectedDuration,
         allowed_data_field_ids: activeFields,
         consentFormFilename: consentFile.name,
-        consentFormBase64: base64Data
+        consentFormBase64: consentFileData
       }));
       submitRequestRef.current = request;
       await request;

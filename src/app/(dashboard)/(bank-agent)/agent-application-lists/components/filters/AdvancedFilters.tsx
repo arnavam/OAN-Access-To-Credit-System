@@ -1,10 +1,11 @@
 'use client';
 
 import { Portal } from '@/components/Portal';
-import { BANK_STATUS_OPTIONS } from '@/features/loans/store/bankApplicationsSlice';
-import { X, ChevronDown, Check } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
 import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
+import { selectBankStageOptions } from '@/features/loans/store/bankApplicationsSlice';
+import { useAppSelector } from '@/store/hooks';
+import { Check, ChevronDown, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 export interface AdvancedFiltersState {
   status: string[];
@@ -24,13 +25,8 @@ interface AdvancedFiltersDrawerProps {
   onApply: (filters: AdvancedFiltersState) => void;
   initialFilters: AdvancedFiltersState;
   availableLoanTypes: string[];
+  statusOptions?: ReadonlyArray<{ value: string; label: string; color: string }>;
 }
-
-// The real lifecycle rather than a display list. `value` is the status the API
-// filters on; `label` is what the business calls it ("Approved" reads as
-// "Granted"). Active/Verified/Processed used to sit here — none of them is an
-// A2C Loan Application status, so every one of those filters matched nothing.
-const statusOptions = BANK_STATUS_OPTIONS;
 
 const loanAmountOptions = [
   '0 - 25,000',
@@ -44,8 +40,11 @@ export default function AdvancedFiltersDrawer({
   onClose,
   onApply,
   initialFilters,
-  availableLoanTypes
+  availableLoanTypes,
+  statusOptions,
 }: AdvancedFiltersDrawerProps) {
+  const storeStageOptions = useAppSelector(selectBankStageOptions);
+  const resolvedStatusOptions = statusOptions ?? storeStageOptions;
   const [filters, setFilters] = useState<AdvancedFiltersState>(initialFilters);
   const [isAmountOpen, setIsAmountOpen] = useState(false);
   const [isTypeOpen, setIsTypeOpen] = useState(false);
@@ -218,7 +217,7 @@ export default function AdvancedFiltersDrawer({
           <div className="space-y-3">
             <h3 className="text-[14px] font-bold text-gray-700">Status</h3>
             <div className="grid grid-cols-2 gap-3">
-              {statusOptions.map(status => {
+              {resolvedStatusOptions.map(status => {
                 // Selection is stored as the API status (`status.value`), never the
                 // label — the label is presentation and would not match server-side.
                 const isSelected = filters.status.includes(status.value);

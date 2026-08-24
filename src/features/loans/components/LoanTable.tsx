@@ -6,15 +6,16 @@ import { Check, ChevronDown, Eye, Filter, Phone } from 'lucide-react';
 import { memo, useEffect, useRef, useState } from 'react';
 // createPortal removed
 import { AnimatePresence, motion } from 'motion/react';
+import { getStageStyle } from '../utils/stageStyles';
+import { TableEmptyState } from '@/components/ui/TableEmptyState';
 import {
-  selectActivityPage, selectAdvancedFilters, selectPagedRows, selectPageSize,
+  selectActivityPage, selectAdvancedFilters, selectLoanStageOptions, selectLoanStages, selectPagedRows, selectPageSize,
   selectTableStatusFilters, selectTableTypeFilters,
   setActivityPage,
   setAdvancedFilters, setPageSize,
   setTableStatusFilters,
   setTableTypeFilters
 } from '../store/loanDashboardSlice';
-import { TableEmptyState } from '@/components/ui/TableEmptyState';
 
 export interface LoanTableRow {
   id: string;
@@ -39,6 +40,7 @@ export interface LoanTableRow {
 interface LoanTableProps {
   onView?: (row: LoanTableRow) => void;
   totalCount?: number;
+  stageOptions?: readonly { label: string; value: string; color?: string; dot?: string }[];
 }
 
 const RANGE_STEPS = [
@@ -127,10 +129,14 @@ function PaginationDropdown({
   );
 }
 
-const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
+const LoanTable = memo(({ onView, totalCount = 0, stageOptions }: LoanTableProps) => {
   const dispatch = useAppDispatch();
   const rows: LoanTableRow[] = useAppSelector(selectPagedRows);
+  const stages = useAppSelector(selectLoanStages);
+  const storeStageOptions = useAppSelector(selectLoanStageOptions);
 
+  const activeStageOptions = stageOptions ?? (storeStageOptions.length > 0 ? storeStageOptions : null);
+  const statusOptionsList = activeStageOptions ? ['All', ...activeStageOptions.map((s) => s.label)] : ['All', 'Submitted', 'Underwriting', 'Approved', 'Disbursed', 'Rejected'];
 
   const selectedStatuses = useAppSelector(selectTableStatusFilters);
   const selectedLoanTypes = useAppSelector(selectTableTypeFilters);
@@ -254,7 +260,7 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
                         Status Filter
                       </div>
                       <div className="max-h-62 overflow-y-auto py-1">
-                        {['All', 'In Underwriting', 'Review', 'Approved', 'Pending', 'Rejected'].map((opt) => {
+                        {statusOptionsList.map((opt) => {
                           const isAll = opt === 'All';
                           const isChecked = isAll ? localStatuses.length === 0 : localStatuses.includes(opt);
                           return (
@@ -567,20 +573,9 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
               />
             ) : (
               rows.map((row, i) => {
-                let badgeColor = 'bg-gray-100 text-gray-600 border-gray-200';
-                let dotColor = 'bg-gray-400';
-
-                const statusLower = row.status.toLowerCase();
-                if (statusLower.includes('processing') || statusLower.includes('active') || row.statusTone === 'info') {
-                  badgeColor = 'bg-cyan-100 text-cyan-600 border border-cyan-300';
-                  dotColor = 'bg-cyan-600';
-                } else if (statusLower.includes('approved') || statusLower.includes('granted') || statusLower.includes('verified') || row.statusTone === 'success') {
-                  badgeColor = 'bg-emerald-50 text-emerald-600 border border-emerald-200';
-                  dotColor = 'bg-emerald-500';
-                } else if (statusLower.includes('rejected') || row.statusTone === 'danger') {
-                  badgeColor = 'bg-red-50 text-red-500 border border-red-200';
-                  dotColor = 'bg-red-500';
-                }
+                const stageStyle = getStageStyle(row.status, stages);
+                const badgeColor = stageStyle.badge;
+                const dotColor = stageStyle.dot;
 
                 const updatedParts = row.updated.split(' · ');
                 const datePart = updatedParts[0];
@@ -606,7 +601,7 @@ const LoanTable = memo(({ onView, totalCount = 0 }: LoanTableProps) => {
                     <td className="px-6 py-5">
                       <span className={`inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-semibold ${badgeColor}`}>
                         <span className={`h-2 w-2 shrink-0 rounded-full ${dotColor}`} />
-                        {row.status.replace(/Verified|Approved/gi, 'Granted').replace(/Active/gi, 'Processing')}
+                        {row.status}
                       </span>
                     </td>
                     <td className="px-6 py-5 font-medium text-gray-700">{row.productName || row.type}</td>

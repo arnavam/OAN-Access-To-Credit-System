@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { toast } from '@/lib/toast';
 import { logger } from '@/lib/logger';
 import { useAppSelector } from '@/store/hooks';
-import { selectConsentState } from '@/features/consent';
+import { isConsentApproved, selectConsentState } from '@/features/consent';
 import { selectFarmerState } from '@/features/new-lead';
 import { startApplication, submitApplication } from '../../api/farmerApi';
 import type { DetailedLoanProduct } from '../../types';
@@ -20,10 +20,7 @@ export default function CreditInformation({ product }: CreditInformationProps) {
   const { consentDate } = useAppSelector(selectConsentState);
   const { farmerDetails } = useAppSelector(selectFarmerState);
 
-  const isConsentCompleted =
-    farmerDetails?.consent_request_status === 'Approved' ||
-    (farmerDetails?.farmer_profile_created === true && !!farmerDetails?.firstName) ||
-    !!consentDate;
+  const isConsentCompleted = isConsentApproved(farmerDetails, consentDate);
 
   const defaultAmount = product?.min_amount ? String(product.min_amount) : '100000';
 

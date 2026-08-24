@@ -1,4 +1,7 @@
 import { GetLoansParams, LoanApplicationSummary, loanService, LoanSummaryMetrics } from '@/features/loans/api/loan.service';
+import { loanStagesService } from '@/features/loans/api/loanStages.service';
+import { getStageStyle, toStageFilterOptions } from '@/features/loans/utils/stageStyles';
+import type { LoanStage } from '@/lib/api/api.schemas';
 import type { ApiResponse } from '@/types/api';
 import { createAsyncThunk, createSelector, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import type { RootState } from '../../../store';
@@ -19,6 +22,22 @@ export const fetchLoans = createAsyncThunk(
         throw error;
       }
       const message = error instanceof Error ? error.message : 'Failed to fetch loans';
+      return rejectWithValue(message);
+    }
+  }
+);
+
+export const fetchLoanStages = createAsyncThunk(
+  'loanDashboard/fetchLoanStages',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await loanStagesService.getStages();
+      return response;
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw error;
+      }
+      const message = error instanceof Error ? error.message : 'Failed to fetch loan stages';
       return rejectWithValue(message);
     }
   }
@@ -95,6 +114,10 @@ interface LoanDashboardState {
   isSummaryLoading: boolean;
   summaryError: string | null;
 
+  stages: LoanStage[];
+  isStagesLoading: boolean;
+  stagesError: string | null;
+
   // UI State
   dateRange: string;
   selectedStatuses: string[];
@@ -127,6 +150,10 @@ const initialState: LoanDashboardState = {
   rawSummaryData: null,
   isSummaryLoading: false,
   summaryError: null,
+
+  stages: [],
+  isStagesLoading: false,
+  stagesError: null,
 
   dateRange: 'last30',
   selectedStatuses: [...ALL_STATUS_VALUES],
@@ -312,6 +339,9 @@ export const selectRawActivityData = (state: RootState) => state.loanDashboard.r
 export const selectIsLoansLoading = (state: RootState) => state.loanDashboard.isLoading;
 export const selectLoansError = (state: RootState) => state.loanDashboard.loansError;
 export const selectRawSummaryData = (state: RootState) => state.loanDashboard.rawSummaryData;
+export const selectLoanStages = (state: RootState) => state.loanDashboard.stages;
+export const selectIsLoanStagesLoading = (state: RootState) => state.loanDashboard.isStagesLoading;
+export const selectLoanStagesError = (state: RootState) => state.loanDashboard.stagesError;
 export const selectDateRange = (state: RootState) => state.loanDashboard.dateRange;
 export const selectSelectedStatuses = (state: RootState) => state.loanDashboard.selectedStatuses;
 export const selectActivityPage = (state: RootState) => state.loanDashboard.activityPage;
@@ -324,10 +354,12 @@ export const selectAdvancedFilters = (state: RootState) => state.loanDashboard.a
 export const selectLoanSortBy = (state: RootState) => state.loanDashboard.advancedFilters.sortBy;
 export const selectLoanSortOrder = (state: RootState) => state.loanDashboard.advancedFilters.sortOrder;
 
+export const selectLoanStageOptions = createSelector([selectLoanStages], (stages) => toStageFilterOptions(stages));
+
 // --- Derived Memoized Selectors ---
 export const selectPagedRowsData = createSelector(
-  [selectRawActivityData, selectPageSize],
-  (rawActivityData, _pageSize) => {
+  [selectRawActivityData, selectPageSize, selectLoanStages],
+  (rawActivityData, _pageSize, stages) => {
     // fetchApi automatically unwraps the "message" envelope, so the data is directly on rawActivityData
     const rows = rawActivityData?.data || [];
 
@@ -345,6 +377,9 @@ export const selectPagedRowsData = createSelector(
       const lastName = row.last_name || '';
       const applicantName = `${firstName} ${lastName}`.trim();
 
+      const displayStatus = row.stage_label || row.status || 'Draft';
+      const stageStyle = getStageStyle(row.stage_label || row.status || '', stages);
+
       return {
         ...row,
         id: formattedId,
@@ -352,8 +387,8 @@ export const selectPagedRowsData = createSelector(
         phone: row.phone_number || '',
         loanAmount: row.loan_amount ? row.loan_amount.toLocaleString() : '—',
         type: row.loan_type || 'Unknown Type',
-        status: row.status || 'Draft',
-        statusTone: row.status === 'Approved' ? 'success' : row.status === 'Rejected' ? 'danger' : row.status === 'Draft' ? 'neutral' : 'info',
+        status: displayStatus,
+        statusTone: stageStyle.tone,
         updated: `${dateStr} · ${timeStr}`,
         timestamp: rawDate.getTime(),
         action: 'View',
@@ -370,27 +405,37 @@ export const selectTotalPages = createSelector([selectPagedRowsData], (data) => 
 export const selectTotalCount = createSelector([selectPagedRowsData], (data) => data.totalCount);
 
 /**
- * KPI figures for the loan dashboard, bucketed by archetype state.
- *
- * These used to read `processing` / `approved` / `rejected` off the summary —
- * names from the status model that the archetype refactor replaced. The endpoint
- * never returned them, so three of the four cards rendered a permanent '—'.
- *
- * They key on `by_status` now: platform constants, identical across every bank.
- * Bucketing on `stages` instead would look richer and be wrong, because a stage
- * label is tenant-defined free text — this dashboard spans banks, and two of them
- * can call the same step different things.
- *
- * `0` is a real answer and must render as "0"; only a genuinely absent summary
- * (not yet fetched, or the request failed) shows a dash.
+ * KPI figures for the loan dashboard.
  */
 export const selectLiveMetrics = createSelector(
-  [selectRawSummaryData],
-  (rawSummaryData) => {
+  [selectRawSummaryData, selectLoanStages],
+  (rawSummaryData, stages) => {
     // fetchApi automatically unwraps the "message" envelope
     const summaryData = rawSummaryData?.data;
     const byStatus = summaryData?.by_status;
     const show = (value: number | undefined) => (typeof value === 'number' ? value.toString() : '—');
+
+    if (stages.length > 0) {
+      let inTransition = 0;
+      let completed = 0;
+      let cancelled = 0;
+      let total = 0;
+      for (const stage of stages) {
+        const count = stage.application_count ?? 0;
+        total += count;
+        if (stage.archetype_state === 'In Transition') inTransition += count;
+        else if (stage.archetype_state === 'Completed') completed += count;
+        else if (stage.archetype_state === 'Rejected' || stage.archetype_state === 'Cancelled') cancelled += count;
+      }
+      if (total > 0) {
+        return {
+          total: { value: total.toString() },
+          in_transition: { value: inTransition.toString() },
+          completed: { value: completed.toString() },
+          cancelled: { value: cancelled.toString() },
+        };
+      }
+    }
 
     return {
       total: { value: show(summaryData?.total) },

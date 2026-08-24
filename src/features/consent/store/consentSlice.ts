@@ -2,6 +2,7 @@ import type { SendOtpAndCreateConsentResponse, SubmitConsentResponse, VerifyOtpR
 import type { RootState } from '@/store';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { consentService } from '../api/consent.service';
+import { isConsentApproved } from '../utils/isConsentApproved';
 // eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
 import { clearForm, initializeLead } from '@/features/new-lead/store/actions';
 // eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
@@ -206,9 +207,7 @@ const consentSlice = createSlice({
         state.consentError = action.payload as string;
       })
       .addCase(fetchLeadDetailsThunk.fulfilled, (state, action) => {
-        const isApproved =
-          action.payload.consent_request_status === 'Approved' ||
-          (action.payload.farmer_profile_created === true && !!action.payload.firstName);
+        const isApproved = isConsentApproved(action.payload, state.consentDate);
 
         if (isApproved) {
           state.isOtpVerified = true;

@@ -1,7 +1,7 @@
 # api-flow-backend.md — OAN A2C Backend API Contract
 
 _Derived from direct source code analysis — `apps/oan_a2c/oan_a2c/api/` — 2026-06-14_
-_Last updated: 2026-06-14 (full reread of all source files)_
+_Last updated: 2026-08-24 (consent `lead_id` contract correction)_
 
 > **Source of truth:** This document reflects what the backend **actually implements**, derived from reading every Python file. Cross-reference `api-flow-frontend.md` to identify discrepancies. When the two conflict, this file wins.
 
@@ -1704,8 +1704,10 @@ All three endpoints accept parameters via JSON body, form dict, or kwargs (merge
 | Param                  | Type   | Required | Notes                                          |
 | ---------------------- | ------ | -------- | ---------------------------------------------- |
 | **`fayda_id`** | string | Yes      |                                                |
-| **`lead_id`**  | string | Yes      |                                                |
 | `idempotency_key`    | string | No       | Optional key to prevent duplicate OTP requests |
+
+`request_otp` is not lead-anchored. A `lead_id` is not required; the consent
+request is identified by the returned `consent_request` value.
 
 **Success response** (HTTP 200):
 
@@ -1725,7 +1727,6 @@ All three endpoints accept parameters via JSON body, form dict, or kwargs (merge
 
 | Condition            | HTTP | code                 | message                                     |
 | -------------------- | ---- | -------------------- | ------------------------------------------- |
-| `lead_id` missing  | 400  | `VALIDATION_ERROR` |                                             |
 | `fayda_id` missing | 400  | `VALIDATION_ERROR` |                                             |
 | Rate limit exceeded  | 429  | `VALIDATION_ERROR` | `"Rate limit exceeded. Try again later."` |
 
@@ -1742,9 +1743,11 @@ All three endpoints accept parameters via JSON body, form dict, or kwargs (merge
 
 | Param                         | Type   | Required | Notes |
 | ----------------------------- | ------ | -------- | ----- |
-| **`lead_id`**         | string | Yes      |       |
 | **`consent_request`** | string | Yes      |       |
 | **`otp_code`**        | string | Yes      |       |
+
+`verify_otp` is correlated by `consent_request`; it does not require a
+`lead_id`.
 
 **Success response** (HTTP 200):
 
@@ -1753,7 +1756,6 @@ All three endpoints accept parameters via JSON body, form dict, or kwargs (merge
   "status": "success",
   "message": "OTP verified successfully. Proceed to submit consent.",
   "data": {
-    "lead_id": "LEAD-2026-0001",
     "consent_request": "CONREQ-2026-0001",
     "transaction_id": "TXN-ABC-123",
     "status": "OTP Verified"
@@ -1773,7 +1775,6 @@ All three endpoints accept parameters via JSON body, form dict, or kwargs (merge
 
 | Param                               | Type    | Required | Notes                               |
 | ----------------------------------- | ------- | -------- | ----------------------------------- |
-| **`lead_id`**               | string  | Yes      |                                     |
 | **`consent_request`**       | string  | Yes      |                                     |
 | `consent_type`                    | string  | No       | Default:`"specific"`              |
 | `consent_reason_id`               | integer | No       | Default:`1`                       |

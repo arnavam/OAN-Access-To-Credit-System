@@ -221,7 +221,7 @@ export default function ApplicationActionModal({
                     <div>
                       <span className="text-gray-400 block">Requested Amount</span>
                       <span className="font-semibold text-gray-800">
-                        {details.requested_amount ? `ETB ${details.requested_amount.toLocaleString()}` : maxAmount}
+                        {details.requested_amount != null ? `ETB ${details.requested_amount.toLocaleString()}` : maxAmount}
                       </span>
                     </div>
                   </div>
