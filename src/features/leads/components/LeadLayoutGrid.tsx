@@ -2,6 +2,7 @@
 import { logger } from '@/lib/logger';
 
 import { FeedbackModal } from '@/components/ui/FeedbackModal';
+// eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
 import { clearForm, submitNewLeadThunk } from '@/features/new-lead/store/newLeadSlice';
 import { useAppDispatch } from '@/store/hooks';
 import { ArrowLeft } from 'lucide-react';

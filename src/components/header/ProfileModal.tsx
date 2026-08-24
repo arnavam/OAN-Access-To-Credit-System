@@ -355,8 +355,8 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
                       className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600"
                     />
                   </div>
-                </div>
-              </section>
+                </section>
+              )}
 
               {/* Security Section */}
               <section className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">

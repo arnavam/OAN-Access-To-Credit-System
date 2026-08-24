@@ -1,15 +1,21 @@
 import { configureStore, ThunkDispatch, UnknownAction } from '@reduxjs/toolkit';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { RootState } from '@/store';
-import { newLeadService } from '../api/newLead.service';
-import { initializeLead } from './actions';
+import { consentService } from '../api/consent.service';
+import { newLeadService } from '@/features/new-lead/api/newLead.service';
+import { initializeLead } from '@/features/new-lead/store/actions';
 import { consentReducer, submitConsentThunk } from './consentSlice';
-import { farmerReducer } from './farmerSlice';
+import { farmerReducer } from '@/features/new-lead/store/farmerSlice';
 
-vi.mock('../api/newLead.service', () => ({
-  newLeadService: {
-    getLeadDetails: vi.fn(),
+vi.mock('../api/consent.service', () => ({
+  consentService: {
     submitConsent: vi.fn(),
+  },
+}));
+
+vi.mock('@/features/new-lead/api/newLead.service', () => ({
+  newLeadService: {
+  getLeadDetails: vi.fn(),
   },
 }));
 
@@ -51,7 +57,7 @@ function createTestStore() {
 }
 
 const getLeadDetailsMock = vi.mocked(newLeadService.getLeadDetails);
-const submitConsentMock = vi.mocked(newLeadService.submitConsent);
+const submitConsentMock = vi.mocked(consentService.submitConsent);
 
 describe('submitConsentThunk', () => {
   beforeEach(() => {

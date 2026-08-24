@@ -1,10 +1,14 @@
 import type { SendOtpAndCreateConsentResponse, SubmitConsentResponse, VerifyOtpResponse } from '@/lib/api/api.schemas';
 import type { RootState } from '@/store';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { newLeadService } from '../api/newLead.service';
-import { clearForm, initializeLead } from './actions';
-import { fetchLeadDetailsThunk } from './farmerSlice';
-import { formatConsentDate } from './helpers';
+import { consentService } from '../api/consent.service';
+import { isConsentApproved } from '../utils/isConsentApproved';
+// eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
+import { clearForm, initializeLead } from '@/features/new-lead/store/actions';
+// eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
+import { fetchLeadDetailsThunk } from '@/features/new-lead/store/farmerSlice';
+// eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
+import { formatConsentDate } from '@/features/new-lead/store/helpers';
 
 interface ConsentState {
   isLoadingConsent: boolean;
@@ -32,12 +36,28 @@ const initialState: ConsentState = {
 
 export const searchFarmerConsent = createAsyncThunk<
   SendOtpAndCreateConsentResponse,
-  { farmerId: string; partnerName: string; leadId: string }
+  { farmerId: string; partnerName: string; leadId?: string | undefined }
 >(
   'consent/searchConsent',
-  async ({ farmerId, leadId }, { rejectWithValue }) => {
+  async ({ farmerId, leadId }, { dispatch, rejectWithValue }) => {
     try {
-      return await newLeadService.sendOtpAndCreateConsent({ farmerId, leadId });
+      // Clear legacy consent state when starting a fresh OTP flow (e.g. Redo Consent)
+      dispatch({
+        type: 'farmer/updateFarmerDetails',
+        payload: {
+          consent_request_status: undefined,
+          consent_request_otp_verified: false,
+          consent_request_name: undefined,
+          farmer_profile_created: false,
+          websub_delivered_at: undefined,
+          validity_from: undefined,
+          validity_to: undefined,
+          purpose: undefined,
+          consent_type: undefined,
+          requested_data_fields: undefined,
+        }
+      });
+      return await consentService.sendOtpAndCreateConsent({ farmerId, leadId });
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Unknown Cause: Failed to request consent');
     }
@@ -46,7 +66,7 @@ export const searchFarmerConsent = createAsyncThunk<
 
 export const verifyOtpThunk = createAsyncThunk<
   VerifyOtpResponse,
-  { otp_code: string; leadId: string },
+  { otp_code: string; leadId?: string | undefined },
   { state: RootState }
 >(
   'consent/verifyOtp',
@@ -57,7 +77,7 @@ export const verifyOtpThunk = createAsyncThunk<
       if (!consentRequestId) {
         throw new Error('No active consent request found. Please request OTP again.');
       }
-      return await newLeadService.verifyOtp({
+      return await consentService.verifyOtp({
         leadId: payload.leadId,
         consent_request: consentRequestId,
         otp_code: payload.otp_code
@@ -71,11 +91,11 @@ export const verifyOtpThunk = createAsyncThunk<
 export const submitConsentThunk = createAsyncThunk<
   SubmitConsentResponse,
   {
-    leadId: string;
-    consent_type?: string;
-    consent_reason_id?: number;
-    validity_months?: number;
-    allowed_data_field_ids?: (number | string)[];
+    leadId?: string | undefined;
+    consent_type?: string | undefined;
+    consent_reason_id?: number | undefined;
+    validity_months?: number | undefined;
+    allowed_data_field_ids?: (number | string)[] | undefined;
     consentFormFilename: string;
     consentFormBase64: string;
   },
@@ -99,7 +119,7 @@ export const submitConsentThunk = createAsyncThunk<
         throw new Error('Missing active consent request.');
       }
 
-      const response = await newLeadService.submitConsent({
+      const response = await consentService.submitConsent({
         lead_id: payload.leadId,
         consent_request: consentRequestId,
         consent_type: payload.consent_type,
@@ -116,7 +136,6 @@ export const submitConsentThunk = createAsyncThunk<
       }
 
       pollingRequest = dispatch(fetchLeadDetailsThunk({ leadId: payload.leadId, shouldPoll: true }));
-
       // .unwrap() so a demographic-sync failure (or an abort) rejects this thunk
       // instead of being silently discarded — without it, submitConsentThunk
       // always resolved as "success" even when the sync polling failed.
@@ -188,8 +207,25 @@ const consentSlice = createSlice({
         state.consentError = action.payload as string;
       })
       .addCase(fetchLeadDetailsThunk.fulfilled, (state, action) => {
-        if (action.payload.farmer_profile_created === false) {
-          // If the profile isn't created, force a complete reset of the consent flow
+        const isApproved = isConsentApproved(action.payload, state.consentDate);
+
+        if (isApproved) {
+          state.isOtpVerified = true;
+          state.consentDate =
+            action.payload.websub_delivered_at ||
+            action.payload.validity_from ||
+            state.consentDate ||
+            formatConsentDate();
+          if (action.payload.consent_request_name) {
+            state.consentRequestId = action.payload.consent_request_name;
+          }
+        } else if (action.payload.consent_request_otp_verified === true) {
+          state.isOtpVerified = true;
+          state.consentDate = null;
+          if (action.payload.consent_request_name) {
+            state.consentRequestId = action.payload.consent_request_name;
+          }
+        } else if (action.payload.farmer_profile_created === false) {
           state.isOtpVerified = false;
           state.consentDate = null;
           state.consentRequestId = null;
@@ -197,11 +233,6 @@ const consentSlice = createSlice({
           state.isSubmittingConsent = false;
           state.consentFormFilename = null;
           state.consentFormBase64 = null;
-        } else {
-          // If profile is created, ensure UI treats it as verified and consented
-          state.isOtpVerified = true;
-          // We can optionally set consentDate to a default or true value if missing,
-          // but typically it's loaded via existingLead or we leave it if it's already set.
         }
       })
       .addCase(fetchLeadDetailsThunk.rejected, (state, action) => {

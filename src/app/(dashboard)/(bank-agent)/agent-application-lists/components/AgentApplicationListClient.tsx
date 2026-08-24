@@ -6,6 +6,7 @@ import {
   BankApplicationRow,
   fetchBankApplicationSummary,
   fetchBankApplications,
+  fetchBankStages,
   selectBankApplicationsError,
   selectBankApplicationsLoading,
   selectBankQueryParams,
@@ -50,6 +51,7 @@ export default function AgentApplicationListClient() {
 
   useEffect(() => {
     dispatch(fetchBankApplicationSummary());
+    dispatch(fetchBankStages());
   }, [dispatch]);
 
   const handleView = useCallback((row: BankApplicationRow) => {

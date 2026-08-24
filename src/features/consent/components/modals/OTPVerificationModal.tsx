@@ -32,7 +32,7 @@ export function OTPVerificationModal({ isOpen, onClose, farmerId: _farmerId, mas
   const dispatch = useAppDispatch();
   const { isVerifyingOtp } = useAppSelector(selectConsentState);
   const params = useParams();
-  const leadId = leadIdProp || (params?.id as string) || '';
+  const leadId = leadIdProp || (audience === 'agent' ? (params?.id as string) : undefined) || '';
 
   const [otp, setOtp] = useState<string[]>(Array(6).fill(''));
   const [error, setError] = useState<string | null>(null);
@@ -127,12 +127,12 @@ export function OTPVerificationModal({ isOpen, onClose, farmerId: _farmerId, mas
     }
 
     setError(null);
-    if (!leadId) {
+    if (audience === 'agent' && !leadId) {
       setError("Missing Lead ID. Please try again.");
       return;
     }
 
-    const result = await dispatch(verifyOtpThunk({ otp_code: code, leadId }));
+    const result = await dispatch(verifyOtpThunk({ otp_code: code, leadId: leadId || undefined }));
     if (verifyOtpThunk.fulfilled.match(result)) {
       onClose(); // Verification successful, close modal
     } else {

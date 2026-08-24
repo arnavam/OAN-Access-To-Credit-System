@@ -3,9 +3,10 @@ import { Award, CheckCircle2, XCircle } from 'lucide-react';
 import { useState } from 'react';
 import ApplicationActionModal from './ApplicationActionModal';
 
-export type ApplicationStatus = 'Draft' | 'Processing' | 'Approved' | 'Rejected';
+export type ApplicationStatus = 'Draft' | 'Under Review' | 'Disbursed' | 'Rejected';
 
 export interface ApplicationCardProps {
+  applicationId?: string | undefined;
   status: ApplicationStatus;
   title: string;
   subtitle: string;
@@ -13,9 +14,11 @@ export interface ApplicationCardProps {
   interest: string;
   tenure: string;
   repayment: string;
+  onApplicationUpdated?: (() => void) | undefined;
 }
 
 export default function ApplicationCard({
+  applicationId,
   status,
   title,
   subtitle,
@@ -23,6 +26,7 @@ export default function ApplicationCard({
   interest,
   tenure,
   repayment,
+  onApplicationUpdated,
 }: ApplicationCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -37,7 +41,7 @@ export default function ApplicationCard({
       buttonIcon: CheckCircle2,
       buttonText: 'Resume Draft',
     },
-    Processing: {
+    'Under Review': {
       wrapper: 'bg-[#F0FAFA] border-[#B2EBF2]',
       iconBg: 'bg-[#E0F7FA] text-[#00ACC1]',
       icon: CheckCircle2,
@@ -47,7 +51,7 @@ export default function ApplicationCard({
       buttonIcon: CheckCircle2,
       buttonText: 'Track Application',
     },
-    Approved: {
+    Disbursed: {
       wrapper: 'bg-green-50 border-green-200',
       iconBg: 'bg-green-100 text-green-600',
       icon: Award,
@@ -55,7 +59,7 @@ export default function ApplicationCard({
       statValue: 'text-green-700',
       button: 'bg-[#16A34A] hover:bg-green-700 text-white',
       buttonIcon: CheckCircle2,
-      buttonText: 'Accept Loan Offer',
+      buttonText: 'Track Application',
     },
     Rejected: {
       wrapper: 'bg-red-50/50 border-red-200',
@@ -68,8 +72,19 @@ export default function ApplicationCard({
       buttonText: 'Appeal Decision',
     },
   };
+  
+  const fallbackTheme = {
+    wrapper: 'bg-gray-50 border-gray-200',
+    iconBg: 'bg-gray-100 text-gray-500',
+    icon: CheckCircle2,
+    subtitle: 'text-gray-500',
+    statValue: 'text-gray-600',
+    button: 'bg-gray-600 hover:bg-gray-700 text-white',
+    buttonIcon: CheckCircle2,
+    buttonText: 'Track Application',
+  };
 
-  const theme = themes[status];
+  const theme = themes[status as keyof typeof themes] || fallbackTheme;
   const Icon = theme.icon;
   const ButtonIcon = theme.buttonIcon;
 
@@ -117,6 +132,7 @@ export default function ApplicationCard({
       <ApplicationActionModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+        applicationId={applicationId}
         status={status}
         title={title}
         subtitle={subtitle}
@@ -125,6 +141,7 @@ export default function ApplicationCard({
         tenure={tenure}
         repayment={repayment}
         modalTitle={theme.buttonText}
+        onApplicationUpdated={onApplicationUpdated}
       />
     </div>
   );

@@ -6,7 +6,7 @@ import { leadReducer } from '../features/leads/store/leadSlice';
 import { bankApplicationsReducer } from '../features/loans/store/bankApplicationsSlice';
 import { loanDashboardReducer } from '../features/loans/store/loanDashboardSlice';
 import { assignmentReducer } from '../features/new-lead/store/assignmentSlice';
-import { consentReducer } from '../features/new-lead/store/consentSlice';
+import { consentReducer } from '@/features/consent';
 import { farmerReducer } from '../features/new-lead/store/farmerSlice';
 import { newLeadReducer } from '../features/new-lead/store/newLeadSlice';
 import { visitReducer } from '../features/new-lead/store/visitSlice';

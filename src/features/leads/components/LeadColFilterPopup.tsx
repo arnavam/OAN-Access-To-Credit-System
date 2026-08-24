@@ -1,4 +1,6 @@
+// eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
 import { selectLeadStatusesOptions } from '@/features/new-lead/store/newLeadSlice';
+// eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
 import { selectCategories } from '@/features/seller/store/loanProductsSlice';
 import { useModalA11y } from '@/hooks/useModalA11y';
 import { useAppSelector } from '@/store/hooks';

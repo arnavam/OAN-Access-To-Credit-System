@@ -1,4 +1,5 @@
 'use client';
+// eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
 import { selectAuthStatus, selectBankName, selectBankStatus } from '@/features/auth/store/authSlice';
 import { useAppSelector } from '@/store/hooks';
 import { Landmark, Plus } from 'lucide-react';

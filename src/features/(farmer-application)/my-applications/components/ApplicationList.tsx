@@ -7,13 +7,22 @@ import ApplicationCard, { ApplicationStatus } from './ApplicationCard';
 
 const TABS: ReadonlyArray<{ value: ApplicationTab; label: string }> = [
   { value: 'total', label: 'Total' },
-  { value: 'Draft', label: 'Draft' },
-  { value: 'Processing', label: 'Processing' },
-  { value: 'Approved', label: 'Approved' },
+  { value: 'Under Review', label: 'Under Review' },
+  { value: 'Disbursed', label: 'Disbursed' },
   { value: 'Rejected', label: 'Rejected' },
 ];
 
-export default function ApplicationList({ activeTab, onTabChange, applications }: { activeTab: string, onTabChange: (tab: string) => void, applications: FarmerLoanApplication[] }) {
+export default function ApplicationList({
+  activeTab,
+  onTabChange,
+  applications,
+  onRefresh,
+}: {
+  activeTab: string;
+  onTabChange: (tab: string) => void;
+  applications: FarmerLoanApplication[];
+  onRefresh?: () => void;
+}) {
 
   const counts = useMemo(() => countByStatus(applications), [applications]);
 
@@ -39,10 +48,11 @@ export default function ApplicationList({ activeTab, onTabChange, applications }
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {filteredApplications.map((app) => (
           <ApplicationCard
             key={app.application_id}
+            applicationId={app.application_id}
             status={app.status as ApplicationStatus}
             title={app.loan_product_name}
             subtitle={`Created on ${app.creation.split(' ')[0]}`}
@@ -57,6 +67,7 @@ export default function ApplicationList({ activeTab, onTabChange, applications }
             // No repayment schedule is stored on an application yet. A dash says
             // so; anything else here would be invented.
             repayment={NO_VALUE}
+            onApplicationUpdated={onRefresh}
           />
         ))}
       </div>

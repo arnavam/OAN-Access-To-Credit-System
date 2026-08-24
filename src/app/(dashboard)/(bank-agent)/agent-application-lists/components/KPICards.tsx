@@ -1,8 +1,8 @@
 'use client';
 
-import { selectBankMetrics } from '@/features/loans/store/bankApplicationsSlice';
+import { selectBankMetrics, selectBankStages } from '@/features/loans/store/bankApplicationsSlice';
 import { useAppSelector } from '@/store/hooks';
-import { Award, FileText, LucideIcon, Users, XCircle } from 'lucide-react';
+import { Award, CheckCircle2, Clock, FileCheck, FileText, LucideIcon, Users, XCircle } from 'lucide-react';
 
 interface StatCardProps {
   label: string;
@@ -26,25 +26,69 @@ function StatCard({ label, value, icon: Icon, iconBgColor, iconColor }: StatCard
   );
 }
 
+function getStageCardIcon(label: string, archetype?: string): { icon: LucideIcon; iconBgColor: string; iconColor: string } {
+  const lower = label.toLowerCase();
+  if (lower.includes('submit')) {
+    return { icon: FileText, iconBgColor: 'bg-blue-100', iconColor: 'text-blue-500' };
+  }
+  if (lower.includes('verif') || lower.includes('doc') || lower.includes('kyc')) {
+    return { icon: FileCheck, iconBgColor: 'bg-indigo-100', iconColor: 'text-indigo-500' };
+  }
+  if (lower.includes('underwrit') || lower.includes('review') || lower.includes('process')) {
+    return { icon: Clock, iconBgColor: 'bg-cyan-100', iconColor: 'text-cyan-500' };
+  }
+  if (lower.includes('approv') || lower.includes('grant') || lower.includes('sanction')) {
+    return { icon: CheckCircle2, iconBgColor: 'bg-emerald-100', iconColor: 'text-emerald-500' };
+  }
+  if (lower.includes('disburs') || lower.includes('complet')) {
+    return { icon: Award, iconBgColor: 'bg-green-100', iconColor: 'text-green-500' };
+  }
+  if (lower.includes('reject') || lower.includes('declin') || lower.includes('cancel')) {
+    return { icon: XCircle, iconBgColor: 'bg-red-100', iconColor: 'text-red-500' };
+  }
+  if (archetype === 'Completed') {
+    return { icon: Award, iconBgColor: 'bg-green-100', iconColor: 'text-green-500' };
+  }
+  if (archetype === 'Rejected' || archetype === 'Cancelled') {
+    return { icon: XCircle, iconBgColor: 'bg-red-100', iconColor: 'text-red-500' };
+  }
+  return { icon: FileText, iconBgColor: 'bg-cyan-100', iconColor: 'text-cyan-500' };
+}
+
 /**
- * Counts for the bank's own applications.
- *
- * Sourced from `get_loan_summary`, which aggregates through `frappe.get_list`
- * and so is scoped by the same bank/lifecycle rules as the table below — the
- * totals can never describe applications the list refuses to show.
- *
- * The tiles are labelled by archetype state, which is what the API can actually
- * answer for. An earlier pass here removed Active / Verified / Processed because
- * they were not statuses and counted nothing — but their replacements (Processing
- * / Granted / Rejected) were names from the model the archetype refactor then
- * replaced, so they counted nothing either, and `?? 0` made that look like data.
- *
- * "Granted" and "Rejected" are absent rather than guessed: the `Rejected`
- * archetype was never implemented, so a declined loan and a disbursed one both
- * sit on `Completed` and only the bank's own stage label separates them.
+ * Stage counts and metrics for the bank applications portal.
+ * Showcases the bank-specific loan stages dynamically.
  */
 export default function StatCards() {
   const metrics = useAppSelector(selectBankMetrics);
+  const stages = useAppSelector(selectBankStages);
+
+  if (stages && stages.length > 0) {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 mb-6">
+        <StatCard
+          label="Total Applications"
+          value={metrics.total}
+          icon={Users}
+          iconBgColor="bg-blue-100"
+          iconColor="text-blue-500"
+        />
+        {stages.map((stage) => {
+          const { icon, iconBgColor, iconColor } = getStageCardIcon(stage.label, stage.archetype_state);
+          return (
+            <StatCard
+              key={stage.stage_id || stage.name || stage.label}
+              label={stage.label}
+              value={stage.application_count ?? 0}
+              icon={icon}
+              iconBgColor={iconBgColor}
+              iconColor={iconColor}
+            />
+          );
+        })}
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -79,3 +123,4 @@ export default function StatCards() {
     </div>
   );
 }
+

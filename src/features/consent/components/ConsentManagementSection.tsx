@@ -1,13 +1,17 @@
+// eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
 import { selectOfficerName } from '@/features/auth/store/authSlice';
 import { logger } from '@/lib/logger';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { AlertCircle, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { AlertCircle, CheckCircle2, RotateCcw, ShieldCheck } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { searchFarmerConsent, selectConsentState, type ConsentAudience } from '../store/consentSlice';
-import { searchFarmerThunk, selectFarmerState, setFarmerId } from '../store/farmerSlice';
-import { selectVerificationBlocked } from '../store/newLeadSlice';
+import { isConsentApproved } from '../utils/isConsentApproved';
+// eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
+import { searchFarmerThunk, selectFarmerState, setFarmerId } from '@/features/new-lead/store/farmerSlice';
+// eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
+import { selectVerificationBlocked } from '@/features/new-lead/store/newLeadSlice';
 
 const OTPVerificationModal = dynamic(() => import('./modals/OTPVerificationModal').then(mod => mod.OTPVerificationModal), {
   ssr: false,
@@ -28,30 +32,27 @@ interface ConsentManagementSectionProps {
 
 export function ConsentManagementSection({ leadId: leadIdProp, audience = 'agent' }: ConsentManagementSectionProps = {}) {
   const dispatch = useAppDispatch();
-  const { farmerId, isSearchingFarmer, searchedFarmer, farmerDetails, searchError, detailsError } = useAppSelector(selectFarmerState);
+  const { farmerId, isSearchingFarmer, searchedFarmer, farmerDetails, searchError } = useAppSelector(selectFarmerState);
   const { isLoadingConsent, consentError, isOtpVerified, consentDate } = useAppSelector(selectConsentState);
   const verificationBlocked = useAppSelector(selectVerificationBlocked);
   const officerName = useAppSelector(selectOfficerName) || 'AgriBank';
   const params = useParams();
-  const leadId = leadIdProp || (params?.id as string);
+  const leadId = leadIdProp || (audience === 'agent' ? (params?.id as string) : undefined);
   const isFarmer = audience === 'farmer';
   const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
   const [isConsentModalOpen, setIsConsentModalOpen] = useState(false);
+  const [isRedoingConsent, setIsRedoingConsent] = useState(false);
   const [maskedPhone, setMaskedPhone] = useState<string>('');
 
-  const isProfileCreated = !!farmerDetails?.farmer_profile_created || !!farmerDetails?.firstName;
-  const isFinalizingConsent = isOtpVerified && !consentDate;
+  const isApproved = isConsentApproved(farmerDetails, consentDate);
 
-  // Only consider sync in progress if we are actively tracking it in this session (isOtpVerified = true)
-  const isSyncInProgress = isOtpVerified &&
-    farmerDetails?.consent_request_status !== 'Pending OTP' &&
-    farmerDetails?.consent_request_otp_verified === true &&
-    farmerDetails?.farmer_profile_created === false;
+  const isOtpVerifiedReady =
+    isOtpVerified || farmerDetails?.consent_request_otp_verified === true;
 
-  const isVerified = isProfileCreated || isFinalizingConsent || (isSyncInProgress && !detailsError);
+  const isVerified = !isRedoingConsent && (isApproved || isOtpVerifiedReady);
 
   // Highlight as a verification blocker only if a verify attempt failed and consent is not yet approved.
-  const isMissingForVerification = verificationBlocked && !isVerified;
+  const isMissingForVerification = verificationBlocked && !isApproved;
 
   // Dispatches an OTP request and refreshes the masked phone. Returns true on success.
   const requestOtp = async (): Promise<boolean> => {
@@ -82,9 +83,11 @@ export function ConsentManagementSection({ leadId: leadIdProp, audience = 'agent
     }
   };
 
+  const displayFaydaId = farmerId || farmerDetails?.faydaId || '***********';
+
   return (
     <section className={`flex flex-col items-center pb-6 gap-4 w-full bg-white border shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.05),0px_2px_4px_-1px_rgba(0,0,0,0.03)] hover:-translate-y-1 hover:shadow-lg transition-all duration-300 rounded-xl ${isMissingForVerification ? 'border-[#EF4444] border-l-4' : 'border-[#F1F3F4]'}`}>
-      <div className="flex flex-row items-center p-5 w-full border-b border-[#dedede]">
+      <div className="flex flex-row items-center justify-between p-5 w-full border-b border-[#dedede]">
         <h2 className="font-inter font-semibold text-lg leading-7 flex items-center gap-2 text-[#232F34]">
           <ShieldCheck size={20} className="text-[#6B7280]" />
           Consent Management
@@ -95,6 +98,16 @@ export function ConsentManagementSection({ leadId: leadIdProp, audience = 'agent
             </span>
           )}
         </h2>
+        {isApproved && !isRedoingConsent && (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold rounded-full">
+            <CheckCircle2 size={13} /> Consent Active
+          </span>
+        )}
+        {!isApproved && isOtpVerifiedReady && !isRedoingConsent && (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 border border-amber-200 text-amber-700 text-xs font-bold rounded-full">
+            <CheckCircle2 size={13} /> OTP Verified • Finalization Pending
+          </span>
+        )}
       </div>
 
       <div className="flex flex-col items-start px-4 sm:px-6 w-full max-w-2xl gap-1">
@@ -103,27 +116,65 @@ export function ConsentManagementSection({ leadId: leadIdProp, audience = 'agent
         </label>
         {isVerified ? (
           <div className="w-full flex flex-col gap-3">
-            <div className="w-full bg-[#F9FAFB] border border-[#D1D5DB] rounded-md shadow-sm h-[42px] px-4 flex items-center">
-              <span className="text-[14px] text-gray-900/40">{farmerId || '***********'}</span>
-            </div>
-            <div className="flex flex-row items-center gap-1.5">
-              <CheckCircle2 size={20} className="text-[#16A34A]" fill="#16A34A" color="white" />
-              {farmerDetails?.requested_data_fields && farmerDetails.requested_data_fields.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setIsConsentModalOpen(true)}
-                  className="text-[14px] font-bold text-[#16A34A] leading-[20px] hover:underline cursor-pointer focus:outline-none"
-                >
-                  View Consent Details
-                </button>
-              )}
-              <span className="text-[14px] font-medium text-[#6B7280] leading-[20px] ml-1">
-                {consentDate ? `provided on ${consentDate}` : 'verified via registry'}
+            <div className="w-full bg-[#F9FAFB] border border-[#D1D5DB] rounded-md shadow-sm h-[42px] px-4 flex items-center justify-between">
+              <span className="text-[14px] font-medium text-gray-700">{displayFaydaId}</span>
+              <span className="text-xs text-emerald-600 font-semibold flex items-center gap-1">
+                <CheckCircle2 size={14} /> {isApproved ? 'Verified' : 'OTP Verified'}
               </span>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 size={18} className="text-[#16A34A] shrink-0" fill="#16A34A" color="white" />
+                {isApproved && farmerDetails?.requested_data_fields && farmerDetails.requested_data_fields.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setIsConsentModalOpen(true)}
+                    className="text-[14px] font-bold text-[#16A34A] leading-[20px] hover:underline cursor-pointer focus:outline-none"
+                  >
+                    View Consent Details
+                  </button>
+                )}
+                <span className="text-[13px] font-medium text-[#6B7280]">
+                  {isApproved
+                    ? consentDate
+                      ? `provided on ${consentDate}`
+                      : farmerDetails?.validity_from
+                        ? `valid until ${farmerDetails.validity_to || 'expiry'}`
+                        : 'verified via registry'
+                    : 'OTP verified. Please complete and submit final consent below.'}
+                </span>
+              </div>
+            </div>
+
+            {/* Bottom Redo Action Footer */}
+            <div className="w-full pt-3 mt-1 border-t border-gray-100 flex items-center justify-between">
+              <span className="text-xs text-gray-500">
+                {isApproved ? 'Need to update permissions or re-verify?' : 'Need to use a different ID?'}
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsRedoingConsent(true)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold text-xs rounded-lg shadow-sm transition-colors"
+              >
+                <RotateCcw size={13} />
+                {isApproved ? 'Redo Consent' : 'Restart Verification'}
+              </button>
             </div>
           </div>
         ) : (
           <div className="flex flex-col gap-3 w-full">
+            {isRedoingConsent && (
+              <div className="flex items-center justify-between p-2.5 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800 mb-1">
+                <span>Re-authorizing consent will update your registry permissions.</span>
+                <button
+                  type="button"
+                  onClick={() => setIsRedoingConsent(false)}
+                  className="font-bold underline text-blue-900 hover:text-blue-700"
+                >
+                  Cancel & Keep Existing
+                </button>
+              </div>
+            )}
             <div className="flex flex-col sm:flex-row gap-3 w-full">
               <input
                 id="consent-farmer-id"
@@ -171,7 +222,10 @@ export function ConsentManagementSection({ leadId: leadIdProp, audience = 'agent
 
       <OTPVerificationModal
         isOpen={isOtpModalOpen}
-        onClose={() => setIsOtpModalOpen(false)}
+        onClose={() => {
+          setIsOtpModalOpen(false);
+          setIsRedoingConsent(false);
+        }}
         farmerId={farmerId}
         maskedPhone={maskedPhone}
         onResend={requestOtp}
@@ -183,6 +237,9 @@ export function ConsentManagementSection({ leadId: leadIdProp, audience = 'agent
         isOpen={isConsentModalOpen}
         onClose={() => setIsConsentModalOpen(false)}
         requestedDataFields={farmerDetails?.requested_data_fields ?? []}
+        purpose={farmerDetails?.purpose}
+        validityFrom={farmerDetails?.validity_from}
+        validityTo={farmerDetails?.validity_to}
       />
     </section>
   );

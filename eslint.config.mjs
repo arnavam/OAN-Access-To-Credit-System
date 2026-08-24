@@ -52,41 +52,83 @@ const eslintConfig = defineConfig([
       "boundaries/ignore": ["**/*.test.*", "**/*.spec.*"],
     },
     rules: {
-      // Layer dependency rules
-      "boundaries/element-types": ["warn", {
+      "boundaries/dependencies": ["warn", {
         default: "disallow",
         rules: [
           // app/ can import features, shared, lib, store, hooks, types
-          { from: ["app"], allow: ["feature", "shared", "lib", "store", "hooks", "types"] },
+          { 
+            from: [{ type: "app" }], 
+            allow: [
+              { to: { type: "feature" } },
+              { to: { type: "shared" } },
+              { to: { type: "lib" } },
+              { to: { type: "store" } },
+              { to: { type: "hooks" } },
+              { to: { type: "types" } }
+            ] 
+          },
           // features can import shared, lib, hooks, types, store, and — in
           // practice — layout/composition pieces living under app/
-          { from: ["feature"], allow: ["shared", "lib", "hooks", "types", "store", "app"] },
-          // a feature can import from itself (intra-feature) — "internal" is
-          // this plugin's own relationship kind for same-element dependencies,
-          // so this only matches self-imports, never a different feature.
-          { from: ["feature"], allow: ["feature"], dependency: { relationship: { from: "internal" } } },
+          { 
+            from: [{ type: "feature" }], 
+            allow: [
+              { to: { type: "shared" } },
+              { to: { type: "lib" } },
+              { to: { type: "hooks" } },
+              { to: { type: "types" } },
+              { to: { type: "store" } },
+              { to: { type: "app" } },
+              // a feature can import from itself (intra-feature)
+              { to: { type: "feature", captured: { featureName: "{{ from.captured.featureName }}" } } }
+            ] 
+          },
           // shared components can import lib, hooks, and — for header/sidebar
           // chrome that needs auth/notification state or shared app/ layout
           // pieces (e.g. LanguageSelector) — features and app.
-          //
-          // `store` is allowed for the same reason: the chrome that lives here
-          // (DashboardHeader, NotificationDropdown, the global loader) reads
-          // app-wide state through the typed hooks in src/store. It was already
-          // doing so; listing it stops that being reported as drift while the
-          // genuine check below — features reaching into each other — still is.
-          //
-          // `shared` is listed for itself because composition inside
-          // src/components is the point of the directory — DashboardShell is
-          // built from Sidebar + DashboardHeader. The plugin treats two
-          // subdirectories of src/components as separate elements, so without
-          // this a shared component may not use another one.
-          { from: ["shared"], allow: ["shared", "lib", "hooks", "types", "feature", "app", "store"] },
+          { 
+            from: [{ type: "shared" }], 
+            allow: [
+              { to: { type: "shared" } },
+              { to: { type: "lib" } },
+              { to: { type: "hooks" } },
+              { to: { type: "types" } },
+              { to: { type: "feature" } },
+              { to: { type: "app" } },
+              { to: { type: "store" } }
+            ] 
+          },
           // lib is a leaf for runtime deps, but mocks (under src/lib/mocks)
           // legitimately need feature payload/response types for realistic typing
-          { from: ["lib"], allow: ["types", "feature"] },
-          { from: ["store"], allow: ["types", "lib"] },
-          { from: ["hooks"], allow: ["lib", "types"] },
-          { from: ["mocks"], allow: ["feature", "shared", "lib", "types"] },
+          { 
+            from: [{ type: "lib" }], 
+            allow: [
+              { to: { type: "types" } },
+              { to: { type: "feature" } }
+            ] 
+          },
+          { 
+            from: [{ type: "store" }], 
+            allow: [
+              { to: { type: "types" } },
+              { to: { type: "lib" } }
+            ] 
+          },
+          { 
+            from: [{ type: "hooks" }], 
+            allow: [
+              { to: { type: "lib" } },
+              { to: { type: "types" } }
+            ] 
+          },
+          { 
+            from: [{ type: "mocks" }], 
+            allow: [
+              { to: { type: "feature" } },
+              { to: { type: "shared" } },
+              { to: { type: "lib" } },
+              { to: { type: "types" } }
+            ] 
+          },
         ],
       }],
     },

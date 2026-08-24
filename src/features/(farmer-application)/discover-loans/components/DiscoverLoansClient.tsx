@@ -103,11 +103,10 @@ export default function DiscoverLoansClient() {
         setTotalEntries(response.pagination.total);
       } catch (error) {
         logger.error('Error fetching catalog', error);
-        if (isMounted) {
-          setProducts([]);
-          setTotalEntries(0);
-          setLoadError('We could not load loan products just now. Please try again.');
-        }
+        if (!isMounted) return;
+        setProducts([]);
+        setTotalEntries(0);
+        setLoadError('We could not load loan products just now. Please try again.');
       } finally {
         if (isMounted) setIsLoading(false);
       }
@@ -166,7 +165,11 @@ export default function DiscoverLoansClient() {
         ) : products.length > 0 ? (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
             {products.map((loan) => (
-              <LoanCard key={loan.name} loan={loan} onBookmarkToggle={handleBookmarkToggle} />
+              <LoanCard
+                key={loan.name}
+                loan={loan}
+                onBookmarkToggle={handleBookmarkToggle}
+              />
             ))}
           </div>
         ) : (

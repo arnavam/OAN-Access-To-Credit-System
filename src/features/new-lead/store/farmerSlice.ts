@@ -67,13 +67,13 @@ export const searchFarmerThunk = createAsyncThunk<FarmerDetails, string>(
 
 export const fetchLeadDetailsThunk = createAsyncThunk<
   FarmerDetails,
-  string | { leadId: string; shouldPoll?: boolean },
+  string | { leadId?: string | undefined; shouldPoll?: boolean | undefined } | void | undefined,
   { state: RootState }
 >(
   'farmer/fetchLeadDetails',
   async (arg, { dispatch, rejectWithValue, signal, requestId }) => {
-    const leadId = typeof arg === 'string' ? arg : arg.leadId;
-    const shouldPoll = typeof arg === 'string' ? false : (arg.shouldPoll ?? false);
+    const leadId = typeof arg === 'string' ? arg : arg?.leadId;
+    const shouldPoll = typeof arg === 'string' ? false : (arg?.shouldPoll ?? false);
 
     // Resolves early on abort instead of always waiting out the full delay, so a
     // cancellation mid-retry-wait is noticed immediately rather than up to 5s late.
@@ -234,6 +234,7 @@ const farmerSlice = createSlice({
           farmer_profile_created: action.payload.farmer_profile_created,
           consent_request_status: action.payload.consent_request_status,
           consent_request_otp_verified: action.payload.consent_request_otp_verified,
+          consent_request_name: action.payload.consent_request_name,
         };
         state.detailsError = null;
       })

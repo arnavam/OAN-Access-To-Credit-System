@@ -1,12 +1,16 @@
 'use client';
 
+// eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
 import LoanTable, { LoanTableRow } from '@/features/loans/components/LoanTable';
+// eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
 import LoanApplicationModal from '@/features/loans/components/modals/LoanApplicationModal';
 import {
   fetchLoans,
+  fetchLoanStages,
   selectAdvancedFilters,
   selectIsLoansLoading,
   selectLoansError,
+  selectLoanStageOptions,
   selectPagedRows,
   selectQueryParams,
   selectSearchQuery,
@@ -15,12 +19,14 @@ import {
   selectTotalCount,
   setSearchQuery,
   updateLoanStatus
+// eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
 } from '@/features/loans/store/loanDashboardSlice';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { AlertCircle, FileOutput, Inbox, Loader2, RefreshCw, Search, SlidersHorizontal } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+// eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
 import LoanAdvancedFilters from '@/features/loans/components/LoanAdvancedFilters';
-import { SELLER_FILTER_STATUS_OPTIONS } from '@/features/loans/constants/loans.constants';
+
 export function LoanApplicationsTable() {
   const dispatch = useAppDispatch();
   const rows = useAppSelector(selectPagedRows);
@@ -32,6 +38,7 @@ export function LoanApplicationsTable() {
   const tableStatusFilters = useAppSelector(selectTableStatusFilters);
   const tableTypeFilters = useAppSelector(selectTableTypeFilters);
   const advancedFilters = useAppSelector(selectAdvancedFilters);
+  const stageOptions = useAppSelector(selectLoanStageOptions);
   // Same active-filters check LoanTable itself uses (plus search) — keeps the
   // "no data at all" empty state from also covering "filters just match nothing",
   // which would otherwise hide the table header along with the illustration.
@@ -58,6 +65,10 @@ export function LoanApplicationsTable() {
       promise.abort();
     };
   }, [loadLoans]);
+
+  useEffect(() => {
+    dispatch(fetchLoanStages());
+  }, [dispatch]);
 
   const handleRetry = () => {
     loadLoans();
@@ -212,7 +223,7 @@ export function LoanApplicationsTable() {
         ) : (
           /* Table of applications */
           <div className="p-4 overflow-x-auto custom-scrollbar">
-            <LoanTable onView={(row) => setSelectedRow(row)} totalCount={totalCount} />
+            <LoanTable onView={(row) => setSelectedRow(row)} totalCount={totalCount} stageOptions={stageOptions} />
           </div>
         )}
       </div>
@@ -236,7 +247,7 @@ export function LoanApplicationsTable() {
       <LoanAdvancedFilters
         isOpen={isFilterOpen}
         onClose={() => setIsFilterOpen(false)}
-        statusOptions={SELLER_FILTER_STATUS_OPTIONS}
+        statusOptions={stageOptions}
       />
     </div>
   );
