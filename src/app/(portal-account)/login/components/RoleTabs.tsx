@@ -9,10 +9,10 @@ export function RoleTabs() {
   const isAdmin = pathname.includes('/bank-admin');
 
   return (
-    <div className="flex w-full max-w-lg mx-auto mb-8">
+    <div className="flex w-full max-w-lg mx-auto mb-8 flex-col sm:flex-row">
       <Link
         href="/login/bank-admin"
-        className={`flex items-start gap-2.5 w-1/2 p-3 rounded-l-xl border transition-colors ${isAdmin
+        className={`flex items-start gap-2.5 w-full sm:w-1/2 p-3 rounded-t-xl rounded-b-none sm:rounded-none sm:rounded-l-xl border-2 transition-colors ${isAdmin
           ? 'border-[#16A34A] bg-[#F4FDF7] z-10'
           : 'border-gray-200 bg-white hover:bg-gray-50'
           }`}
@@ -23,14 +23,14 @@ export function RoleTabs() {
         <div className="flex flex-col">
           <span className="text-[14px] sm:text-[15px] font-bold text-gray-900 leading-tight mb-1">Bank Admin</span>
           <span className="text-[12px] sm:text-[12.5px] text-gray-500 leading-snug font-medium tracking-tight">
-            Manage products,<br />approvals &amp; KYC
+            Manage products, <br className="hidden sm:block" />approvals &amp; KYC
           </span>
         </div>
       </Link>
 
       <Link
         href="/login/bank-agent"
-        className={`flex items-start gap-2.5 w-1/2 p-3 rounded-r-xl border transition-colors -ml-[1px] ${!isAdmin
+        className={`flex items-start gap-2.5 w-full sm:w-1/2 p-3 rounded-b-xl rounded-t-none sm:rounded-none sm:rounded-r-xl border-2 transition-colors -mt-[2px] sm:-mt-0 sm:-ml-[2px] ${!isAdmin
           ? 'border-[#16A34A] bg-[#F4FDF7] z-10'
           : 'border-gray-200 bg-white hover:bg-gray-50'
           }`}
@@ -41,7 +41,7 @@ export function RoleTabs() {
         <div className="flex flex-col">
           <span className="text-[14px] sm:text-[15px] font-bold text-gray-900 leading-tight mb-1">Bank Agent</span>
           <span className="text-[12px] sm:text-[12.5px] text-gray-500 leading-snug font-medium tracking-tight">
-            Create loan products<br />for approval
+            Create loan products <br className="hidden sm:block" />for approval
           </span>
         </div>
       </Link>

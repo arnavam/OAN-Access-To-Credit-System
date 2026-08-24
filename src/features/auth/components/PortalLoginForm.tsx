@@ -149,7 +149,7 @@ export function PortalLoginForm({
         <h2 className="text-[28px] sm:text-[32px] font-bold text-[#1F2937] mb-2 tracking-tight">
           {heading}
         </h2>
-        <p className="text-[#6B7280] text-[15px] font-medium max-w-[280px]">{subtitle}</p>
+        <p className="text-[#6B7280] text-[14px] sm:text-[15px] font-medium px-2 sm:px-0 w-full sm:w-auto sm:whitespace-nowrap md:whitespace-normal md:max-w-[280px] mx-auto">{subtitle}</p>
       </div>
 
       {notice && (
@@ -176,10 +176,10 @@ export function PortalLoginForm({
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="w-full space-y-6" autoComplete="off">
-        <div className="space-y-4">
-          <div className="space-y-1.5">
-            <label className="text-[14px] font-semibold text-[#374151]">{usernameLabel}</label>
+      <form onSubmit={handleSubmit} className="w-full flex flex-col gap-6" autoComplete="off">
+        <div className="flex flex-col gap-5">
+          <label className="flex flex-col gap-2.5">
+            <span className="text-[14px] font-semibold text-[#374151]">{usernameLabel}</span>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#9CA3AF]">
                 <User size={18} strokeWidth={2} />
@@ -196,10 +196,10 @@ export function PortalLoginForm({
                 className="w-full pl-10 pr-4 py-3 bg-white border border-[#D1D5DB] rounded-xl text-[14px] text-[#1F2937] focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] transition-all placeholder:text-[#9CA3AF] font-medium shadow-sm"
               />
             </div>
-          </div>
+          </label>
 
-          <div className="space-y-1.5">
-            <label className="text-[14px] font-semibold text-[#374151]">Password</label>
+          <label className="flex flex-col gap-2.5">
+            <span className="text-[14px] font-semibold text-[#374151]">Password</span>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#9CA3AF]">
                 <Lock size={18} strokeWidth={2} />
@@ -218,13 +218,16 @@ export function PortalLoginForm({
               />
               <button
                 type="button"
-                onClick={() => setShowPassword(!showPassword)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setShowPassword(!showPassword);
+                }}
                 className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#9CA3AF] hover:text-[#4B5563] transition-colors"
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
-          </div>
+          </label>
         </div>
 
         <div className="flex items-center justify-between">
@@ -265,14 +268,12 @@ export function PortalLoginForm({
           {!isLoading && <ArrowRight size={18} strokeWidth={2.5} />}
         </button>
 
-        {showRegisterLink && (
-          <div className="text-center text-[14px] font-medium text-[#6B7280]">
-            New to OAN?{' '}
-            <Link href="/create-account" className="text-[#16A34A] font-bold hover:underline">
-              <span className='text-[#16A34A]'>Register account</span>
-            </Link>
-          </div>
-        )}
+        <div className={`text-center text-[14px] font-medium text-[#6B7280] ${showRegisterLink ? 'opacity-100' : 'opacity-0 pointer-events-none select-none'}`}>
+          New to OAN?{' '}
+          <Link href="/create-account" className="text-[#16A34A] font-bold hover:underline" tabIndex={showRegisterLink ? 0 : -1}>
+            <span className='text-[#16A34A]'>Register account</span>
+          </Link>
+        </div>
       </form>
 
       {showPartnerBanks && (

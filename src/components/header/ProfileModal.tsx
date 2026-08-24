@@ -26,24 +26,24 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
-  
+
   const [profile, setProfile] = useState<UserProfileResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     full_name: '',
     phone_number: '',
     language: 'English',
     gender: '',
   });
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fallbackOfficerName = useAppSelector(selectOfficerName) || 'User';
   const fallbackOrganization = useAppSelector(selectBankName) || 'Organization';
-  
+
   const officerName = profile?.personal_information.full_name || formData.full_name || fallbackOfficerName;
   const organization = profile?.account_information.organization || fallbackOrganization;
 
@@ -103,7 +103,7 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
       toast.error('Password must be at least 8 characters long');
       return;
     }
-    
+
     try {
       setIsChangingPassword(true);
       await changePassword(currentPassword, newPassword);
@@ -130,13 +130,13 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
         const base64Data = reader.result as string;
         // The endpoint expects just the base64 part, not the data URI prefix
         const base64Content = base64Data.split(',')[1] ?? '';
-        
+
         try {
           const uploadRes = await onboardingService.uploadImage({
             filename: file.name,
             filedata: base64Content,
           });
-          
+
           if (uploadRes.data?.file_url) {
             const updated = await updateProfile({
               user_image: uploadRes.data.file_url
@@ -168,7 +168,7 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
       <div className="bg-[#FAFAFA] rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col relative animate-in fade-in zoom-in duration-200">
-        
+
         {/* Header */}
         <div className="px-8 py-6 border-b border-gray-200 bg-white rounded-t-xl flex justify-between items-start">
           <div>
@@ -177,7 +177,7 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
               Manage your personal details, organization profile, and team members.
             </p>
           </div>
-          <button 
+          <button
             onClick={onClose}
             className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
           >
@@ -187,7 +187,7 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
 
         {/* Content */}
         <div className="p-8 space-y-6 overflow-y-auto">
-          
+
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-12">
               <Loader2 className="w-8 h-8 text-[#16A34A] animate-spin mb-4" />
@@ -197,18 +197,18 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
             <>
               {/* Personal Information Section */}
               <section className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-                <div className="flex justify-between items-center mb-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 mb-6">
                   <h3 className="text-lg font-bold text-gray-800">Personal Information</h3>
-                  <button 
+                  <button
                     onClick={handleSaveProfile}
                     disabled={isSaving}
-                    className="bg-[#16A34A] hover:bg-[#15803d] disabled:opacity-70 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center"
+                    className="w-full sm:w-auto justify-center bg-[#16A34A] hover:bg-[#15803d] disabled:opacity-70 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center shrink-0"
                   >
                     {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                    Save Change
+                    <span className='font-semibold'>Save Change</span>
                   </button>
                 </div>
-                
+
                 <div className="flex flex-col md:flex-row gap-8">
                   {/* Avatar Column */}
                   <div className="flex flex-col items-center justify-center min-w-[200px]">
@@ -228,32 +228,32 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
                           {initials}
                         </div>
                       )}
-                      
-                      <button 
+
+                      <button
                         onClick={() => fileInputRef.current?.click()}
                         disabled={isUploading}
                         className="absolute bottom-0 right-0 w-8 h-8 bg-[#16A34A] border-2 border-white rounded-full flex items-center justify-center hover:bg-[#15803d] transition-colors cursor-pointer shadow-sm disabled:opacity-70"
                       >
                         {isUploading ? <Loader2 className="w-3.5 h-3.5 text-white animate-spin" /> : <Camera className="w-3.5 h-3.5 text-white" />}
                       </button>
-                      <input 
-                        type="file" 
-                        ref={fileInputRef} 
-                        onChange={handlePhotoUpload} 
-                        accept="image/*" 
-                        className="hidden" 
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handlePhotoUpload}
+                        accept="image/*"
+                        className="hidden"
                       />
                     </div>
                     <h4 className="mt-4 font-bold text-gray-900 text-center">{officerName}</h4>
                     <p className="text-xs text-gray-500 mt-1 text-center">
                       {profile?.account_information.user_role || role} &middot; {organization}
                     </p>
-                    <button 
+                    <button
                       onClick={() => fileInputRef.current?.click()}
                       disabled={isUploading}
                       className="mt-3 text-sm font-medium text-[#16A34A] hover:text-[#15803d] transition-colors disabled:opacity-70"
                     >
-                      {isUploading ? 'Uploading...' : 'Upload new photo'}
+                      <span className='font-medium'>{isUploading ? 'Uploading...' : 'Upload new photo'}</span>
                     </button>
                   </div>
 
@@ -263,10 +263,10 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
                       <label className="block text-sm font-medium text-gray-900 mb-1.5">
                         Full Name <span className="text-red-500">*</span>
                       </label>
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
                         value={formData.full_name}
-                        onChange={(e) => setFormData({...formData, full_name: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                         className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-colors"
                       />
                     </div>
@@ -276,7 +276,7 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
                       </label>
                       <select
                         value={formData.gender}
-                        onChange={(e) => setFormData({...formData, gender: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
                         className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-colors appearance-none"
                       >
                         <option value="">Select Gender</option>
@@ -289,10 +289,10 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
                       <label className="block text-sm font-medium text-gray-900 mb-1.5">
                         Phone Number <span className="text-red-500">*</span>
                       </label>
-                      <input 
-                        type="tel" 
+                      <input
+                        type="tel"
                         value={formData.phone_number}
-                        onChange={(e) => setFormData({...formData, phone_number: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
                         placeholder="Enter Phone Number"
                         className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-colors"
                       />
@@ -301,9 +301,9 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
                       <label className="block text-sm font-medium text-gray-900 mb-1.5">
                         Language <span className="text-red-500">*</span>
                       </label>
-                      <select 
+                      <select
                         value={formData.language}
-                        onChange={(e) => setFormData({...formData, language: e.target.value})}
+                        onChange={(e) => setFormData({ ...formData, language: e.target.value })}
                         className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-colors appearance-none"
                       >
                         <option value="English">English</option>
@@ -321,8 +321,8 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
                   <div>
                     <label className="block text-sm font-medium text-gray-900 mb-1.5">User Role</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       value={profile?.account_information.user_role || role}
                       disabled
                       className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600"
@@ -330,8 +330,8 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-900 mb-1.5">Organization</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       value={profile?.account_information.organization || organization}
                       disabled
                       className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600"
@@ -339,8 +339,8 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-900 mb-1.5">Employee Email Address</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       value={profile?.account_information.employee_id || 'N/A'}
                       disabled
                       className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600"
@@ -348,8 +348,8 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-900 mb-1.5">Member Since</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       value={profile?.account_information.member_since || 'N/A'}
                       disabled
                       className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600"
@@ -360,33 +360,34 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
 
               {/* Security Section */}
               <section className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-                <div className={`flex justify-between items-center ${isEditingPassword ? 'mb-6' : ''}`}>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 mb-6">
                   <div>
                     <h3 className="text-lg font-bold text-gray-800">Security</h3>
                     {!isEditingPassword && <p className="text-sm text-gray-500 mt-1">Manage your password and security settings.</p>}
                   </div>
-                  <button 
+                  <button
                     onClick={() => setIsEditingPassword(!isEditingPassword)}
-                    className={`${isEditingPassword ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-[#16A34A] hover:bg-[#15803d] text-white'} px-4 py-2 rounded-lg text-sm font-medium transition-colors`}
+                    className={`w-full sm:w-auto justify-center ${isEditingPassword ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-[#16A34A] hover:bg-[#15803d] text-white'} px-4 py-2 rounded-lg text-sm font-medium transition-colors shrink-0`}
                   >
-                    {isEditingPassword ? 'Cancel' : 'Update Password'}
+                    <span className='font-semibold'>{isEditingPassword ? 'Cancel' : 'Update Password'}</span>
+
                   </button>
                 </div>
-                
+
                 {isEditingPassword && (
                   <div className="space-y-6 pt-6 border-t border-gray-100 animate-in fade-in slide-in-from-top-2 duration-200">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       <div>
                         <label className="block text-sm font-medium text-gray-900 mb-1.5">Current Password</label>
                         <div className="relative">
-                          <input 
-                            type={showCurrentPassword ? "text" : "password"} 
+                          <input
+                            type={showCurrentPassword ? "text" : "password"}
                             placeholder="••••••••••••"
                             value={currentPassword}
                             onChange={(e) => setCurrentPassword(e.target.value)}
                             className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-colors font-mono tracking-widest text-gray-600"
                           />
-                          <button 
+                          <button
                             type="button"
                             onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
@@ -398,14 +399,14 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
                       <div>
                         <label className="block text-sm font-medium text-gray-900 mb-1.5">New Password</label>
                         <div className="relative">
-                          <input 
-                            type={showNewPassword ? "text" : "password"} 
+                          <input
+                            type={showNewPassword ? "text" : "password"}
                             placeholder="New password"
                             value={newPassword}
                             onChange={(e) => setNewPassword(e.target.value)}
                             className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-colors font-mono tracking-widest text-gray-600"
                           />
-                          <button 
+                          <button
                             type="button"
                             onClick={() => setShowNewPassword(!showNewPassword)}
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
@@ -417,14 +418,14 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
                       <div>
                         <label className="block text-sm font-medium text-gray-900 mb-1.5">Confirm New Password</label>
                         <div className="relative">
-                          <input 
-                            type={showConfirmPassword ? "text" : "password"} 
+                          <input
+                            type={showConfirmPassword ? "text" : "password"}
                             placeholder="Confirm password"
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
                             className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-colors font-mono tracking-widest text-gray-600"
                           />
-                          <button 
+                          <button
                             type="button"
                             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
@@ -434,9 +435,9 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="flex justify-end">
-                      <button 
+                      <button
                         onClick={handleChangePassword}
                         disabled={isChangingPassword || !currentPassword || !newPassword || !confirmPassword}
                         className="bg-[#16A34A] hover:bg-[#15803d] text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-70 flex items-center"

@@ -10,7 +10,7 @@ const activeAgents = [
 
 export function LeftSidebar() {
   return (
-    <div className="w-full md:w-[45%] bg-[#0B6C43] p-10 md:p-14 flex flex-col relative overflow-hidden">
+    <div className="w-full md:w-[45%] bg-[#0B6C43] p-6 sm:p-10 md:p-14 flex flex-col relative overflow-hidden">
       <div className="flex items-center space-x-2 mb-16 relative z-10">
         <Image src="/logo.png" alt="OARI Logo" width={1536} height={1024} className="h-[40px] sm:h-[48px] w-auto shrink-0" />
         <div className="flex flex-col border-l border-white/30 pl-2">
@@ -19,7 +19,7 @@ export function LeftSidebar() {
         </div>
       </div>
 
-      <div className="relative z-10 mb-8">
+      <div className="relative z-10 mb-8 md:mb-0">
         <span className="inline-block px-4 py-1.5 bg-white/10 text-white/90 text-[10px] font-bold tracking-wider rounded-full uppercase mb-8 border border-white/10">
           FIELD AGENT PORTAL
         </span>
@@ -31,7 +31,7 @@ export function LeftSidebar() {
         </p>
       </div>
 
-      <div className="mt-auto relative z-10 flex items-center gap-3">
+      <div className="mt-8 md:mt-auto relative z-10 flex flex-col sm:flex-row items-start sm:items-center gap-3">
         <div className="flex -space-x-3">
           {activeAgents.map((agent, index) => (
             <div key={index} className="w-10 h-10 rounded-full border-2 border-[#0B6C43] overflow-hidden flex items-center justify-center bg-white z-[3]">

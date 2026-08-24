@@ -37,14 +37,13 @@ export const BankHeaderCard = ({ portalLabel = 'Bank Admin Portal - Loan Product
           onClick={() => setIsModalOpen(true)}
           disabled={isAddDisabled}
           title={isAddDisabled ? 'Your bank is still under review. You can add loan products once it is approved.' : undefined}
-          className={`px-5 py-2.5 rounded-lg font-bold text-[14px] transition-colors flex items-center space-x-2 whitespace-nowrap shadow-sm ${
-            isAddDisabled
-              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              : 'bg-[#16A34A] hover:bg-[#15803d] text-white'
-          }`}
+          className={`px-5 py-2.5 w-full sm:w-auto justify-center sm:justify-start rounded-lg font-bold text-[14px] transition-colors flex items-center space-x-2 whitespace-nowrap shadow-sm ${isAddDisabled
+            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            : 'bg-[#16A34A] hover:bg-[#15803d] text-white'
+            }`}
         >
           <Plus size={18} strokeWidth={2.5} />
-          <span>Add Loan Product</span>
+          <span className='font-semibold'>Add Loan Product</span>
         </button>
       </div>
       <AddLoanProductModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
