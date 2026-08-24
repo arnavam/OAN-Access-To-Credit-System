@@ -91,9 +91,10 @@ export interface GetLoansParams {
   search_query?: string; // free-text search by Application ID, Lead ID, or Phone Number
   /**
    * One or more archetype states, comma-separated — 'Active' | 'In Transition' |
-   * 'Completed' | 'Cancelled'. `GetAllLoansSchema` validates every member against the
-   * workflow's states and answers 400 for anything else, so this is never a display
-   * label and never a bank stage name.
+   * 'Completed' | 'Rejected' | 'Cancelled' (the five in `ARCHETYPE_STATES`).
+   * `GetAllLoansSchema` validates every member against the workflow's states and
+   * answers 400 for anything else, so this is never a display label and never a
+   * bank stage name.
    */
   status?: string;
   /** A bank's own stage label (A2C Loan Status Stage). Tenant free text, comma-separated. */

@@ -8,6 +8,7 @@ import {
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import type { RootState } from '../../../store';
 
+import { withCurrentSort } from '@/lib/filterSort';
 import { normalizeLeadId } from '@/lib/utils';
 
 function findLeadById(leads: Lead[], id: string): Lead | undefined {
@@ -80,21 +81,6 @@ export function advFilterValues(filters: AdvFilters): AdvFilterValues {
     loanType: filters.loanType,
     leadSources: filters.leadSources,
   };
-}
-
-/**
- * Re-attach the sort the user already picked to a fresh set of filter values.
- *
- * The drawer's Apply built an object literal with no `sortBy`/`sortOrder` and
- * `setAdvFilters` assigned it wholesale, so applying any filter silently reset the
- * table to "newest first" — a column header the user had just clicked kept its
- * arrow while the rows underneath came back in a different order.
- */
-function withCurrentSort(values: AdvFilterValues, current: AdvFilters): AdvFilters {
-  const next: AdvFilters = { ...values };
-  if (current.sortBy !== undefined) next.sortBy = current.sortBy;
-  if (current.sortOrder !== undefined) next.sortOrder = current.sortOrder;
-  return next;
 }
 
 interface LeadState {

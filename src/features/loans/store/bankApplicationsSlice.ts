@@ -5,6 +5,7 @@ import {
   LoanSummaryMetrics,
 } from '@/features/loans/api/loan.service';
 import { loanStagesService } from '@/features/loans/api/loanStages.service';
+import { formatLocation } from '@/features/loans/utils/formatLocation';
 import { getStageStyle, toStageFilterOptions } from '@/features/loans/utils/stageStyles';
 import type { LoanStage } from '@/lib/api/api.schemas';
 import type { ApiResponse } from '@/types/api';
@@ -359,11 +360,6 @@ export const selectBankStageOptions = createSelector([selectBankStages], (stages
   }
   return toStageFilterOptions(stages);
 });
-
-/** "Region · Woreda", skipping whichever levels the record has not reached yet. */
-function formatLocation(row: LoanApplicationSummary): string {
-  return [row.region, row.woreda].filter(Boolean).join(' · ');
-}
 
 // --- Derived selectors ---
 const selectRowsData = createSelector([selectRaw, selectBankStages], (raw, stages) => {

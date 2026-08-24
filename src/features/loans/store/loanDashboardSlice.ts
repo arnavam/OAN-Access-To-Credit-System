@@ -1,7 +1,9 @@
 import { GetLoansParams, LoanApplicationSummary, loanService, LoanSummaryMetrics } from '@/features/loans/api/loan.service';
 import { loanStagesService } from '@/features/loans/api/loanStages.service';
+import { formatLocation } from '@/features/loans/utils/formatLocation';
 import { getStageStyle, toStageFilterOptions } from '@/features/loans/utils/stageStyles';
 import type { LoanStage } from '@/lib/api/api.schemas';
+import { withCurrentSort } from '@/lib/filterSort';
 import type { ApiResponse } from '@/types/api';
 import { createAsyncThunk, createSelector, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import type { RootState } from '../../../store';
@@ -173,21 +175,6 @@ const DEFAULT_ADVANCED_FILTERS: AdvancedFilters = {
   dateFrom: '',
   dateTo: '',
 };
-
-/**
- * Replaces the filter values while carrying the current sort over.
- *
- * The drawer has no sort control, so the reducers below must not let its payload
- * decide the sort. Written as an explicit merge rather than a spread because
- * `exactOptionalPropertyTypes` rejects handing an optional field an explicit
- * `undefined`.
- */
-function withCurrentSort(values: AdvancedFilterValues, current: AdvancedFilters): AdvancedFilters {
-  const next: AdvancedFilters = { ...values };
-  if (current.sortBy !== undefined) next.sortBy = current.sortBy;
-  if (current.sortOrder !== undefined) next.sortOrder = current.sortOrder;
-  return next;
-}
 
 const initialState: LoanDashboardState = {
   rawActivityData: null,
@@ -399,11 +386,6 @@ export const selectLoanTypeOptions = createSelector(
     Array.from(new Set([...known, ...tableTypes, ...advanced.type])).sort()
 );
 
-/** "Region · Woreda", skipping whichever levels the record has not reached yet. */
-function formatLocation(row: LoanApplicationSummary): string {
-  return [row.region, row.woreda].filter(Boolean).join(' · ');
-}
-
 export const selectLoanStageOptions = createSelector([selectLoanStages], (stages) => toStageFilterOptions(stages));
 
 // --- Derived Memoized Selectors ---
@@ -436,7 +418,7 @@ export const selectPagedRowsData = createSelector(
       // otherwise the archetype. 'Draft' stood here as the fallback and was never
       // one of the four archetype states.
       const displayStatus = row.stage_label || status;
-      const stageStyle = getStageStyle(row.stage_label || row.status || '', stages);
+      const stageStyle = getStageStyle(row.stage_label || status, stages);
 
       return {
         ...row,
