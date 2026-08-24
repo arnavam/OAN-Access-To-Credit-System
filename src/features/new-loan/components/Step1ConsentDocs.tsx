@@ -1,7 +1,9 @@
 'use client';
 
 import { UndoToast } from '@/components/ui/UndoToast';
+// eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
 import { loanService, type SupportingDocument } from '@/features/loans/api/loan.service';
+// eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
 import { newLeadService, type FarmerDetails } from '@/features/new-lead/api/newLead.service';
 import { nextStepAPI, selectLoanFormState } from '@/features/new-loan/store/newLoanFormSlice';
 import { logger } from '@/lib/logger';

@@ -3,7 +3,7 @@ import type { FarmerLoanApplication } from '../../types';
 import { countByStatus } from '../counts';
 
 export default function ApplicationSummary({ activeTab: _activeTab, onTabChange, applications }: { activeTab: string, onTabChange: (tab: string) => void, applications: FarmerLoanApplication[] }) {
-  const { total, Draft: draft, Processing: processing, Approved: approved, Rejected: rejected } =
+  const { total, Draft: draft, 'Under Review': processing, Disbursed: approved, Rejected: rejected } =
     countByStatus(applications);
   return (
     <div className="grid grid-cols-4 gap-6 mb-8">
@@ -37,11 +37,11 @@ export default function ApplicationSummary({ activeTab: _activeTab, onTabChange,
 
       {/* Processing Card */}
       <div
-        onClick={() => onTabChange('Processing')}
+        onClick={() => onTabChange('Under Review')}
         className={`bg-white rounded-xl p-5 flex items-center justify-between border border-[#F1F3F4] shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.05),0px_2px_4px_-1px_rgba(0,0,0,0.03)] hover:-translate-y-1 hover:shadow-lg transition-all duration-300 cursor-pointer group`}
       >
         <div>
-          <p className="text-md text-gray-500 font-semibold mb-1">Processing</p>
+          <p className="text-md text-gray-500 font-semibold mb-1">Under Review</p>
           <h2 className="text-3xl font-bold text-gray-900">{processing}</h2>
         </div>
         <div className="w-16 h-16 rounded-xl bg-cyan-100 flex items-center justify-center shrink-0 group-hover:scale-110 group-hover:bg-cyan-200 transition-all duration-300">
@@ -51,11 +51,11 @@ export default function ApplicationSummary({ activeTab: _activeTab, onTabChange,
 
       {/* Disbursed Card */}
       <div
-        onClick={() => onTabChange('Approved')}
+        onClick={() => onTabChange('Disbursed')}
         className={`bg-white rounded-xl p-5 flex items-center justify-between border border-[#F1F3F4] shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.05),0px_2px_4px_-1px_rgba(0,0,0,0.03)] hover:-translate-y-1 hover:shadow-lg transition-all duration-300 cursor-pointer group`}
       >
         <div>
-          <p className="text-md text-gray-500 font-semibold mb-1">Approved</p>
+          <p className="text-md text-gray-500 font-semibold mb-1">Disbursed</p>
           <h2 className="text-3xl font-bold text-gray-900">{approved}</h2>
         </div>
         <div className="w-16 h-16 rounded-xl bg-green-100 flex items-center justify-center shrink-0 group-hover:scale-110 group-hover:bg-green-200 transition-all duration-300">

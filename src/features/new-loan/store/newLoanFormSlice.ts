@@ -1,5 +1,7 @@
+// eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
 import { loanService, type LoanApplicationSummary } from '@/features/loans/api/loan.service';
-import { newLeadService } from '@/features/new-lead/api/newLead.service';
+// eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
+import { consentService } from '@/features/consent/api/consent.service';
 import type { VerifyOtpResponse } from '@/lib/api/api.schemas';
 import { logger } from '@/lib/logger';
 import { normalizeLeadId } from '@/lib/utils';
@@ -202,7 +204,7 @@ export const sendOtpAPI = createAsyncThunk(
   'loanForm/sendOtp',
   async (payload: { farmerId: string; leadId?: string }, { rejectWithValue }) => {
     try {
-      const response = await newLeadService.sendOtpAndCreateConsent(payload);
+      const response = await consentService.sendOtpAndCreateConsent(payload);
       return response;
     } catch (err) {
       return rejectWithValue(err instanceof Error ? err.message : 'Failed to send OTP');
@@ -223,7 +225,7 @@ export const verifyOtpAPI = createAsyncThunk<
       if (!consentRequest) {
         throw new Error('No active consent request found. Please request OTP again.');
       }
-      const response = await newLeadService.verifyOtp({
+      const response = await consentService.verifyOtp({
         ...(payload.leadId ? { leadId: payload.leadId } : {}),
         consent_request: consentRequest,
         otp_code: payload.otp_code

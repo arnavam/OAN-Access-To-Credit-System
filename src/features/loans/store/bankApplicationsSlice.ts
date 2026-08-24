@@ -4,6 +4,9 @@ import {
   loanService,
   LoanSummaryMetrics,
 } from '@/features/loans/api/loan.service';
+import { loanStagesService } from '@/features/loans/api/loanStages.service';
+import { getStageStyle, toStageFilterOptions } from '@/features/loans/utils/stageStyles';
+import type { LoanStage } from '@/lib/api/api.schemas';
 import type { ApiResponse } from '@/types/api';
 import { createAsyncThunk, createSelector, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import type { RootState } from '../../../store';
@@ -25,7 +28,7 @@ import type { RootState } from '../../../store';
 // Nothing on this page can widen that, and nothing here should try to enforce it
 // — the client just renders what the scoped endpoint returned.
 
-/** Backend status -> the label the business uses for it on bank screens. */
+/** Backend status -> fallback label if no matching stage is found. */
 const STATUS_LABELS: Record<string, string> = {
   Approved: 'Granted',
   Processing: 'Processing',
@@ -33,16 +36,16 @@ const STATUS_LABELS: Record<string, string> = {
   Draft: 'Draft',
 };
 
-export function bankStatusLabel(status: string): string {
+export function bankStatusLabel(status: string, stages?: readonly LoanStage[]): string {
+  if (stages && stages.length > 0) {
+    const style = getStageStyle(status, stages);
+    return style.label;
+  }
   return STATUS_LABELS[status] ?? status;
 }
 
 /**
- * The statuses a bank can actually see, in lifecycle order.
- *
- * `Draft` is absent on purpose: it is the Development Agent's private stage and
- * the backend refuses it to bank users (`loan_application_scope_query`), so
- * offering it as a filter would only ever return nothing.
+ * Fallback statuses for a bank if dynamic stages have not yet resolved.
  */
 export const BANK_STATUS_OPTIONS: ReadonlyArray<{ value: string; label: string; color: string }> = [
   { value: 'Processing', label: 'Processing', color: 'bg-cyan-500' },
@@ -125,6 +128,10 @@ interface BankApplicationsState {
    */
   latestRequestId: string | null;
 
+  stages: LoanStage[];
+  isStagesLoading: boolean;
+  stagesError: string | null;
+
   summary: ApiResponse<LoanSummaryMetrics> | null;
   isSummaryLoading: boolean;
   summaryError: string | null;
@@ -163,6 +170,10 @@ const initialState: BankApplicationsState = {
   error: null,
   latestRequestId: null,
 
+  stages: [],
+  isStagesLoading: false,
+  stagesError: null,
+
   summary: null,
   isSummaryLoading: false,
   summaryError: null,
@@ -187,6 +198,21 @@ export const fetchBankApplications = createAsyncThunk(
         throw error;
       }
       const message = error instanceof Error ? error.message : 'Failed to fetch applications';
+      return rejectWithValue(message);
+    }
+  }
+);
+
+export const fetchBankStages = createAsyncThunk(
+  'bankApplications/fetchStages',
+  async (_, { rejectWithValue }) => {
+    try {
+      return await loanStagesService.getStages();
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw error;
+      }
+      const message = error instanceof Error ? error.message : 'Failed to fetch loan stages';
       return rejectWithValue(message);
     }
   }
@@ -262,6 +288,19 @@ const bankApplicationsSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload as string;
       })
+      .addCase(fetchBankStages.pending, (state) => {
+        state.isStagesLoading = true;
+        state.stagesError = null;
+      })
+      .addCase(fetchBankStages.fulfilled, (state, action) => {
+        state.isStagesLoading = false;
+        state.stages = action.payload?.data?.stages ?? [];
+      })
+      .addCase(fetchBankStages.rejected, (state, action) => {
+        if (action.meta.aborted) return;
+        state.isStagesLoading = false;
+        state.stagesError = action.payload as string;
+      })
       .addCase(fetchBankApplicationSummary.pending, (state) => {
         state.isSummaryLoading = true;
         state.summaryError = null;
@@ -290,6 +329,9 @@ export const {
 const selectRaw = (state: RootState) => state.bankApplications.raw;
 export const selectBankApplicationsLoading = (state: RootState) => state.bankApplications.isLoading;
 export const selectBankApplicationsError = (state: RootState) => state.bankApplications.error;
+export const selectBankStages = (state: RootState) => state.bankApplications.stages;
+export const selectIsBankStagesLoading = (state: RootState) => state.bankApplications.isStagesLoading;
+export const selectBankStagesError = (state: RootState) => state.bankApplications.stagesError;
 export const selectBankPage = (state: RootState) => state.bankApplications.page;
 export const selectBankPageSize = (state: RootState) => state.bankApplications.pageSize;
 export const selectBankSearchQuery = (state: RootState) => state.bankApplications.searchQuery;
@@ -298,15 +340,15 @@ export const selectBankSortBy = (state: RootState) => state.bankApplications.sor
 export const selectBankSortOrder = (state: RootState) => state.bankApplications.sortOrder;
 const selectSummary = (state: RootState) => state.bankApplications.summary;
 
-function toneFor(status: string): BankApplicationRow['statusTone'] {
-  if (status === 'Approved') return 'success';
-  if (status === 'Rejected') return 'danger';
-  if (status === 'Draft') return 'neutral';
-  return 'info';
-}
+export const selectBankStageOptions = createSelector([selectBankStages], (stages) => {
+  if (stages.length === 0) {
+    return BANK_STATUS_OPTIONS;
+  }
+  return toStageFilterOptions(stages);
+});
 
 // --- Derived selectors ---
-const selectRowsData = createSelector([selectRaw], (raw) => {
+const selectRowsData = createSelector([selectRaw, selectBankStages], (raw, stages) => {
   const rows = raw?.data ?? [];
 
   const mapped: BankApplicationRow[] = rows.map((row) => {
@@ -321,7 +363,9 @@ const selectRowsData = createSelector([selectRaw], (raw) => {
       year: 'numeric',
     });
     const appliedTime = created.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-    const status = row.status || 'Processing';
+    const rawStatus = row.status || 'Processing';
+    const displayLabel = row.stage_label || bankStatusLabel(rawStatus, stages);
+    const stageStyle = getStageStyle(row.stage_label || rawStatus, stages);
 
     return {
       id: row.application_id,
@@ -338,9 +382,9 @@ const selectRowsData = createSelector([selectRaw], (raw) => {
       type: row.loan_type || 'Unknown Type',
       productName: row.loan_product_name || '',
       loanAmount: row.loan_amount ? row.loan_amount.toLocaleString() : '—',
-      status,
-      statusLabel: bankStatusLabel(status),
-      statusTone: toneFor(status),
+      status: rawStatus,
+      statusLabel: displayLabel,
+      statusTone: stageStyle.tone,
       appliedDate,
       appliedTime,
       updated: `${appliedDate} · ${appliedTime}`,
@@ -376,17 +420,31 @@ export const selectBankLoanTypeOptions = createSelector(
 
 /**
  * Bank-side KPI figures, bucketed by archetype state.
- *
- * `processing` / `approved` / `rejected` were read here for a long time and the
- * endpoint has never returned them — they are names from the status model the
- * archetype refactor replaced. With `?? 0` behind them the three tiles showed a
- * confident, permanent zero, which reads as real data rather than as missing.
- *
- * `by_status` is keyed on the archetype constants, so it means the same thing
- * for every bank; a stage label does not.
  */
-export const selectBankMetrics = createSelector([selectSummary], (summary) => {
+export const selectBankMetrics = createSelector([selectSummary, selectBankStages], (summary, stages) => {
   const byStatus = summary?.data?.by_status;
+  if (stages.length > 0) {
+    let inTransition = 0;
+    let completed = 0;
+    let cancelled = 0;
+    let total = 0;
+    for (const stage of stages) {
+      const count = stage.application_count ?? 0;
+      total += count;
+      if (stage.archetype_state === 'In Transition') inTransition += count;
+      else if (stage.archetype_state === 'Completed') completed += count;
+      else if (stage.archetype_state === 'Rejected' || stage.archetype_state === 'Cancelled') cancelled += count;
+    }
+    if (total > 0) {
+      return {
+        total,
+        inTransition,
+        completed,
+        cancelled,
+      };
+    }
+  }
+
   return {
     total: summary?.data?.total ?? 0,
     inTransition: byStatus?.['In Transition'] ?? 0,

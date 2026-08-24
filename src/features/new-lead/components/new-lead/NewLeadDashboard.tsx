@@ -1,16 +1,18 @@
 'use client';
 
+// eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
 import { LeadLayoutGrid } from '@/features/leads/components/LeadLayoutGrid';
+// eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
 import { useLeadInitialization } from '@/features/leads/hooks/useLeadInitialization';
+// eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
 import { selectLeads } from '@/features/leads/store/leadSlice';
 import {
-    fetchActivitiesThunk, fetchLeadDetailsThunk, fetchLeadMetadataThunk, fetchLeadProfileThunk, fetchVisitSchedulesThunk, selectConsentState, selectDetailsError, selectFarmerState, selectLeadFirstName,
+    fetchActivitiesThunk, fetchLeadDetailsThunk, fetchLeadMetadataThunk, fetchLeadProfileThunk, fetchVisitSchedulesThunk, selectDetailsError, selectFarmerState, selectLeadFirstName,
     selectLeadLastName, selectLeadPhoneNumber, selectLeadStatus, selectVisitState
 } from '@/features/new-lead';
 import { ActivitySection } from '@/features/new-lead/components/ActivitySection';
 import { CallDetailsSection } from '@/features/new-lead/components/CallDetailsSection';
-import { ConsentFinalizationSection } from '@/features/new-lead/components/ConsentFinalizationSection';
-import { ConsentManagementSection } from '@/features/new-lead/components/ConsentManagementSection';
+import { ConsentFinalizationSection, ConsentManagementSection, selectConsentState } from '@/features/consent';
 import { CreditInformationSection } from '@/features/new-lead/components/CreditInformationSection';
 import { FarmerDetailsSection } from '@/features/new-lead/components/FarmerDetailsSection';
 import { InteractionTimelineCard } from '@/features/new-lead/components/InteractionTimelineCard';

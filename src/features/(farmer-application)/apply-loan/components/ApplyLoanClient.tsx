@@ -5,11 +5,11 @@ import { logger } from '@/lib/logger';
 import { AlertCircle, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { getCatalog } from '../../api/farmerApi';
+import { getProduct } from '../../api/farmerApi';
 import ApplicationHeader from './ApplicationHeader';
 import ConsentManagement from './ConsentManagement';
 import CreditInformation from './CreditInformation';
-import type { FarmerLoanProduct } from '../../types';
+import type { DetailedLoanProduct } from '../../types';
 
 interface ApplyLoanClientProps {
   productId: string;
@@ -17,7 +17,7 @@ interface ApplyLoanClientProps {
 
 export default function ApplyLoanClient({ productId }: ApplyLoanClientProps) {
   // Loan product state
-  const [loanProduct, setLoanProduct] = useState<FarmerLoanProduct | null>(null);
+  const [loanProduct, setLoanProduct] = useState<DetailedLoanProduct | null>(null);
   const [isLoadingProduct, setIsLoadingProduct] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
 
@@ -27,10 +27,8 @@ export default function ApplyLoanClient({ productId }: ApplyLoanClientProps) {
       setIsLoadingProduct(true);
       setLoadFailed(false);
       try {
-        const res = await getCatalog({ loan_product: productId });
-        // Read the element once and narrow it: under noUncheckedIndexedAccess a
-        // length check does not tell the compiler that [0] is present.
-        const product = res.data?.products?.[0];
+        const res = await getProduct(productId);
+        const product = res.data?.product;
         if (!isMounted) return;
         if (product) {
           setLoanProduct(product);

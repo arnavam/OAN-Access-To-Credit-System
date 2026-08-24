@@ -191,4 +191,84 @@ describe('selectBankApplicationRows', () => {
       loanAmount: '15,000',
     });
   });
+
+  it('uses dynamic stage_label when provided in the payload', () => {
+    const store = createTestStore();
+    store.dispatch({
+      type: 'bankApplications/fetch/pending',
+      meta: { requestId: 'r2' },
+    });
+    store.dispatch({
+      type: 'bankApplications/fetch/fulfilled',
+      meta: { requestId: 'r2' },
+      payload: {
+        data: [
+          {
+            application_id: 'APP-2026-01482',
+            status: 'In Transition',
+            stage_id: 'LSS-00021',
+            stage_label: 'Verified',
+            step: 1,
+            lead_id: null,
+            loan_amount: 124.0,
+            loan_type: null,
+            loan_product: 'PROD-PB-0370-01218',
+            loan_product_name: '123456',
+            phone_number: '+18289997752',
+            creation: '2026-08-23T14:37:01.408252+05:30',
+          },
+        ],
+        pagination: { total: 1, total_pages: 1 },
+      },
+    });
+
+    const rows = selectBankApplicationRows(asRootState(store.getState()));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      id: 'APP-2026-01482',
+      statusLabel: 'Verified',
+      statusTone: 'info',
+    });
+  });
+
+  it('populates dynamic stages and derives stage options', () => {
+    const store = createTestStore();
+    store.dispatch({
+      type: 'bankApplications/fetchStages/fulfilled',
+      payload: {
+        data: {
+          bank: 'HDFC Bank',
+          stages: [
+            {
+              name: 'c2f9d14a80',
+              bank: 'HDFC Bank',
+              stage_id: 'submitted-a8f3b2',
+              label: 'Submitted',
+              archetype_state: 'In Transition',
+              sequence: 1,
+              external_code: null,
+              description: 'Initial application submission',
+              application_count: 14,
+            },
+            {
+              name: 'd3e8c25b91',
+              bank: 'HDFC Bank',
+              stage_id: 'disbursed-b9e4c3',
+              label: 'Disbursed',
+              archetype_state: 'Completed',
+              sequence: 2,
+              external_code: null,
+              description: 'Loan disbursed',
+              application_count: 20,
+            },
+          ],
+        },
+      },
+    });
+
+    const state = store.getState();
+    expect(state.bankApplications.stages).toHaveLength(2);
+    expect(state.bankApplications.stages[0]?.label).toBe('Submitted');
+    expect(state.bankApplications.stages[1]?.label).toBe('Disbursed');
+  });
 });

@@ -1,6 +1,6 @@
 import type { FarmerLoanApplication } from '../types';
 
-export type ApplicationTab = 'total' | 'Draft' | 'Processing' | 'Approved' | 'Rejected';
+export type ApplicationTab = 'total' | 'Draft' | 'Under Review' | 'Disbursed' | 'Rejected';
 
 export type ApplicationCounts = Record<ApplicationTab, number>;
 
@@ -15,12 +15,16 @@ export function countByStatus(applications: FarmerLoanApplication[]): Applicatio
   const counts: ApplicationCounts = {
     total: applications.length,
     Draft: 0,
-    Processing: 0,
-    Approved: 0,
+    'Under Review': 0,
+    Disbursed: 0,
     Rejected: 0,
   };
   for (const application of applications) {
-    counts[application.status] += 1;
+    const status = application.status as ApplicationTab;
+    if (counts[status] === undefined) {
+      counts[status] = 0;
+    }
+    counts[status] += 1;
   }
   return counts;
 }

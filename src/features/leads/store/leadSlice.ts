@@ -219,9 +219,9 @@ const leadSlice = createSlice({
         fetchLeadDetailsThunk.fulfilled.match,
         (state, action) => {
           const arg = action.meta.arg;
-          const leadId = typeof arg === 'string' ? arg : arg.leadId;
+          const leadId = typeof arg === 'string' ? arg : arg?.leadId;
           const leadData = action.payload;
-          if (leadData) {
+          if (leadData && leadId) {
             const lead = findLeadById(state.leads, leadId);
             if (lead) {
               lead.name = `${leadData.firstName} ${leadData.lastName}`.trim();

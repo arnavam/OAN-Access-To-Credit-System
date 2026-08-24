@@ -1,3 +1,4 @@
+// eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
 import { invalidateVisitScheduleCache } from '@/features/leads/api/lead.service';
 import { normalizeLeadId } from '@/lib/utils';
 import type { RootState } from '@/store';

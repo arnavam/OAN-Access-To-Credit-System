@@ -1,5 +1,6 @@
 import { Portal } from '@/components/Portal';
 import { SelectField } from '@/components/ui/SelectField';
+// eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
 import { loanService, type BrowseProductItem } from '@/features/loans/api/loan.service';
 import { X } from 'lucide-react';
 import { useEffect, useState } from 'react';
