@@ -101,7 +101,7 @@ export function LoanProductCard({ product, variant = 'default', canDelete = true
 
   return (
     <>
-      <div className="flex items-start justify-between gap-4 rounded-xl border border-[#E5E7EB] bg-white p-5 shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.05),0px_2px_4px_-1px_rgba(0,0,0,0.03)] transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-xl border border-[#E5E7EB] bg-white p-5 shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.05),0px_2px_4px_-1px_rgba(0,0,0,0.03)] transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
         {/* Left Section */}
         <div className="flex items-start gap-4 min-w-0">
           {/* Category Icon */}
@@ -113,9 +113,9 @@ export function LoanProductCard({ product, variant = 'default', canDelete = true
             {/* Header: Title + Category Pill + Status Pill */}
             <div className="flex flex-wrap items-center gap-2.5">
               <h3 className="text-[16px] font-bold text-[#1F2937] truncate">{product.product_name}</h3>
-              
+
               {categoryKey ? (
-                <span className={`rounded-md px-2.5 py-0.5 text-[12px] font-bold ${theme.tagBg} ${theme.tagText}`}>
+                <span className={`rounded-full px-2.5 py-0.5 text-[12px] font-bold  border border-emerald-200 ${theme.tagBg} ${theme.tagText}`}>
                   {categoryKey}
                 </span>
               ) : null}
@@ -157,7 +157,7 @@ export function LoanProductCard({ product, variant = 'default', canDelete = true
         </div>
 
         {/* Right Actions */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center justify-end w-full sm:w-auto gap-2 shrink-0 mt-4 sm:mt-0 border-t sm:border-0 border-gray-100 pt-4 sm:pt-0">
           {isApproval ? (
             <button
               type="button"

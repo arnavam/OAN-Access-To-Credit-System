@@ -76,7 +76,7 @@ export default function AgentApplicationListClient() {
       {/* Stat Cards Row */}
       <StatCards />
 
-      <div className="bg-white border border-[#F1F3F4] rounded-2xl shadow-sm overflow-hidden flex flex-col">
+      <div className="bg-white border border-[#F1F3F4] rounded-2xl shadow-sm flex flex-col">
         {/* Table */}
         <AgentApplicationTable onView={handleView} />
       </div>

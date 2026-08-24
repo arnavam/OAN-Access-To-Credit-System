@@ -195,7 +195,7 @@ export function DashboardHeader({ onMenuClick, title = 'Dashboard', subtitle }: 
                   className="w-full flex items-center gap-3.5 px-5 py-3 text-sm font-medium text-gray-900 hover:bg-gray-50 transition-colors border-b border-gray-100 text-left whitespace-nowrap"
                 >
                   <UserRound className="w-5 h-5 text-[#16A34A] shrink-0" />
-                  <span>My Profile</span>
+                  <span className='font-medium'>My Profile</span>
                 </button>
 
                 {canManageOrganization && (
@@ -226,7 +226,7 @@ export function DashboardHeader({ onMenuClick, title = 'Dashboard', subtitle }: 
                   className="w-full flex items-center gap-3.5 px-5 py-3 text-sm font-bold text-[#FF4D4D] hover:bg-red-50/60 transition-colors text-left whitespace-nowrap"
                 >
                   <LogOut className="w-5 h-5 text-[#FF4D4D] shrink-0" />
-                  <span>Logout</span>
+                  <span className='font-medium'>Logout</span>
                 </button>
               </div>
             )}

@@ -198,7 +198,7 @@ export function ReviewProductModal({ isOpen, onClose, product, initialMode = nul
             onClick={onClose}
             className="rounded-lg border border-[#D1D5DB] bg-white px-6 py-2.5 text-[14px] font-bold text-[#374151] transition-colors hover:bg-gray-50"
           >
-            Close
+            <span className='font-semibold'>Close</span>
           </button>
         ) : (
           <>
