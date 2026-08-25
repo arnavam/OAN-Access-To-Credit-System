@@ -104,8 +104,8 @@ export default function DiscoverLoansClient() {
         if (!isMounted) return;
 
         const fetched = response.data.products || [];
-        // is_saved rides on each row from list_catalog, so a card draws the right
-        // star on a cold load rather than resetting to empty every refresh.
+        // is_saved rides on each row from list_catalog, so a card draws its
+        // bookmark set on a cold load rather than resetting to empty every refresh.
         setProducts(fetched);
         setTotalEntries(response.pagination.total);
 
@@ -215,7 +215,7 @@ export default function DiscoverLoansClient() {
             <p className="text-[15px] text-gray-500 max-w-sm mx-auto leading-relaxed">
               {loadError ??
                 (showsOnlyBookmarks
-                  ? 'Tap the star on any loan to bookmark it, and it will show up here.'
+                  ? 'Tap the bookmark icon on any loan to save it, and it will show up here.'
                   : searchQuery || hasActiveFilters
                     ? "Try adjusting your filters or search query to find what you're looking for."
                     : 'No loan products are available yet. Please check back soon.')}

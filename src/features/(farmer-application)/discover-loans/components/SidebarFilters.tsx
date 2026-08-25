@@ -1,7 +1,7 @@
 'use client';
 
 import Button from '@/components/ui/Button';
-import { ChevronDown, ChevronUp, Star } from 'lucide-react';
+import { Bookmark, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
 import type { CatalogFacets, CatalogFilters } from '../../types';
 
@@ -126,7 +126,7 @@ export default function SidebarFilters({ facets, hasFailed = false, onRetry, fil
             }}
             className="w-4 h-4 rounded accent-[#16A34A]"
           />
-          <Star className="w-4 h-4 text-amber-500 shrink-0" fill="currentColor" />
+          <Bookmark className="w-4 h-4 text-[#16A34A] shrink-0" fill="currentColor" />
           <span className="flex-1">Bookmarked only</span>
         </label>
       </Section>

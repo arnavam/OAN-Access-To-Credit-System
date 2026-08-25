@@ -1,5 +1,5 @@
 "use client";
-import { ArrowRight, Star, Landmark, Tag } from 'lucide-react';
+import { ArrowRight, Bookmark, Landmark, Tag } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { toast } from '@/lib/toast';
@@ -34,7 +34,7 @@ export default function LoanCard({ loan, onBookmarkToggle }: LoanCardProps) {
     try {
       await onBookmarkToggle(loan, previous);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to save product');
+      toast.error(err instanceof Error ? err.message : 'Failed to update bookmark');
       setIsBookmarked(previous);
     } finally {
       setIsSaving(false);
@@ -88,7 +88,11 @@ export default function LoanCard({ loan, onBookmarkToggle }: LoanCardProps) {
           </span>
         </div>
 
-        {/* Floating Top Right: Bookmark Button */}
+        {/* Floating Top Right: Bookmark Button. A bookmark icon, not a star —
+            a star reads as a rating or a favourite, and this is the same saved
+            list the sidebar filters on and the aria-label already calls a
+            bookmark. Brand green for the set state, matching every other active
+            control on the page. */}
         <div className="absolute top-3.5 right-3.5 z-20">
           <button
             type="button"
@@ -97,10 +101,10 @@ export default function LoanCard({ loan, onBookmarkToggle }: LoanCardProps) {
             aria-pressed={isBookmarked}
             aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark this loan'}
             className={`w-9 h-9 rounded-full bg-white/95 backdrop-blur-md border border-white/40 shadow-sm flex items-center justify-center transition-all hover:scale-110 disabled:opacity-60 ${
-              isBookmarked ? 'text-amber-500' : 'text-gray-400 hover:text-gray-600'
+              isBookmarked ? 'text-[#16A34A]' : 'text-gray-400 hover:text-gray-600'
             }`}
           >
-            <Star className="w-4 h-4" fill={isBookmarked ? 'currentColor' : 'none'} />
+            <Bookmark className="w-4 h-4" fill={isBookmarked ? 'currentColor' : 'none'} />
           </button>
         </div>
 
