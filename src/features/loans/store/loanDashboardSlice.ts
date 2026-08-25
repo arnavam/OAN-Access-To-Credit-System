@@ -506,7 +506,7 @@ export const selectQueryParams = createSelector(
     if (!allChecked && selectedStatuses.length > 0) {
       if (selectedStatuses.includes('danger')) statusesToPass.push('Rejected', 'Action Required');
       if (selectedStatuses.includes('neutral')) statusesToPass.push('Draft');
-      if (selectedStatuses.includes('info')) statusesToPass.push('Pending Review', 'Processing');
+      if (selectedStatuses.includes('info')) statusesToPass.push('Pending Review', 'Processed', 'Processing');
       if (selectedStatuses.includes('success')) statusesToPass.push('Approved');
     }
 
