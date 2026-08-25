@@ -1,4 +1,5 @@
 "use client";
+import { DiscoverLoansCta } from '@/components/DiscoverLoansCta';
 import { useMemo } from 'react';
 import { NO_VALUE, formatRate, formatTenure } from '../../format';
 import type { FarmerLoanApplication } from '../../types';
@@ -48,6 +49,26 @@ export default function ApplicationList({
         </div>
       </div>
 
+      {filteredApplications.length === 0 ? (
+        // An empty grid used to render as blank space under the tabs. Which of
+        // the two empties it is matters: someone who has never applied needs the
+        // catalogue, someone filtering to a tab they have nothing in just needs
+        // to know the filter is why.
+        applications.length === 0 ? (
+          <DiscoverLoansCta
+            variant="empty"
+            title="You have not applied for a loan yet"
+            description="Browse loan products from every participating bank and compare amounts, rates and tenure before you apply."
+          />
+        ) : (
+          <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50/60 px-6 py-12 text-center">
+            <p className="text-[15px] font-semibold text-gray-900">No {activeTab.toLowerCase()} applications</p>
+            <p className="mt-1 text-[14px] text-gray-500">
+              Your other applications are still here — switch tabs to see them.
+            </p>
+          </div>
+        )
+      ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {filteredApplications.map((app) => (
           <ApplicationCard
@@ -71,6 +92,7 @@ export default function ApplicationList({
           />
         ))}
       </div>
+      )}
     </div>
   );
 }

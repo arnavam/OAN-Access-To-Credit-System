@@ -204,6 +204,14 @@ export const loanProductSummarySchema = z.object({
   creation: z.string().nullable().optional(),
   categories: z.array(z.string()).nullish().transform((val) => val ?? []),
   applications_count: z.number().nullish().transform((val) => val ?? 0),
+  // `list_products` has always sent these three; they were absent here, so zod
+  // stripped them and the bank's cards had no banner image to show. Declared now
+  // that the bank renders the same ProductCard as the farmer catalogue. Optional
+  // rather than required: a product created before an image field existed carries
+  // none, and `bank_name` is resolved from a separate lookup that can miss.
+  image: z.string().nullable().optional(),
+  bank: z.string().nullable().optional(),
+  bank_name: z.string().nullable().optional(),
 });
 export type LoanProductSummary = z.infer<typeof loanProductSummarySchema>;
 

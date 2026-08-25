@@ -51,7 +51,9 @@ export function BaseProductList({
           </p>
         </div>
       ) : (
-        <div className="mt-6 flex flex-col gap-4">
+        // A grid, matching Discover Loans: the cards carry a banner image now, so
+        // stacking them full-width left most of each row empty.
+        <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {products.map(renderItem)}
         </div>
       )}

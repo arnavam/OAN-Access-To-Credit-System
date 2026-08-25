@@ -18,6 +18,7 @@ const LeadAdvancedFilters = dynamic(() => import('@/features/leads/components/Le
 });
 
 import { AccessDenied } from '@/components/AccessDenied';
+import { DiscoverLoansCta } from '@/components/DiscoverLoansCta';
 import { ConnectionError } from '@/components/ConnectionError';
 // eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
 import { selectOfficerName } from '@/features/auth/store/authSlice';
@@ -297,6 +298,16 @@ export function LeadsDashboardClient() {
           ))}
         </div>
       </div>
+
+      {/* A development agent browses the catalogue on a farmer's behalf, so the
+          way in belongs on the screen where they work leads. `/loan-discovery`,
+          not `/discover-loans`: the dev-agent portal mounts the same catalogue
+          under its own route. */}
+      <DiscoverLoansCta
+        href="/loan-discovery"
+        title="Browse loans for a farmer"
+        description="Compare products from every participating bank before starting an application on a lead's behalf."
+      />
 
       <div className="overflow-hidden rounded-2xl border border-[#e9e9e9] bg-white shadow-sm hover:-translate-y-0.5 hover:shadow-lg transition-all">
         <LeadToolbar
