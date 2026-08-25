@@ -209,7 +209,7 @@ export const loanService = {
   async submitApplication(application_id: string): Promise<ApiResponse<null>> {
     return fetchApi('oan_a2c.api.v1.loan_applications.update_loan_status', {
       method: 'POST',
-      body: JSON.stringify({ application_id, status: 'Processing' }),
+      body: JSON.stringify({ application_id, status: 'Processed' }),
     }) as Promise<ApiResponse<null>>;
   },
 

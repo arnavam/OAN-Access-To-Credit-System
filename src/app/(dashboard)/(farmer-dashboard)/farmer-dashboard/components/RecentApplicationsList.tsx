@@ -19,6 +19,7 @@ export default function RecentApplicationsList({ applications = [] }: { applicat
       case 'Disbursed':
       case 'Active':
         return 'bg-green-100 text-green-700';
+      case 'Processed':
       case 'Processing':
       case 'Under Review':
         return 'bg-yellow-100 text-yellow-700';

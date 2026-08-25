@@ -139,14 +139,14 @@ export interface FilterStatusOption {
 
 /** Dev-agent loan dashboard: the post-submission lifecycle only. */
 export const LOAN_FILTER_STATUS_OPTIONS: readonly FilterStatusOption[] = [
-  { label: 'Processing', value: 'Processing', dot: 'bg-teal-500' },
+  { label: 'Processed', value: 'Processed', dot: 'bg-teal-500' },
   { label: 'Approved', value: 'Approved', dot: 'bg-teal-500' },
   { label: 'Rejected', value: 'Rejected', dot: 'bg-red-500' },
 ];
 
 /** Bank portals: the admin dashboard also sees the pre-decision stages. */
 export const SELLER_FILTER_STATUS_OPTIONS: readonly FilterStatusOption[] = [
-  { label: 'In Underwriting', value: 'Processing', dot: 'bg-emerald-500' },
+  { label: 'In Underwriting', value: 'Processed', dot: 'bg-emerald-500' },
   { label: 'Approved', value: 'Approved', dot: 'bg-emerald-500' },
   { label: 'Review', value: 'Pending Review', dot: 'bg-blue-500' },
   { label: 'Rejected', value: 'Rejected', dot: 'bg-red-500' },

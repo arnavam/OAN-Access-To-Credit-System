@@ -31,7 +31,8 @@ import type { RootState } from '../../../store';
 /** Backend status -> fallback label if no matching stage is found. */
 const STATUS_LABELS: Record<string, string> = {
   Approved: 'Granted',
-  Processing: 'Processing',
+  Processing: 'Processed',
+  Processed: 'Processed',
   Rejected: 'Rejected',
   Draft: 'Draft',
 };
@@ -48,7 +49,7 @@ export function bankStatusLabel(status: string, stages?: readonly LoanStage[]): 
  * Fallback statuses for a bank if dynamic stages have not yet resolved.
  */
 export const BANK_STATUS_OPTIONS: ReadonlyArray<{ value: string; label: string; color: string }> = [
-  { value: 'Processing', label: 'Processing', color: 'bg-cyan-500' },
+  { value: 'Processed', label: 'Processed', color: 'bg-cyan-500' },
   { value: 'Approved', label: 'Granted', color: 'bg-emerald-500' },
   { value: 'Rejected', label: 'Rejected', color: 'bg-red-500' },
 ];
@@ -363,7 +364,7 @@ const selectRowsData = createSelector([selectRaw, selectBankStages], (raw, stage
       year: 'numeric',
     });
     const appliedTime = created.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-    const rawStatus = row.status || 'Processing';
+    const rawStatus = row.status || 'Processed';
     const displayLabel = row.stage_label || bankStatusLabel(rawStatus, stages);
     const stageStyle = getStageStyle(row.stage_label || rawStatus, stages);
 
