@@ -26,6 +26,7 @@ export default function DiscoverLoansClient() {
   const [filters, setFilters] = useState<CatalogFilters>({});
   const [currentPage, setCurrentPage] = useState(1);
   const [entriesPerPage, setEntriesPerPage] = useState(10);
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
   const [facets, setFacets] = useState<CatalogFacets | null>(null);
   const [facetsFailed, setFacetsFailed] = useState(false);
@@ -137,15 +138,32 @@ export default function DiscoverLoansClient() {
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 w-full">
+      {/* Mobile Filters Toggle */}
+      <div className="lg:hidden flex items-center justify-between bg-white border border-[#F1F3F4] rounded-xl p-4 shadow-sm">
+        <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
+        <button
+          onClick={() => setIsMobileFiltersOpen(!isMobileFiltersOpen)}
+          className="flex items-center gap-2 text-sm font-bold text-[#16A34A]"
+        >
+          {isMobileFiltersOpen ? 'Hide Filters' : 'Show Filters'}
+        </button>
+      </div>
+
       {/* Sidebar - Left */}
-      <div className="w-full lg:w-[320px] shrink-0">
+      <div className={`w-full lg:w-[320px] shrink-0 ${isMobileFiltersOpen ? 'block' : 'hidden lg:block'}`}>
         <SidebarFilters
           facets={facets}
           hasFailed={facetsFailed}
           onRetry={retryFacets}
           filters={filters}
-          onApply={setFilters}
-          onReset={() => setFilters({})}
+          onApply={(newFilters) => {
+            setFilters(newFilters);
+            setIsMobileFiltersOpen(false);
+          }}
+          onReset={() => {
+            setFilters({});
+            setIsMobileFiltersOpen(false);
+          }}
         />
       </div>
 

@@ -246,7 +246,7 @@ export function LeadsDashboardClient() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 min-w-0 w-full">
       <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-0 rounded-2xl border border-[#e9e9e9] bg-white px-6 py-5 shadow-sm hover:-translate-y-0.5 hover:shadow-lg transition-all">
         <div>
           <h1 className="text-2xl font-bold text-text-primary">Welcome, {isMounted && officerName ? officerName : 'Agent'}</h1>
@@ -274,7 +274,7 @@ export function LeadsDashboardClient() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1 min-w-0">
         <div
           className="flex w-full justify-start gap-3 overflow-x-auto pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] snap-x snap-mandatory"
           onScroll={handleSliderScroll}
