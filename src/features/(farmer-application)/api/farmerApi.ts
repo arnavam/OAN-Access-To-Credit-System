@@ -40,6 +40,10 @@ export async function getCatalog(
     query.append('max_tenure_months', params.tenure_months.toString());
   }
   if (params.category) query.append('category', params.category);
+  // Sent only when set. FarmerCatalogSchema types this as `bool | None`, and
+  // pydantic's lax mode reads the string '1' as True; omitting the param leaves
+  // it None, which is the "no bookmark filter" branch on the backend.
+  if (params.is_saved) query.append('is_saved', '1');
   if (params.sort_by) query.append('sort_by', params.sort_by);
   if (params.limit !== undefined) query.append('limit', params.limit.toString());
   if (params.start !== undefined) query.append('start', params.start.toString());

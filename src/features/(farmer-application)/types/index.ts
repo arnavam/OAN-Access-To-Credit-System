@@ -165,6 +165,12 @@ export interface CatalogFilters {
   max_amount?: number;
   /** Ceiling on the headline rate the card displays (min_interest_rate). */
   max_interest_rate?: number;
+  /** Restrict the catalog to products this user has bookmarked.
+   *
+   *  Only ever true or absent. `is_saved=false` on the wire would read as "show
+   *  me what I have *not* saved", which is not what an unticked box means — the
+   *  key is deleted instead. */
+  is_saved?: true;
 }
 
 export interface CreateApplicationPayload {

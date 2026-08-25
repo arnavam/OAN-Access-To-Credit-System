@@ -1,7 +1,7 @@
 'use client';
 
 import Button from '@/components/ui/Button';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Star } from 'lucide-react';
 import { useState } from 'react';
 import type { CatalogFacets, CatalogFilters } from '../../types';
 
@@ -66,49 +66,23 @@ export default function SidebarFilters({ facets, hasFailed = false, onRetry, fil
     setDraft(filters);
   }
 
-  // Checked before the loading state: a failed request also leaves `facets` null,
-  // and "Loading filters…" forever is the one thing worse than saying so.
-  if (hasFailed) {
-    return (
-      <div className="h-fit bg-white rounded-2xl border border-gray-200 p-6 border-[#F1F3F4] shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.05),0px_2px_4px_-1px_rgba(0,0,0,0.03)] flex flex-col gap-3">
-        <h2 className="text-lg font-bold text-gray-900">Filters</h2>
-        <p className="text-sm font-medium text-gray-500">
-          We could not load the filter options. The loans themselves are still listed.
-        </p>
-        {onRetry && (
-          <button
-            onClick={onRetry}
-            className="self-start text-sm font-bold text-[#16A34A] hover:text-[#10883c] transition-colors"
-          >
-            Try again
-          </button>
-        )}
-      </div>
-    );
-  }
-
-  if (!facets) {
-    return (
-      <div className="h-fit bg-white rounded-2xl border border-gray-200 p-6 border-[#F1F3F4] shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.05),0px_2px_4px_-1px_rgba(0,0,0,0.03)]">
-        <p className="text-sm font-medium text-gray-500">Loading filters…</p>
-      </div>
-    );
-  }
-
-  const amountMax = facets.amount_range?.max ?? 0;
-  const amountMin = facets.amount_range?.min ?? 0;
+  // Read defensively rather than behind an early return. These used to sit after
+  // a `if (!facets) return`, which guaranteed the object; the bookmark filter
+  // below has to render whether or not the facets request landed, so the guard
+  // moved onto the individual sections. Each fallback renders nothing rather
+  // than throwing — including `tenures`, whose absence from the payload once took
+  // the whole page down with a TypeError instead of dropping one section.
+  const amountMax = facets?.amount_range?.max ?? 0;
+  const amountMin = facets?.amount_range?.min ?? 0;
   const hasAmountRange = amountMax > amountMin;
-  const rateCeiling = facets.max_interest_rate;
-  // Defaulted, not read straight off the payload. `facets` is whatever the endpoint
-  // returned — there is no schema parse between the two — so a backend that stops
-  // sending this key took the whole page down with a TypeError rather than dropping
-  // one section. Every other field here is already read defensively.
-  const tenures = facets.tenures ?? [];
+  const rateCeiling = facets?.max_interest_rate ?? null;
+  const tenures = facets?.tenures ?? [];
+  const categories = facets?.categories ?? [];
 
   // A catalog with nothing in it has nothing to filter by. Saying so beats
   // rendering empty controls that look broken.
   const hasAnyFacet =
-    hasAmountRange || rateCeiling !== null || tenures.length > 0 || facets.categories.length > 0;
+    hasAmountRange || rateCeiling !== null || tenures.length > 0 || categories.length > 0;
 
   return (
     <div className="h-fit bg-white rounded-2xl border border-gray-200 p-6 flex flex-col gap-5 border-[#F1F3F4] shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.05),0px_2px_4px_-1px_rgba(0,0,0,0.03)] hover:-translate-y-1 hover:shadow-lg transition-all">
@@ -127,11 +101,62 @@ export default function SidebarFilters({ facets, hasFailed = false, onRetry, fil
 
       <hr className="border-gray-200 -mx-6" />
 
-      {!hasAnyFacet && (
+      {/* The bookmark filter is the one control here that owes nothing to the
+          facets request — it narrows by the farmer's own saved list, not by the
+          shape of the catalog. So it renders in all three states below, failure
+          included: a facets outage must not be what hides the bookmarks the
+          farmer opened this panel to find. */}
+      <Section title="Bookmarks">
+        <label className="flex items-center gap-2.5 text-sm font-medium text-gray-700 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={draft.is_saved ?? false}
+            onChange={(e) => {
+              const next = { ...draft };
+              if (e.target.checked) {
+                next.is_saved = true;
+              } else {
+                // Deleted rather than set to false, as with the tenure chips:
+                // exactOptionalPropertyTypes treats absent and undefined as
+                // different types, and an `is_saved=0` on the wire would read as
+                // "products I have *not* saved" — not what unticking a box means.
+                delete next.is_saved;
+              }
+              setDraft(next);
+            }}
+            className="w-4 h-4 rounded accent-[#16A34A]"
+          />
+          <Star className="w-4 h-4 text-amber-500 shrink-0" fill="currentColor" />
+          <span className="flex-1">Bookmarked only</span>
+        </label>
+      </Section>
+
+      {/* Failure is checked before loading: a failed request also leaves `facets`
+          null, and "Loading filters…" forever is the one thing worse than saying
+          so. It is reported as a failure, too — substituting an all-empty facet
+          set made the sidebar say "the catalog is empty", which is a statement
+          about the catalog, not about the request that did not arrive. */}
+      {hasFailed ? (
+        <div className="flex flex-col gap-3">
+          <p className="text-sm font-medium text-gray-500">
+            We could not load the rest of the filter options. The loans themselves are still listed.
+          </p>
+          {onRetry && (
+            <button
+              onClick={onRetry}
+              className="self-start text-sm font-bold text-[#16A34A] hover:text-[#10883c] transition-colors"
+            >
+              Try again
+            </button>
+          )}
+        </div>
+      ) : !facets ? (
+        <p className="text-sm font-medium text-gray-500">Loading filters…</p>
+      ) : !hasAnyFacet ? (
         <p className="text-sm font-medium text-gray-500">
-          No filters available — the catalog is empty.
+          No catalog filters available — the catalog is empty.
         </p>
-      )}
+      ) : null}
 
       {hasAmountRange && (
         <Section title="Loan Amount">
@@ -223,10 +248,10 @@ export default function SidebarFilters({ facets, hasFailed = false, onRetry, fil
         </Section>
       )}
 
-      {facets.categories.length > 0 && (
+      {categories.length > 0 && (
         <Section title="Loan Types">
           <div className="flex flex-col gap-2">
-            {facets.categories.map((cat) => {
+            {categories.map((cat) => {
               const selected = draft.category === cat.name;
               return (
                 <label
@@ -258,11 +283,12 @@ export default function SidebarFilters({ facets, hasFailed = false, onRetry, fil
         </Section>
       )}
 
-      {hasAnyFacet && (
-        <Button onClick={() => onApply(draft)} className="w-full">
-          Apply Filters
-        </Button>
-      )}
+      {/* Unconditional, where it used to hang off hasAnyFacet: the bookmark
+          checkbox is committable on its own, so there is no longer a state of
+          this sidebar with nothing to apply. */}
+      <Button onClick={() => onApply(draft)} className="w-full">
+        Apply Filters
+      </Button>
     </div>
   );
 }

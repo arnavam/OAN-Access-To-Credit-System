@@ -33,6 +33,10 @@ export default function DiscoverLoansClient() {
   const [totalEntries, setTotalEntries] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // Bumped when the page on screen stops matching the server. Only the bookmark
+  // toggle does that today: under "Bookmarked only" the list *is* the saved set,
+  // so un-saving a card leaves behind a row that no longer belongs in it.
+  const [catalogAttempt, setCatalogAttempt] = useState(0);
 
   // Filter options come from the catalog itself, so the sidebar only ever offers
   // choices that match something. Fetched once — the option set changes when a
@@ -99,8 +103,20 @@ export default function DiscoverLoansClient() {
 
         if (!isMounted) return;
 
-        setProducts(response.data.products || []);
+        const fetched = response.data.products || [];
+        // is_saved rides on each row from list_catalog, so a card draws the right
+        // star on a cold load rather than resetting to empty every refresh.
+        setProducts(fetched);
         setTotalEntries(response.pagination.total);
+
+        // Un-bookmarking the only row on the last page empties the page the
+        // farmer is standing on while results still exist behind it. Stepping
+        // back to the last populated page beats showing "No loans found" over a
+        // non-empty result. Guarded on total > 0, so it cannot loop.
+        const lastPage = Math.ceil(response.pagination.total / entriesPerPage);
+        if (fetched.length === 0 && lastPage > 0 && currentPage > lastPage) {
+          setCurrentPage(lastPage);
+        }
       } catch (error) {
         logger.error('Error fetching catalog', error);
         if (!isMounted) return;
@@ -116,10 +132,15 @@ export default function DiscoverLoansClient() {
     return () => {
       isMounted = false;
     };
-  }, [debouncedSearch, sortBy, filters, currentPage, entriesPerPage]);
+  }, [debouncedSearch, sortBy, filters, currentPage, entriesPerPage, catalogAttempt]);
 
   const totalPages = Math.ceil(totalEntries / entriesPerPage) || 1;
   const hasActiveFilters = Object.values(filters).some((v) => v !== undefined);
+  // Only when nothing else is narrowing the list does an empty result mean "you
+  // have no bookmarks"; with a search term or a second filter on top, the honest
+  // advice is still to widen the filters.
+  const showsOnlyBookmarks =
+    filters.is_saved === true && !debouncedSearch && Object.keys(filters).length === 1;
 
   // Rethrows: the card renders the new state optimistically and needs to know
   // when the write failed so it can put the bookmark back rather than keep
@@ -132,6 +153,13 @@ export default function DiscoverLoansClient() {
       await removeBookmark(product.name);
     } else {
       await saveBookmark(product.name);
+    }
+
+    // Refetch rather than splice the row out locally: the grid is one page of a
+    // server-side count, and dropping a row here would leave the pager claiming
+    // a total the list no longer has.
+    if (filters.is_saved) {
+      setCatalogAttempt((attempt) => attempt + 1);
     }
   };
 
@@ -178,13 +206,19 @@ export default function DiscoverLoansClient() {
               <Search className="w-7 h-7 text-[#16A34A]" strokeWidth={2} />
             </div>
             <h3 className="text-xl font-bold text-gray-900 mb-3">
-              {loadError ? 'Could not load loans' : 'No loans found'}
+              {loadError
+                ? 'Could not load loans'
+                : showsOnlyBookmarks
+                  ? 'No bookmarks yet'
+                  : 'No loans found'}
             </h3>
             <p className="text-[15px] text-gray-500 max-w-sm mx-auto leading-relaxed">
               {loadError ??
-                (searchQuery || hasActiveFilters
-                  ? "Try adjusting your filters or search query to find what you're looking for."
-                  : 'No loan products are available yet. Please check back soon.')}
+                (showsOnlyBookmarks
+                  ? 'Tap the star on any loan to bookmark it, and it will show up here.'
+                  : searchQuery || hasActiveFilters
+                    ? "Try adjusting your filters or search query to find what you're looking for."
+                    : 'No loan products are available yet. Please check back soon.')}
             </p>
           </div>
         )}

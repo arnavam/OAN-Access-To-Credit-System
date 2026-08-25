@@ -19,7 +19,10 @@ const navigationSections: NavSection[] = [
       {
         path: '/loan-discovery',
         activePaths: ['/loan-discovery'],
-        label: 'Loan Discovery',
+        // Same page, same name as the farmer's at /discover-loans. The routes have
+        // to differ -- two route groups cannot both own /discover-loans -- but the
+        // label is what people read, and one surface should have one name.
+        label: 'Discover Loans',
         icon: Search,
       },
       {
