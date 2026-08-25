@@ -3,6 +3,7 @@ import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
 import { selectLeadSourcesOptions } from '@/features/new-lead/store/newLeadSlice';
 // eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
 import { selectCategories } from '@/features/seller/store/loanProductsSlice';
+import { ALL_AMOUNTS_INDEX, LOAN_AMOUNT_RANGES, loanAmountRange, loanAmountRangeIndex } from '@/lib/loanAmountRanges';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { useModalA11y } from '@/hooks/useModalA11y';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -13,15 +14,13 @@ import { KPI_CARDS_LAYOUT, STATUS_STYLE_MAP } from '../constants/leads.constants
 import { resetFilters, selectAdvFilters, setAdvFilters } from '../store/leadSlice';
 
 
-const RANGE_STEPS = [
-  { label: '0-25,000', value: '0-25000', min: 0, max: 25000, display: 'ETB 0 - 25,000' },
-  { label: '25,001 - 50,000', value: '25001-50000', min: 25001, max: 50000, display: 'ETB 25,001 - 50,000' },
-  { label: '50,001 - 1,00,000', value: '50001-100000', min: 50001, max: 100000, display: 'ETB 50,001 - 1,00,000' },
-  { label: '1,00,000 and above', value: '100000+', min: 100001, max: 10000000, display: 'ETB 1,00,000 and above' },
-  { label: 'All Amounts', value: 'all', min: null, max: null, display: 'All Amounts' },
-] as const;
+// The shared buckets, not a fourth private copy. This drawer kept its own list
+// whose top bucket closed at max: 10,000,000, so "1,00,000 and above" quietly
+// excluded every lead above ten million — the exact ceiling the shared list was
+// created to remove, applied to loans but never carried across to leads.
+const RANGE_STEPS = LOAN_AMOUNT_RANGES;
 
-const getRangeStep = (index: number) => RANGE_STEPS[index] ?? RANGE_STEPS[4];
+const getRangeStep = (index: number) => loanAmountRange(index);
 
 interface LeadAdvancedFiltersProps {
   onClose: () => void;
@@ -48,16 +47,11 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
   // level-name dropdown that used to sit here is gone.
   const [region, setRegion] = useState(activeFilters.region || '');
 
-  const getInitialIndex = () => {
-    const min = activeFilters.minAmount;
-    const max = activeFilters.maxAmount;
-    if (min === null || max === null) return 4;
-    if (min === 0 && max === 25000) return 0;
-    if (min === 25001 && max === 50000) return 1;
-    if (min === 50001 && max === 100000) return 2;
-    if (min === 100001 && max === 10000000) return 3;
-    return 4;
-  };
+  // Derived from the shared list rather than re-listing the bounds here: this
+  // copy still tested `max === 10000000` for the top bucket, so once that bucket
+  // became open-ended the drawer would have reopened on "All Amounts" and shown
+  // no amount filter at all.
+  const getInitialIndex = () => loanAmountRangeIndex(activeFilters.minAmount, activeFilters.maxAmount);
 
   // Loan Amount states
   const [isAmountOpen, setIsAmountOpen] = useState(false);
@@ -111,7 +105,7 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
   const toggleSource = (s: string) => setTempSources(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s]);
 
   const selectedAmountSummary = useMemo(() => {
-    if (tempIndex === 4) return '';
+    if (tempIndex === ALL_AMOUNTS_INDEX) return '';
     return getRangeStep(tempIndex).display;
   }, [tempIndex]);
 
@@ -119,7 +113,7 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
     (selStatuses.length > 0 ? 1 : 0) +
     (quickDate || dateFrom ? 1 : 0) +
     (region.trim() ? 1 : 0) +
-    (tempIndex !== 4 ? 1 : 0) +
+    (tempIndex !== ALL_AMOUNTS_INDEX ? 1 : 0) +
     (tempLoanTypes.length > 0 ? 1 : 0) +
     (tempSources.length > 0 ? 1 : 0);
 
@@ -220,7 +214,7 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
                       <div className="h-3 w-full bg-[#D1D5DB] rounded-full relative">
                         <div
                           className="absolute left-0 top-0 h-full bg-[#16A34A] rounded-full"
-                          style={{ width: `${(tempIndex / 4) * 100}%` }}
+                          style={{ width: `${(tempIndex / ALL_AMOUNTS_INDEX) * 100}%` }}
                         />
                         <input
                           type="range"
@@ -233,7 +227,7 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
                         />
                         <div
                           className="absolute w-7 h-7 bg-white border-[4px] border-[#16A34A] rounded-full -top-2 -ml-3.5 pointer-events-none transition-all shadow-sm"
-                          style={{ left: `${(tempIndex / 4) * 100}%` }}
+                          style={{ left: `${(tempIndex / ALL_AMOUNTS_INDEX) * 100}%` }}
                         />
                       </div>
                     </div>
@@ -253,7 +247,8 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
 
                       <div className="flex flex-col items-end leading-tight">
                         <span className="text-[10px] font-bold text-gray-500 tracking-wide">ETB</span>
-                        <span className="text-sm font-bold text-gray-700">1000000</span>
+                        {/* The top bucket has no ceiling, so the scale can't claim one. */}
+                        <span className="text-sm font-bold text-gray-700">100,000+</span>
                       </div>
                     </div>
                   </div>
@@ -261,19 +256,19 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
                   <hr className="border-t border-[#F3F3F3] -mx-4" />
 
                   <div className="flex flex-col -mx-4 -mb-4">
-                    {RANGE_STEPS.slice(0, 4).map((opt, idx) => {
+                    {RANGE_STEPS.slice(0, ALL_AMOUNTS_INDEX).map((opt, idx) => {
                       const isSel = tempIndex === idx;
                       return (
                         <div
-                          key={opt.value}
+                          key={opt.label}
                           role="button"
                           tabIndex={0}
                           aria-pressed={isSel}
-                          onClick={() => setTempIndex(isSel ? 4 : idx)}
+                          onClick={() => setTempIndex(isSel ? ALL_AMOUNTS_INDEX : idx)}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' || e.key === ' ') {
                               e.preventDefault();
-                              setTempIndex(isSel ? 4 : idx);
+                              setTempIndex(isSel ? ALL_AMOUNTS_INDEX : idx);
                             }
                           }}
                           className="flex items-center gap-4 py-4 px-6 border-b border-[#F3F3F3] last:border-0 hover:bg-slate-50 cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A] focus-visible:ring-inset"
@@ -480,7 +475,10 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
                 quickDate,
                 dateFrom,
                 dateTo,
-                region,
+                // Trimmed on the way in, matching the count above (which already
+                // used `region.trim()`): a whitespace-only region is matched from
+                // the start of the name and empties the table.
+                region: region.trim(),
                 minAmount: activeRange.min,
                 maxAmount: activeRange.max,
                 loanType: tempLoanTypes,

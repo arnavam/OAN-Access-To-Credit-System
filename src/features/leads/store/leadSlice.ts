@@ -75,7 +75,9 @@ export function advFilterValues(filters: AdvFilters): AdvFilterValues {
     quickDate: filters.quickDate,
     dateFrom: filters.dateFrom,
     dateTo: filters.dateTo,
-    region: filters.region,
+    // Trimmed: matched from the start of the region name, so a whitespace-only
+    // value is truthy but can never match — an empty table with nothing to clear.
+    region: filters.region.trim(),
     minAmount: filters.minAmount,
     maxAmount: filters.maxAmount,
     loanType: filters.loanType,

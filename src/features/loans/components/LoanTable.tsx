@@ -275,6 +275,21 @@ const LoanTable = memo(({ onView, totalCount = 0, stageOptions }: LoanTableProps
     if (close) setAmountFilterOpen(false);
   };
 
+  // The slider's position while it is still being dragged, held locally so the
+  // committed filter does not change on every step crossed. Dispatching per tick
+  // put a new object into `selectQueryParams`, and the effect watching it fired a
+  // fetch for each one — a drag across the scale was four requests, three of them
+  // aborted the instant they left. Null means "not dragging", so the committed
+  // value shows through.
+  const [draggingAmountIndex, setDraggingAmountIndex] = useState<number | null>(null);
+  const displayedAmountIndex = draggingAmountIndex ?? amountIndex;
+
+  const commitAmountDrag = () => {
+    if (draggingAmountIndex === null) return;
+    applyAmountIndex(draggingAmountIndex, false);
+    setDraggingAmountIndex(null);
+  };
+
   const handleApplyDate = () => {
     dispatch(setAdvancedFilters({
       ...advancedFilterValues(currentAdvancedFilters),
@@ -545,20 +560,26 @@ const LoanTable = memo(({ onView, totalCount = 0, stageOptions }: LoanTableProps
                           <div className="h-2 w-full bg-gray-200 rounded-full relative">
                             <div
                               className="absolute left-0 top-0 h-full bg-emerald-500 rounded-full"
-                              style={{ width: `${(amountIndex / ALL_AMOUNTS_INDEX) * 100}%` }}
+                              style={{ width: `${(displayedAmountIndex / ALL_AMOUNTS_INDEX) * 100}%` }}
                             />
                             <input
                               type="range"
                               min="0"
                               max={ALL_AMOUNTS_INDEX}
                               step="1"
-                              value={amountIndex}
-                              onChange={(e) => applyAmountIndex(Number(e.target.value), false)}
+                              value={displayedAmountIndex}
+                              onChange={(e) => setDraggingAmountIndex(Number(e.target.value))}
+                              // Commit on release, not per step. `onKeyUp` covers the
+                              // keyboard, where arrow keys drive the same handle, and
+                              // `onBlur` catches a pointer released off the control.
+                              onPointerUp={commitAmountDrag}
+                              onKeyUp={commitAmountDrag}
+                              onBlur={commitAmountDrag}
                               className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
                             />
                             <div
                               className="absolute w-5 h-5 bg-white border-2 border-emerald-600 rounded-full -top-1.5 -ml-2.5 pointer-events-none shadow-sm"
-                              style={{ left: `${(amountIndex / ALL_AMOUNTS_INDEX) * 100}%` }}
+                              style={{ left: `${(displayedAmountIndex / ALL_AMOUNTS_INDEX) * 100}%` }}
                             />
                           </div>
                         </div>
@@ -569,7 +590,7 @@ const LoanTable = memo(({ onView, totalCount = 0, stageOptions }: LoanTableProps
                             <span>0</span>
                           </div>
                           <div className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-md border border-emerald-100 font-extrabold">
-                            {loanAmountRange(amountIndex).display}
+                            {loanAmountRange(displayedAmountIndex).display}
                           </div>
                           <div className="text-right">
                             <span className="block text-[10px] text-gray-400">ETB</span>
@@ -582,7 +603,7 @@ const LoanTable = memo(({ onView, totalCount = 0, stageOptions }: LoanTableProps
 
                       <div className="space-y-1.5 border-t border-gray-100 pt-3">
                         {LOAN_AMOUNT_RANGES.slice(0, ALL_AMOUNTS_INDEX).map((opt, idx) => {
-                          const isSel = amountIndex === idx;
+                          const isSel = displayedAmountIndex === idx;
                           return (
                             <button
                               key={opt.label}

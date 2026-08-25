@@ -547,8 +547,13 @@ export const selectQueryParams = createSelector(
 
     // `region`, not `location`: A2C Loan Application has no `location` column, and
     // naming one put a nonexistent column in the WHERE clause — a 500, not a filter.
-    if (advancedFilters.region) {
-      params.region = advancedFilters.region;
+    //
+    // Trimmed because the control is a free-text box matched from the start of the
+    // region name: an untrimmed "  " is truthy, so it went to the endpoint as
+    // `like '  %'` and emptied the table with no filter chip to explain why.
+    const region = advancedFilters.region?.trim();
+    if (region) {
+      params.region = region;
     }
 
     if (advancedFilters.minLoan !== null && advancedFilters.minLoan !== undefined) {

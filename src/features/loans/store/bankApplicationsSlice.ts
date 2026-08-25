@@ -478,7 +478,11 @@ export const selectBankQueryParams = createSelector(
     if (searchQuery) params.search_query = searchQuery;
     if (filters.status.length > 0) params.status = filters.status.join(',');
     if (filters.loanType.length > 0) params.loan_type = filters.loanType.join(',');
-    if (filters.region) params.region = filters.region;
+    // Trimmed: the region control is free text matched from the start of the name,
+    // so a whitespace-only value is truthy but matches nothing — an empty table
+    // with no visible filter to clear.
+    const region = filters.region?.trim();
+    if (region) params.region = region;
     if (filters.dateFrom) params.from_date = filters.dateFrom;
     if (filters.dateTo) params.to_date = filters.dateTo;
 
