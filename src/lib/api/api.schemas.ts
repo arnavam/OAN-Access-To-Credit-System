@@ -104,7 +104,9 @@ export const loanApplicationSummarySchema = z.object({
   status: z.string(),
   stage_id: z.string().nullable().optional(),
   stage_label: z.string().nullable().optional(),
-  step: z.number(),
+  // `get_all_loans` sends `step`; the farmer's `list_applications` rows do not,
+  // so it cannot be required without failing every farmer-side parse.
+  step: z.number().nullish().transform((val) => val ?? undefined),
   lead_id: z.string().nullable().optional(),
   loan_amount: z.number().nullish().transform((val) => val ?? 0),
   loan_type: z.string().nullish().transform((val) => val ?? undefined),
@@ -115,10 +117,45 @@ export const loanApplicationSummarySchema = z.object({
   creation: z.string(),
   first_name: z.string().nullish().transform((val) => val ?? undefined),
   last_name: z.string().nullish().transform((val) => val ?? undefined),
+  bank: z.string().nullish().transform((val) => val ?? undefined),
+  region: z.string().nullish().transform((val) => val ?? ''),
+  woreda: z.string().nullish().transform((val) => val ?? ''),
+  kebele: z.string().nullish().transform((val) => val ?? ''),
+  // Stage placement, resolved server-side against the owning bank's pipeline.
+  // `sequence` orders the stages; the two booleans are what tells a caller
+  // whether a row is finished, and whether it finished well — the only honest
+  // way to bucket a bank-defined label the client has never seen before.
+  sequence: z.number().nullable().optional(),
+  is_terminal: z.boolean().nullish().transform((val) => val ?? false),
+  is_successful: z.boolean().nullish().transform((val) => val ?? false),
   stage: z.string().nullable().optional(),
   archetype_state: z.string().nullable().optional(),
 });
 export type LoanApplicationSummary = z.infer<typeof loanApplicationSummarySchema>;
+
+/**
+ * `loan_applications.get_loan_metadata` — the caller-scoped list of statuses the
+ * signed-in user can actually see and filter on.
+ *
+ * This is the role-agnostic counterpart to `seller.loan_stages.get_stages`:
+ * that endpoint is restricted to bank roles holding a bank binding, so a
+ * Development Agent or a farmer calling it gets 403. `get_loan_metadata`
+ * resolves per role instead — a Bank Agent sees its own bank's stages, a farmer
+ * the stages of the banks they applied to, a Dev Agent / admin the union.
+ */
+export const loanStatusMetaSchema = z.object({
+  status: z.string(),
+  stage_id: z.string().nullable().optional(),
+  sequence: z.number().nullable().optional(),
+  is_terminal: z.boolean().nullish().transform((val) => val ?? false),
+  is_successful: z.boolean().nullish().transform((val) => val ?? false),
+});
+export type LoanStatusMeta = z.infer<typeof loanStatusMetaSchema>;
+
+export const loanMetadataSchema = z.object({
+  statuses: z.array(loanStatusMetaSchema),
+});
+export type LoanMetadata = z.infer<typeof loanMetadataSchema>;
 
 // 6. leads.add_lead_credit_info / get_lead_credit_infos
 export const creditInfoApiSchema = z.object({
@@ -323,8 +360,13 @@ export const registerSellerSchema = z.object({
 export type RegisterSellerSchemaPayload = z.infer<typeof registerSellerSchema>;
 
 export const loanStageSchema = z.object({
-  name: z.string(),
-  bank: z.string(),
+  // Optional because `get_stages` does not send either: the owning bank is
+  // reported once on the enclosing payload, not repeated per stage, and there is
+  // no separate doc `name` in the response. Requiring them made every call throw
+  // "Data format error" out of validateResponse, taking the whole stage list
+  // with it — a stricter schema than the endpoint has ever satisfied.
+  name: z.string().optional(),
+  bank: z.string().optional(),
   stage_id: z.string(),
   label: z.string(),
   archetype_state: z.string(),

@@ -1,9 +1,11 @@
 import {
     loanApplicationFullSchema,
     loanApplicationSummarySchema,
+    loanMetadataSchema,
     validateResponse,
     type LoanApplicationFull,
-    type LoanApplicationSummary
+    type LoanApplicationSummary,
+    type LoanMetadata
 } from '@/lib/api/api.schemas';
 import { fetchApi } from '@/lib/api/fetchApi';
 import { normalizeLeadId } from '@/lib/utils';
@@ -15,7 +17,7 @@ import type { LoanFormData } from '../types/loans.types';
 // `get_full_profile` / `get_all_loans`; their single source of truth is the Zod
 // schema in `@/lib/api/api.schemas`. Re-exported here so existing consumers keep
 // importing them from the service.
-export type { LoanApplicationFull, LoanApplicationSummary };
+export type { LoanApplicationFull, LoanApplicationSummary, LoanMetadata };
 
 export interface LoanApplication {
   id: string;
@@ -38,14 +40,14 @@ export interface LoanApplication {
  * that the endpoint has never sent — names left over from the status model the
  * archetype refactor replaced. Because the type asserted they were there, every
  * consumer type-checked cleanly while reading `undefined` at runtime.
+ *
+ * `by_status` was the second round of the same mistake: the endpoint returns
+ * `total`, `stages` and `tab_counts` and nothing else, so every selector reading
+ * `by_status['In Transition']` was reading `undefined` and rendering a dash.
+ * Bucket `stages` by archetype instead — see `bucketStagesByArchetype`.
  */
 export interface LoanSummaryMetrics {
   total: number;
-  /**
-   * Counts per archetype state — platform constants, so safe to key on across
-   * banks. Seeded server-side with every state, so a quiet one reads 0.
-   */
-  by_status: Record<string, number>;
   /**
    * Counts per *bank-defined* stage label, falling back to the archetype when a
    * loan sits on no named stage. Tenant free text: never key on a literal here.
@@ -94,6 +96,12 @@ export interface GetLoansParams {
   loan_type?: string;
   phone_number?: string;
   loan_officer?: string; // user email, or the literal 'unassigned' (get_all_loans filter)
+  /**
+   * Coarse workflow bucket — 'Active' | 'In Transition' | 'Completed' |
+   * 'Rejected'. Backend-validated and bank-agnostic, so it is the only status
+   * filter that is safe to send before per-bank stages have resolved.
+   */
+  archetype?: string;
   from_date?: string;
   to_date?: string;
   location?: string;
@@ -102,48 +110,7 @@ export interface GetLoansParams {
   sort_order?: 'asc' | 'desc';
 }
 
-export interface GetProductsParams {
-  search?: string;
-  bank?: string;
-  loan_product?: string;
-  min_amount?: number;
-  max_amount?: number;
-  limit?: number;
-  start?: number;
-}
-export type BrowseProductsParams = GetProductsParams;
-
-export interface LoanProductItem {
-  name: string;
-  product_name: string;
-  slug?: string | null;
-  bank?: string | null;
-  min_interest_rate: number;
-  max_interest_rate?: number | null;
-  min_amount?: number | null;
-  max_amount: number;
-  tenure_months: number;
-}
-export type BrowseProductItem = LoanProductItem;
-
 export const loanService = {
-  async getProducts(params?: GetProductsParams, options?: RequestInit): Promise<ApiResponse<{ products: LoanProductItem[] }>> {
-    const searchParams = new URLSearchParams();
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-          searchParams.append(key, value.toString());
-        }
-      });
-    }
-    const path = `oan_a2c.api.v1.loan_applications.get_products?${searchParams.toString()}`;
-    return fetchApi(path, options) as Promise<ApiResponse<{ products: LoanProductItem[] }>>;
-  },
-
-  async browseProducts(params?: GetProductsParams, options?: RequestInit): Promise<ApiResponse<{ products: LoanProductItem[] }>> {
-    return this.getProducts(params, options);
-  },
-
   async getLoans(params?: GetLoansParams, options?: RequestInit): Promise<ApiResponse<LoanApplicationSummary[]>> {
     const searchParams = new URLSearchParams();
     if (params) {
@@ -164,6 +131,24 @@ export const loanService = {
 
   async getLoanSummary(): Promise<ApiResponse<LoanSummaryMetrics>> {
     return fetchApi('oan_a2c.api.v1.loan_applications.get_loan_summary') as Promise<ApiResponse<LoanSummaryMetrics>>;
+  },
+
+  /**
+   * The statuses the *caller* can see, resolved per role by the backend.
+   *
+   * Prefer this over `loanStagesService.getStages()` anywhere outside the bank
+   * portals: that endpoint is a seller API and 403s for a Development Agent or
+   * a farmer, neither of whom holds a bank binding.
+   */
+  async getLoanMetadata(options?: RequestInit): Promise<ApiResponse<LoanMetadata>> {
+    const response = await fetchApi(
+      'oan_a2c.api.v1.loan_applications.get_loan_metadata',
+      options,
+    ) as ApiResponse<LoanMetadata>;
+    return {
+      ...response,
+      data: validateResponse(loanMetadataSchema, response?.data, 'get_loan_metadata'),
+    };
   },
 
   async downloadSupportingDocument(file_id: string, view = 0): Promise<null> {
@@ -206,10 +191,20 @@ export const loanService = {
     }) as Promise<ApiResponse<null>>;
   },
 
+  /**
+   * Submits a drafted application into the owning bank's pipeline.
+   *
+   * Goes through `submit_application` rather than posting a status directly:
+   * that endpoint resolves the bank's *own* initial stage, whereas the literal
+   * 'Processed' this used to send is a label no bank is obliged to define — for
+   * a bank whose first stage is called anything else, the submit 400s. The
+   * endpoint accepts `A2C Development Agent` as well as `A2C Farmer`, and it
+   * enforces the consent precondition that a raw status write skips.
+   */
   async submitApplication(application_id: string): Promise<ApiResponse<null>> {
-    return fetchApi('oan_a2c.api.v1.loan_applications.update_loan_status', {
+    return fetchApi('oan_a2c.api.v1.farmer.applications.submit_application', {
       method: 'POST',
-      body: JSON.stringify({ application_id, status: 'Processed' }),
+      body: JSON.stringify({ application_id }),
     }) as Promise<ApiResponse<null>>;
   },
 
@@ -220,10 +215,24 @@ export const loanService = {
     }) as Promise<ApiResponse<CreateLoanApplicationResponse>>;
   },
 
-  async updateLoanStatus(application_id: string, status: string, reason?: string, notes?: string): Promise<ApiResponse<null>> {
+  /**
+   * Moves an application to another stage of its owning bank's pipeline.
+   *
+   * `status` takes a stage label, a stage ID, or an archetype — the backend
+   * resolves it against that bank's own stages, so it must come from
+   * `get_stages` rather than from a fixed vocabulary.
+   *
+   * `reason` is optional and recorded on the audit timeline when given. It used
+   * to be sent alongside a `notes` field that the endpoint does not accept, so
+   * anything typed into the modal's separate note box was discarded in transit;
+   * there is one free-text field here now, and it is this one.
+   */
+  async updateLoanStatus(application_id: string, status: string, reason?: string): Promise<ApiResponse<null>> {
     return fetchApi('oan_a2c.api.v1.loan_applications.update_loan_status', {
       method: 'POST',
-      body: JSON.stringify({ application_id, status, reason, notes }),
+      // Omitted rather than sent as undefined: `reason` is optional and an
+      // explicit null would land in the audit trail as an empty remark.
+      body: JSON.stringify({ application_id, status, ...(reason ? { reason } : {}) }),
     }) as Promise<ApiResponse<null>>;
   },
 

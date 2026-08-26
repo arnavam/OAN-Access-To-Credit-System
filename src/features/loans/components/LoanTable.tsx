@@ -136,7 +136,11 @@ const LoanTable = memo(({ onView, totalCount = 0, stageOptions }: LoanTableProps
   const storeStageOptions = useAppSelector(selectLoanStageOptions);
 
   const activeStageOptions = stageOptions ?? (storeStageOptions.length > 0 ? storeStageOptions : null);
-  const statusOptionsList = activeStageOptions ? ['All', ...activeStageOptions.map((s) => s.label)] : ['All', 'Submitted', 'Underwriting', 'Approved', 'Disbursed', 'Rejected'];
+  // Only 'All' until the pipeline resolves. The guessed list that used to stand
+  // in here ('Submitted', 'Underwriting', …) was not a harmless placeholder:
+  // stage labels are per-bank, so picking one that the caller's banks do not
+  // define makes `get_all_loans` 400 and empties the table.
+  const statusOptionsList = activeStageOptions ? ['All', ...activeStageOptions.map((s) => s.label)] : ['All'];
 
   const selectedStatuses = useAppSelector(selectTableStatusFilters);
   const selectedLoanTypes = useAppSelector(selectTableTypeFilters);

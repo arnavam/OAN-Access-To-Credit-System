@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 
 const PAGE_SIZE_OPTIONS = [10, 20, 100] as const;
 
-interface PaginationProps {
+interface CatalogPaginationProps {
   currentPage: number;
   totalPages: number;
   totalEntries: number;
@@ -13,7 +13,7 @@ interface PaginationProps {
   onPageSizeChange: (size: number) => void;
 }
 
-export default function Pagination({
+export default function CatalogPagination({
   currentPage,
   totalPages,
   totalEntries,
@@ -21,7 +21,7 @@ export default function Pagination({
   entriesPerPage,
   onPageChange,
   onPageSizeChange,
-}: PaginationProps) {
+}: CatalogPaginationProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 

@@ -59,7 +59,7 @@ export function getStageStyle(
       (s) =>
         s.label.toLowerCase() === rawStatus.toLowerCase() ||
         s.stage_id.toLowerCase() === rawStatus.toLowerCase() ||
-        s.name.toLowerCase() === rawStatus.toLowerCase() ||
+        s.name?.toLowerCase() === rawStatus.toLowerCase() ||
         (s.external_code && s.external_code.toLowerCase() === rawStatus.toLowerCase())
     );
 

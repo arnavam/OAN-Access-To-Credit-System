@@ -57,9 +57,38 @@ describe('selectBankQueryParams', () => {
 
   it('sends the API status values, not their display labels', () => {
     const store = createTestStore();
+    store.dispatch({
+      type: 'bankApplications/fetchStages/fulfilled',
+      payload: [
+        {
+          name: 'c2f9d14a80',
+          bank: 'HDFC Bank',
+          stage_id: 'approved-a8f3b2',
+          label: 'Approved',
+          archetype_state: 'Completed',
+          sequence: 1,
+          external_code: null,
+          description: 'Approved',
+          application_count: 14,
+        },
+        {
+          name: 'd3e8c25b91',
+          bank: 'HDFC Bank',
+          stage_id: 'rejected-b9e4c3',
+          label: 'Rejected',
+          archetype_state: 'Cancelled',
+          sequence: 2,
+          external_code: null,
+          description: 'Rejected',
+          application_count: 20,
+        },
+      ],
+    });
     store.dispatch(setBankFilters({ ...baseFilters, status: ['Approved', 'Rejected'] }));
 
-    expect(selectBankQueryParams(asRootState(store.getState())).status).toBe('Approved,Rejected');
+    expect(selectBankQueryParams(asRootState(store.getState())).status).toBe(
+      JSON.stringify(['Approved', 'Rejected'])
+    );
   });
 
   it('collapses selected amount buckets into a single min/max span', () => {
@@ -235,35 +264,30 @@ describe('selectBankApplicationRows', () => {
     const store = createTestStore();
     store.dispatch({
       type: 'bankApplications/fetchStages/fulfilled',
-      payload: {
-        data: {
+      payload: [
+        {
+          name: 'c2f9d14a80',
           bank: 'HDFC Bank',
-          stages: [
-            {
-              name: 'c2f9d14a80',
-              bank: 'HDFC Bank',
-              stage_id: 'submitted-a8f3b2',
-              label: 'Submitted',
-              archetype_state: 'In Transition',
-              sequence: 1,
-              external_code: null,
-              description: 'Initial application submission',
-              application_count: 14,
-            },
-            {
-              name: 'd3e8c25b91',
-              bank: 'HDFC Bank',
-              stage_id: 'disbursed-b9e4c3',
-              label: 'Disbursed',
-              archetype_state: 'Completed',
-              sequence: 2,
-              external_code: null,
-              description: 'Loan disbursed',
-              application_count: 20,
-            },
-          ],
+          stage_id: 'submitted-a8f3b2',
+          label: 'Submitted',
+          archetype_state: 'In Transition',
+          sequence: 1,
+          external_code: null,
+          description: 'Initial application submission',
+          application_count: 14,
         },
-      },
+        {
+          name: 'd3e8c25b91',
+          bank: 'HDFC Bank',
+          stage_id: 'disbursed-b9e4c3',
+          label: 'Disbursed',
+          archetype_state: 'Completed',
+          sequence: 2,
+          external_code: null,
+          description: 'Loan disbursed',
+          application_count: 20,
+        },
+      ],
     });
 
     const state = store.getState();

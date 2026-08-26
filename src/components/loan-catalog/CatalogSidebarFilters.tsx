@@ -3,9 +3,9 @@
 import Button from '@/components/ui/Button';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
-import type { CatalogFacets, CatalogFilters } from '../../types';
+import type { CatalogFacets, CatalogFilters } from '@/types/loan-catalog';
 
-interface SidebarFiltersProps {
+interface CatalogSidebarFiltersProps {
   /** Options derived from the live catalog; null while loading or after a failure. */
   facets: CatalogFacets | null;
   /** True when the facets request failed — a different state from "no options". */
@@ -50,7 +50,7 @@ function Section({
 const formatETB = (value: number) =>
   new Intl.NumberFormat('en-ET', { maximumFractionDigits: 0 }).format(value);
 
-export default function SidebarFilters({ facets, hasFailed = false, onRetry, filters, onApply, onReset }: SidebarFiltersProps) {
+export default function CatalogSidebarFilters({ facets, hasFailed = false, onRetry, filters, onApply, onReset }: CatalogSidebarFiltersProps) {
   // Draft state: the sidebar is an "apply" form, so nothing refetches until the
   // farmer commits. Seeded from the applied filters so reopening shows the truth.
   const [draft, setDraft] = useState<CatalogFilters>(filters);
@@ -101,7 +101,8 @@ export default function SidebarFilters({ facets, hasFailed = false, onRetry, fil
   const rateCeiling = facets.max_interest_rate;
 
   // A catalog with nothing in it has nothing to filter by. Saying so beats
-  // rendering empty controls that look broken.
+  // rendering empty controls that look broken. Worded without naming the
+  // catalog because this panel also serves a bank looking at its own products.
   const hasAnyFacet =
     hasAmountRange || rateCeiling !== null || facets.tenures.length > 0 || facets.categories.length > 0;
 
@@ -124,7 +125,7 @@ export default function SidebarFilters({ facets, hasFailed = false, onRetry, fil
 
       {!hasAnyFacet && (
         <p className="text-sm font-medium text-gray-500">
-          No filters available — the catalog is empty.
+          No filters available — there are no products to filter.
         </p>
       )}
 

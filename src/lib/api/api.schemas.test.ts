@@ -47,7 +47,14 @@ describe('api.schemas validation', () => {
       };
 
       const result = loanApplicationSummarySchema.parse(validData);
-      expect(result).toEqual(validData);
+      expect(result).toEqual({
+        ...validData,
+        region: '',
+        woreda: '',
+        kebele: '',
+        is_terminal: false,
+        is_successful: false,
+      });
     });
 
     it('should handle null location and null name fields', () => {

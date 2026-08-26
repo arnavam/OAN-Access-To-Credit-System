@@ -5,12 +5,14 @@ import LoanTable, { LoanTableRow } from '@/features/loans/components/LoanTable';
 // eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
 import LoanApplicationModal from '@/features/loans/components/modals/LoanApplicationModal';
 import {
+  fetchBankPipelineStages,
   fetchLoans,
   fetchLoanStages,
   selectAdvancedFilters,
   selectIsLoansLoading,
   selectLoansError,
   selectLoanStageOptions,
+  selectOrderedBankPipelineStages,
   selectPagedRows,
   selectQueryParams,
   selectSearchQuery,
@@ -39,6 +41,10 @@ export function LoanApplicationsTable() {
   const tableTypeFilters = useAppSelector(selectTableTypeFilters);
   const advancedFilters = useAppSelector(selectAdvancedFilters);
   const stageOptions = useAppSelector(selectLoanStageOptions);
+  // The bank's own pipeline, for the status picker in the detail modal. Separate
+  // from `stageOptions` above, which drives the table filters off role-scoped
+  // metadata and must keep working for callers `get_stages` would 403.
+  const pipelineStages = useAppSelector(selectOrderedBankPipelineStages);
   // Same active-filters check LoanTable itself uses (plus search) — keeps the
   // "no data at all" empty state from also covering "filters just match nothing",
   // which would otherwise hide the table header along with the illustration.
@@ -68,6 +74,7 @@ export function LoanApplicationsTable() {
 
   useEffect(() => {
     dispatch(fetchLoanStages());
+    dispatch(fetchBankPipelineStages());
   }, [dispatch]);
 
   const handleRetry = () => {
@@ -234,10 +241,10 @@ export function LoanApplicationsTable() {
           isOpen={!!selectedRow}
           onClose={() => setSelectedRow(null)}
           data={selectedRow}
-          onStatusChange={(id, status, reason, note) => {
-            const payload: { id: string; status: string; reason?: string; notes?: string } = { id, status };
+          stages={pipelineStages}
+          onStatusChange={(id, status, reason) => {
+            const payload: { id: string; status: string; reason?: string } = { id, status };
             if (reason) payload.reason = reason;
-            if (note) payload.notes = note;
             dispatch(updateLoanStatus(payload));
           }}
         />

@@ -1,19 +1,19 @@
 "use client";
 import { Portal } from '@/components/Portal';
 import { useModalA11y } from '@/hooks/useModalA11y';
-import { Award, CheckCircle2, Loader2, Send, X, XCircle, Building2, Calendar, FileText, DollarSign } from 'lucide-react';
+import { Building2, Calendar, DollarSign, FileText, Loader2, Send, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from '@/lib/toast';
 import { logger } from '@/lib/logger';
 import { getApplication, submitApplication } from '../../api/farmerApi';
-import type { FarmerLoanApplication } from '../../types';
-import { ApplicationStatus } from './ApplicationCard';
+import { isDraftApplication, type FarmerLoanApplication } from '../../types';
+import { themeForApplication } from './ApplicationCard';
 
 interface ApplicationActionModalProps {
   isOpen: boolean;
   onClose: () => void;
   applicationId?: string | undefined;
-  status: ApplicationStatus;
+  application: FarmerLoanApplication;
   title: string;
   subtitle: string;
   maxAmount: string;
@@ -28,7 +28,7 @@ export default function ApplicationActionModal({
   isOpen,
   onClose,
   applicationId,
-  status: initialStatus,
+  application,
   title,
   subtitle,
   maxAmount,
@@ -42,9 +42,15 @@ export default function ApplicationActionModal({
   const [details, setDetails] = useState<FarmerLoanApplication | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submittedStatus, setSubmittedStatus] = useState<ApplicationStatus | null>(null);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
 
-  const currentStatus = submittedStatus || initialStatus;
+  // Prefer the freshly fetched document over the row that opened the modal: the
+  // bank may have moved the application on since the list was loaded.
+  const current = details ?? application;
+  const statusLabel = current.stage_label || current.status;
+  // After a successful submit the application is no longer a draft, but the list
+  // behind us has not refetched yet — so stop offering to submit it again.
+  const canSubmit = !hasSubmitted && isDraftApplication(current);
 
   useEffect(() => {
     if (!isOpen || !applicationId) return;
@@ -73,46 +79,9 @@ export default function ApplicationActionModal({
 
   if (!isOpen) return null;
 
-  const themes = {
-    Draft: {
-      wrapper: 'bg-[#FFF8E1] border-[#FFECB3]',
-      iconBg: 'bg-[#FFECB3] text-[#FF8F00]',
-      icon: CheckCircle2,
-      subtitle: 'text-[#FF8F00]',
-      statValue: 'text-[#FF8F00]',
-    },
-    'Under Review': {
-      wrapper: 'bg-[#F0FAFA] border-[#B2EBF2]',
-      iconBg: 'bg-[#E0F7FA] text-[#00ACC1]',
-      icon: CheckCircle2,
-      subtitle: 'text-[#00ACC1]',
-      statValue: 'text-[#00ACC1]',
-    },
-    Disbursed: {
-      wrapper: 'bg-green-50 border-green-200',
-      iconBg: 'bg-green-100 text-green-600',
-      icon: Award,
-      subtitle: 'text-green-600',
-      statValue: 'text-green-700',
-    },
-    Rejected: {
-      wrapper: 'bg-red-50/50 border-red-200',
-      iconBg: 'bg-red-100 text-red-600',
-      icon: XCircle,
-      subtitle: 'text-red-500',
-      statValue: 'text-red-600',
-    },
-  };
-  
-  const fallbackTheme = {
-    wrapper: 'bg-gray-50 border-gray-200',
-    iconBg: 'bg-gray-100 text-gray-500',
-    icon: CheckCircle2,
-    subtitle: 'text-gray-500',
-    statValue: 'text-gray-600',
-  };
-
-  const theme = themes[currentStatus as keyof typeof themes] || fallbackTheme;
+  // Same archetype-keyed theme the card uses, so opening one never changes how
+  // the application is presented.
+  const theme = themeForApplication(current);
   const Icon = theme.icon;
 
   const handleSubmitDraft = async () => {
@@ -121,11 +90,15 @@ export default function ApplicationActionModal({
     try {
       await submitApplication(applicationId);
       toast.success('Application submitted successfully!');
-      setSubmittedStatus('Under Review');
+      setHasSubmitted(true);
       onApplicationUpdated?.();
       onClose();
     } catch (err) {
-      logger.error('Failed to submit draft application', err);
+      logger.error('Failed to submit application', err);
+      // The endpoint rejects two things the farmer can act on — an application
+      // that is no longer a draft, and a missing or unapproved consent — and
+      // says which in the message. Passing it through beats a generic failure
+      // that leaves them with nothing to do about it.
       toast.error(err instanceof Error ? err.message : 'Failed to submit application.');
     } finally {
       setIsSubmitting(false);
@@ -172,7 +145,7 @@ export default function ApplicationActionModal({
                   <div className="flex items-center justify-between">
                     <h3 className="font-bold text-gray-900 text-sm truncate">{title}</h3>
                     <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${theme.wrapper} ${theme.statValue}`}>
-                      {currentStatus}
+                      {isDraftApplication(current) ? 'Draft' : statusLabel}
                     </span>
                   </div>
                   <p className={`text-xs font-medium ${theme.subtitle} mt-0.5`}>{subtitle}</p>
@@ -247,8 +220,11 @@ export default function ApplicationActionModal({
               </div>
             ) : null}
 
-            {/* Action Buttons */}
-            {currentStatus === 'Draft' && (
+            {/* Action Buttons. Offered for a draft — an application sitting on no
+                stage — not for the label 'Draft', which this API never sends:
+                the pre-submission status is called `Active`, so this gate was
+                never true and the Submit button never appeared. */}
+            {canSubmit && (
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
                 <button
                   type="button"

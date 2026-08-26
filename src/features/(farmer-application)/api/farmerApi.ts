@@ -1,10 +1,8 @@
 import { fetchApi } from '@/lib/api/fetchApi';
+import type { LoanStatusMeta } from '@/lib/api/api.schemas';
 import type {
   CreateApplicationPayload,
   FarmerLoanApplication,
-  CatalogFacets,
-  CatalogFilters,
-  CatalogSortKey,
   FarmerDashboardSummary,
   FarmerLoanProduct,
   DetailedLoanProduct,
@@ -14,44 +12,10 @@ import type {
   ApiResponse,
 } from '../types';
 
-/**
- * Retrieves the catalog of active loan products available to the farmer.
- */
-export async function getCatalog(
-  params: CatalogFilters & {
-    search?: string;
-    limit?: number;
-    start?: number;
-    loan_product?: string;
-    sort_by?: CatalogSortKey;
-  } = {}
-): Promise<PaginatedResponse<{ products: FarmerLoanProduct[] }>> {
-  const query = new URLSearchParams();
-  if (params.search) query.append('search', params.search);
-  if (params.min_amount !== undefined) query.append('min_amount', params.min_amount.toString());
-  if (params.max_amount !== undefined) query.append('max_amount', params.max_amount.toString());
-  if (params.max_interest_rate !== undefined) query.append('max_interest_rate', params.max_interest_rate.toString());
-  // Comma-separated: the sidebar's tenure chips are a multi-select and the
-  // endpoint matches the listed months exactly.
-  if (params.tenure_months?.length) query.append('tenure_months', params.tenure_months.join(','));
-  if (params.category) query.append('category', params.category);
-  if (params.sort_by) query.append('sort_by', params.sort_by);
-  if (params.limit !== undefined) query.append('limit', params.limit.toString());
-  if (params.start !== undefined) query.append('start', params.start.toString());
-  if (params.loan_product) query.append('loan_product', params.loan_product);
-
-  return fetchApi(`oan_a2c.api.v1.farmer.catalog.list_catalog?${query.toString()}`);
-}
-
-/**
- * Filter options for the discovery sidebar, derived from the live catalog.
- *
- * Fetched rather than hardcoded so the sidebar can never offer a filter that
- * matches nothing — and never offers one the catalog endpoint cannot apply.
- */
-export async function getCatalogFacets(): Promise<ApiResponse<CatalogFacets>> {
-  return fetchApi('oan_a2c.api.v1.farmer.catalog.get_catalog_facets');
-}
+// The catalog endpoint is shared with the bank portals, so it lives in lib.
+// Re-exported here because it is part of this feature's API surface and every
+// existing caller imports it from farmerApi.
+export { getCatalog, getCatalogFacets } from '@/lib/api/catalogApi';
 
 /**
  * Retrieves the farmer's bookmarked/saved products.
@@ -88,16 +52,62 @@ export async function removeBookmark(loan_product: string): Promise<ApiResponse>
 
 /**
  * Retrieves a list of applications owned by the farmer.
+ *
+ * `status` takes a bank stage label or stage ID (or a JSON array of them);
+ * `archetype` takes one of the four platform-level buckets. Both are validated
+ * server-side.
  */
 export async function getMyApplications(
-  params: { status?: string; page?: number; page_size?: number } = {}
+  params: { status?: string; archetype?: string; page?: number; page_size?: number } = {}
 ): Promise<PaginatedResponse<FarmerLoanApplication[]>> {
   const query = new URLSearchParams();
   if (params.status) query.append('status', params.status);
+  if (params.archetype) query.append('archetype', params.archetype);
   if (params.page !== undefined) query.append('page', params.page.toString());
   if (params.page_size !== undefined) query.append('page_size', params.page_size.toString());
 
   return fetchApi(`oan_a2c.api.v1.farmer.applications.list_applications?${query.toString()}`);
+}
+
+/** Hard ceiling on the paging loop below, so a runaway response can't spin. */
+const MAX_APPLICATION_PAGES = 10;
+const APPLICATION_PAGE_SIZE = 100;
+
+/**
+ * Every application the farmer has, across all pages.
+ *
+ * The list view needs the whole set, not a page of it: the tab counts are per
+ * stage and have to be exact, and there is no farmer-side counterpart to
+ * `get_loan_summary` to ask for those counts directly. Called with no arguments
+ * at all, this endpoint returns 20 rows — so a farmer with more applications
+ * than that was shown a truncated list, with tab counts computed over the
+ * truncation and no paging control to reach the rest.
+ *
+ * A farmer holds a handful of applications, so fetching them all is cheap. If
+ * that stops being true, the fix is a counts endpoint, not a bigger page size.
+ */
+export async function getAllMyApplications(): Promise<FarmerLoanApplication[]> {
+  const applications: FarmerLoanApplication[] = [];
+
+  for (let page = 1; page <= MAX_APPLICATION_PAGES; page += 1) {
+    const response = await getMyApplications({ page, page_size: APPLICATION_PAGE_SIZE });
+    applications.push(...(response.data ?? []));
+    if (!response.pagination?.has_next) break;
+  }
+
+  return applications;
+}
+
+/**
+ * The statuses this farmer can see — the stages of the banks they have applied
+ * to, resolved server-side per role.
+ *
+ * Shares `loan_applications.get_loan_metadata` with the bank and dev-agent
+ * lists. There is no farmer-specific variant, and no fixed list to fall back on:
+ * a stage label belongs to the bank that defined it.
+ */
+export async function getLoanStatusMetadata(): Promise<ApiResponse<{ statuses: LoanStatusMeta[] }>> {
+  return fetchApi('oan_a2c.api.v1.loan_applications.get_loan_metadata');
 }
 
 /**

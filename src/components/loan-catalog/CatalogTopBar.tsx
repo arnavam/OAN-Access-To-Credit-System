@@ -1,9 +1,9 @@
 'use client';
 import { Check, ChevronDown, Search } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import type { CatalogSortKey } from '../../types';
+import type { CatalogSortKey } from '@/types/loan-catalog';
 
-interface TopBarProps {
+interface CatalogTopBarProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   sortBy: CatalogSortKey;
@@ -23,7 +23,7 @@ const SORT_OPTIONS: ReadonlyArray<{ value: CatalogSortKey; label: string }> = [
   { value: 'newest', label: 'Newest First' },
 ];
 
-export default function TopBar({ searchQuery, onSearchChange, sortBy, onSortChange }: TopBarProps) {
+export default function CatalogTopBar({ searchQuery, onSearchChange, sortBy, onSortChange }: CatalogTopBarProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
