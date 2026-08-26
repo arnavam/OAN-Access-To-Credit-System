@@ -3,6 +3,7 @@ import { DateRangeFilter } from '@/components/ui/DateRangeFilter';
 import { selectLeadSourcesOptions } from '@/features/new-lead/store/newLeadSlice';
 // eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
 import { selectCategories } from '@/features/seller/store/loanProductsSlice';
+import { ALL_AMOUNTS_INDEX, LOAN_AMOUNT_RANGES, loanAmountRange, loanAmountRangeIndex } from '@/lib/loanAmountRanges';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { useModalA11y } from '@/hooks/useModalA11y';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
@@ -13,17 +14,13 @@ import { KPI_CARDS_LAYOUT, STATUS_STYLE_MAP } from '../constants/leads.constants
 import { resetFilters, selectAdvFilters, setAdvFilters } from '../store/leadSlice';
 
 
-const RANGE_STEPS = [
-  { label: '0-25,000', value: '0-25000', min: 0, max: 25000, display: 'ETB 0 - 25,000' },
-  { label: '25,001 - 50,000', value: '25001-50000', min: 25001, max: 50000, display: 'ETB 25,001 - 50,000' },
-  { label: '50,001 - 1,00,000', value: '50001-100000', min: 50001, max: 100000, display: 'ETB 50,001 - 1,00,000' },
-  { label: '1,00,000 and above', value: '100000+', min: 100001, max: 10000000, display: 'ETB 1,00,000 and above' },
-  { label: 'All Amounts', value: 'all', min: null, max: null, display: 'All Amounts' },
-] as const;
+// The shared buckets, not a fourth private copy. This drawer kept its own list
+// whose top bucket closed at max: 10,000,000, so "1,00,000 and above" quietly
+// excluded every lead above ten million — the exact ceiling the shared list was
+// created to remove, applied to loans but never carried across to leads.
+const RANGE_STEPS = LOAN_AMOUNT_RANGES;
 
-const getRangeStep = (index: number) => RANGE_STEPS[index] ?? RANGE_STEPS[4];
-
-const LOCATION_OPTS = ['Region', 'Woreda', 'Kebele'] as const;
+const getRangeStep = (index: number) => loanAmountRange(index);
 
 interface LeadAdvancedFiltersProps {
   onClose: () => void;
@@ -46,21 +43,15 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
   const [dateTo, setDateTo] = useState(activeFilters.dateTo);
   // Removed automatic "Today" date setting so filters are empty by default
 
-  // Location states
-  const [location, setLocation] = useState(activeFilters.location || '');
-  const [isLocationOpen, setIsLocationOpen] = useState(false);
-  const locationRef = useRef<HTMLDivElement>(null);
+  // Region state. One plain text box — see the Region section below for why the
+  // level-name dropdown that used to sit here is gone.
+  const [region, setRegion] = useState(activeFilters.region || '');
 
-  const getInitialIndex = () => {
-    const min = activeFilters.minAmount;
-    const max = activeFilters.maxAmount;
-    if (min === null || max === null) return 4;
-    if (min === 0 && max === 25000) return 0;
-    if (min === 25001 && max === 50000) return 1;
-    if (min === 50001 && max === 100000) return 2;
-    if (min === 100001 && max === 10000000) return 3;
-    return 4;
-  };
+  // Derived from the shared list rather than re-listing the bounds here: this
+  // copy still tested `max === 10000000` for the top bucket, so once that bucket
+  // became open-ended the drawer would have reopened on "All Amounts" and shown
+  // no amount filter at all.
+  const getInitialIndex = () => loanAmountRangeIndex(activeFilters.minAmount, activeFilters.maxAmount);
 
   // Loan Amount states
   const [isAmountOpen, setIsAmountOpen] = useState(false);
@@ -89,7 +80,7 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
     setQuickDate(activeFilters.quickDate);
     setDateFrom(activeFilters.dateFrom);
     setDateTo(activeFilters.dateTo);
-    setLocation(activeFilters.location || '');
+    setRegion(activeFilters.region || '');
     setTempIndex(getInitialIndex());
     setTempLoanTypes(activeFilters.loanType || []);
     setTempSources(activeFilters.leadSources || []);
@@ -101,7 +92,6 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
   useClickOutside(amountRef, () => setIsAmountOpen(false), isAmountOpen);
   useClickOutside(loanTypeRef, () => setIsLoanTypeOpen(false), isLoanTypeOpen);
   useClickOutside(sourcesRef, () => setIsSourcesOpen(false), isSourcesOpen);
-  useClickOutside(locationRef, () => setIsLocationOpen(false), isLocationOpen);
 
   // This panel is only ever mounted while it should be visible (no isOpen
   // prop — the parent conditionally renders it), so it's always "open" here.
@@ -115,15 +105,15 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
   const toggleSource = (s: string) => setTempSources(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s]);
 
   const selectedAmountSummary = useMemo(() => {
-    if (tempIndex === 4) return '';
+    if (tempIndex === ALL_AMOUNTS_INDEX) return '';
     return getRangeStep(tempIndex).display;
   }, [tempIndex]);
 
   const activeCount =
     (selStatuses.length > 0 ? 1 : 0) +
     (quickDate || dateFrom ? 1 : 0) +
-    (location.trim() ? 1 : 0) +
-    (tempIndex !== 4 ? 1 : 0) +
+    (region.trim() ? 1 : 0) +
+    (tempIndex !== ALL_AMOUNTS_INDEX ? 1 : 0) +
     (tempLoanTypes.length > 0 ? 1 : 0) +
     (tempSources.length > 0 ? 1 : 0);
 
@@ -174,15 +164,15 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
                         toggleStatus(s);
                       }
                     }}
-                    className={`flex cursor-pointer items-center justify-between rounded-xl border px-3 py-3 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-2 ${sel ? 'border-green-500 bg-green-50' : 'border-gray-200 bg-white hover:border-gray-300'
+                    className={`flex cursor-pointer items-center justify-between rounded-xl border px-3 py-3 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A] focus-visible:ring-offset-2 ${sel ? 'border-[#16A34A] bg-green-50' : 'border-gray-200 bg-white hover:border-gray-300'
                       }`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition ${sel ? 'border-green-600 bg-green-600' : 'border-gray-300 bg-white'
+                      <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition ${sel ? 'border-[#16A34A] bg-[#16A34A]' : 'border-gray-300 bg-white'
                         }`}>
                         {sel && <Check size={12} strokeWidth={3} className="text-white" />}
                       </div>
-                      <span className={`text-base font-medium ${sel ? 'text-green-700' : 'text-text-primary'}`}>{label}</span>
+                      <span className={`text-base font-medium ${sel ? 'text-[#10883c]' : 'text-text-primary'}`}>{label}</span>
                     </div>
                     <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${dot}`} />
                   </div>
@@ -200,15 +190,15 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
               <button
                 type="button"
                 onClick={() => setIsAmountOpen(prev => !prev)}
-                className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-sm shadow-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-1 ${isAmountOpen
-                  ? 'border-green-600 bg-white ring-2 ring-green-600/15'
-                  : 'border-gray-200 bg-white hover:border-green-600/50'
+                className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-sm shadow-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A] focus-visible:ring-offset-1 ${isAmountOpen
+                  ? 'border-[#16A34A] bg-white ring-2 ring-[#16A34A]/15'
+                  : 'border-gray-200 bg-white hover:border-[#16A34A]/50'
                   }`}
               >
                 <span className={selectedAmountSummary ? 'text-[#232F34] font-medium' : 'text-[#8E9AA0]'}>
                   {selectedAmountSummary || 'Select Loan Amount'}
                 </span>
-                <ChevronDown size={14} className={`text-gray-400 transition-transform ${isAmountOpen ? 'rotate-180 text-green-600' : ''}`} />
+                <ChevronDown size={14} className={`text-gray-400 transition-transform ${isAmountOpen ? 'rotate-180 text-[#16A34A]' : ''}`} />
               </button>
 
               {isAmountOpen && (
@@ -224,7 +214,7 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
                       <div className="h-3 w-full bg-[#D1D5DB] rounded-full relative">
                         <div
                           className="absolute left-0 top-0 h-full bg-[#16A34A] rounded-full"
-                          style={{ width: `${(tempIndex / 4) * 100}%` }}
+                          style={{ width: `${(tempIndex / ALL_AMOUNTS_INDEX) * 100}%` }}
                         />
                         <input
                           type="range"
@@ -236,8 +226,8 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
                           className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
                         />
                         <div
-                          className="absolute w-7 h-7 bg-white border-[4px] border-[#4B8261] rounded-full -top-2 -ml-3.5 pointer-events-none transition-all shadow-sm"
-                          style={{ left: `${(tempIndex / 4) * 100}%` }}
+                          className="absolute w-7 h-7 bg-white border-[4px] border-[#16A34A] rounded-full -top-2 -ml-3.5 pointer-events-none transition-all shadow-sm"
+                          style={{ left: `${(tempIndex / ALL_AMOUNTS_INDEX) * 100}%` }}
                         />
                       </div>
                     </div>
@@ -250,14 +240,15 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
                       </div>
 
                       <div className="absolute left-1/2 -translate-x-1/2 bg-[#D1FAE5] border border-[#A7F3D0] px-3 py-1.5 rounded-lg flex items-center justify-center min-w-[120px]">
-                        <span className="text-[13px] font-bold text-[#059669]">
+                        <span className="text-[13px] font-bold text-[#16A34A]">
                           {getRangeStep(tempIndex).display}
                         </span>
                       </div>
 
                       <div className="flex flex-col items-end leading-tight">
                         <span className="text-[10px] font-bold text-gray-500 tracking-wide">ETB</span>
-                        <span className="text-sm font-bold text-gray-700">1000000</span>
+                        {/* The top bucket has no ceiling, so the scale can't claim one. */}
+                        <span className="text-sm font-bold text-gray-700">100,000+</span>
                       </div>
                     </div>
                   </div>
@@ -265,22 +256,22 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
                   <hr className="border-t border-[#F3F3F3] -mx-4" />
 
                   <div className="flex flex-col -mx-4 -mb-4">
-                    {RANGE_STEPS.slice(0, 4).map((opt, idx) => {
+                    {RANGE_STEPS.slice(0, ALL_AMOUNTS_INDEX).map((opt, idx) => {
                       const isSel = tempIndex === idx;
                       return (
                         <div
-                          key={opt.value}
+                          key={opt.label}
                           role="button"
                           tabIndex={0}
                           aria-pressed={isSel}
-                          onClick={() => setTempIndex(isSel ? 4 : idx)}
+                          onClick={() => setTempIndex(isSel ? ALL_AMOUNTS_INDEX : idx)}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' || e.key === ' ') {
                               e.preventDefault();
-                              setTempIndex(isSel ? 4 : idx);
+                              setTempIndex(isSel ? ALL_AMOUNTS_INDEX : idx);
                             }
                           }}
-                          className="flex items-center gap-4 py-4 px-6 border-b border-[#F3F3F3] last:border-0 hover:bg-slate-50 cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-inset"
+                          className="flex items-center gap-4 py-4 px-6 border-b border-[#F3F3F3] last:border-0 hover:bg-slate-50 cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A] focus-visible:ring-inset"
                         >
                           <div className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-md border-2 transition-all ${isSel ? 'border-[#16A34A] bg-[#16A34A]' : 'border-gray-400 bg-white'}`}>
                             {isSel && <Check size={14} strokeWidth={4} className="text-white" />}
@@ -303,9 +294,9 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
               <button
                 type="button"
                 onClick={() => setIsLoanTypeOpen(prev => !prev)}
-                className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-sm shadow-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-1 ${isLoanTypeOpen
-                  ? 'border-green-600 bg-white ring-2 ring-green-600/15'
-                  : 'border-[#EDEFF1] bg-white hover:border-green-600/50'
+                className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-sm shadow-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A] focus-visible:ring-offset-1 ${isLoanTypeOpen
+                  ? 'border-[#16A34A] bg-white ring-2 ring-[#16A34A]/15'
+                  : 'border-[#EDEFF1] bg-white hover:border-[#16A34A]/50'
                   }`}
                 style={{
                   boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.05)',
@@ -314,7 +305,7 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
                 <span className={tempLoanTypes.length > 0 ? 'text-[#232F34] font-medium font-sans' : 'text-[#8E9AA0] font-sans'}>
                   {tempLoanTypes.length > 0 ? `${tempLoanTypes.length} Selected` : 'Select Loan Type'}
                 </span>
-                <ChevronDown size={14} className={`text-gray-400 transition-transform ${isLoanTypeOpen ? 'rotate-180 text-green-600' : ''}`} />
+                <ChevronDown size={14} className={`text-gray-400 transition-transform ${isLoanTypeOpen ? 'rotate-180 text-[#16A34A]' : ''}`} />
               </button>
 
               {isLoanTypeOpen && (
@@ -340,7 +331,7 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
                               setTempLoanTypes(prev => isSel ? prev.filter(x => x !== opt) : [...prev, opt]);
                             }
                           }}
-                          className={`flex items-center gap-4 py-4 px-6 border-b border-[#F3F3F3] last:border-0 hover:bg-slate-50 cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-inset ${idx === loanTypesOptions.length - 1 ? 'rounded-b-lg' : ''
+                          className={`flex items-center gap-4 py-4 px-6 border-b border-[#F3F3F3] last:border-0 hover:bg-slate-50 cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A] focus-visible:ring-inset ${idx === loanTypesOptions.length - 1 ? 'rounded-b-lg' : ''
                             }`}
                         >
                           <div className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-md border-2 transition-all ${isSel
@@ -366,9 +357,9 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
               <button
                 type="button"
                 onClick={() => setIsSourcesOpen(prev => !prev)}
-                className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-sm shadow-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-1 ${isSourcesOpen
-                  ? 'border-green-600 bg-white ring-2 ring-green-600/15'
-                  : 'border-[#EDEFF1] bg-white hover:border-green-600/50'
+                className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-sm shadow-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A] focus-visible:ring-offset-1 ${isSourcesOpen
+                  ? 'border-[#16A34A] bg-white ring-2 ring-[#16A34A]/15'
+                  : 'border-[#EDEFF1] bg-white hover:border-[#16A34A]/50'
                   }`}
                 style={{
                   boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.05)',
@@ -377,7 +368,7 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
                 <span className={tempSources.length > 0 ? 'text-[#232F34] font-medium font-sans' : 'text-[#8E9AA0] font-sans'}>
                   {tempSources.length > 0 ? `${tempSources.length} Selected` : 'Select Lead Source'}
                 </span>
-                <ChevronDown size={14} className={`text-gray-400 transition-transform ${isSourcesOpen ? 'rotate-180 text-green-600' : ''}`} />
+                <ChevronDown size={14} className={`text-gray-400 transition-transform ${isSourcesOpen ? 'rotate-180 text-[#16A34A]' : ''}`} />
               </button>
 
               {/* Dropdown List */}
@@ -404,7 +395,7 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
                               toggleSource(opt);
                             }
                           }}
-                          className={`flex items-center gap-4 py-4 px-6 border-b border-[#F3F3F3] last:border-0 hover:bg-slate-50 cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-inset ${idx === leadSourcesOptions.length - 1 ? 'rounded-b-lg' : ''
+                          className={`flex items-center gap-4 py-4 px-6 border-b border-[#F3F3F3] last:border-0 hover:bg-slate-50 cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A] focus-visible:ring-inset ${idx === leadSourcesOptions.length - 1 ? 'rounded-b-lg' : ''
                             }`}
                         >
                           <div className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-md border-2 transition-all ${isSel
@@ -423,53 +414,23 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
             </div>
           </section>
 
-          {/* Location */}
-          <section ref={locationRef} className="relative">
-            <p className="mb-3 text-base font-semibold text-text-primary">Location</p>
+          {/* Region */}
+          <section>
+            <p className="mb-3 text-base font-semibold text-text-primary">Region</p>
             <div className="relative">
               <input
                 type="text"
-                value={location}
-                onFocus={() => setIsLocationOpen(true)}
-                onChange={e => {
-                  setLocation(e.target.value);
-                  setIsLocationOpen(true);
-                }}
-                placeholder="Enter Region, Woreda or Kebele"
-                className="w-full rounded-xl border border-[#EDEFF1] bg-white py-3 px-4 text-sm text-[#232F34] placeholder:text-[#8E9AA0] focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/20 font-sans shadow-sm"
+                value={region}
+                onChange={e => setRegion(e.target.value)}
+                placeholder="Enter Region"
+                className="w-full rounded-xl border border-[#EDEFF1] bg-white py-3 px-4 text-sm text-[#232F34] placeholder:text-[#8E9AA0] focus:border-[#16A34A] focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20 font-sans shadow-sm"
               />
-              {isLocationOpen && (
-                <div
-                  className="absolute left-0 right-0 z-30 mt-1 rounded-b-lg border border-gray-200 bg-white shadow-xl flex flex-col"
-                  style={{
-                    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.05), 0px 1px 3px rgba(0, 0, 0, 0.07), 0px 1px 2px rgba(0, 0, 0, 0.06)'
-                  }}
-                >
-                  <div className="flex flex-col">
-                    {LOCATION_OPTS.filter(opt => opt.toLowerCase().includes(location.toLowerCase())).map((opt, idx) => (
-                      <div
-                        key={opt}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => {
-                          setLocation(opt);
-                          setIsLocationOpen(false);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            setLocation(opt);
-                            setIsLocationOpen(false);
-                          }
-                        }}
-                        className={`py-3 px-4 border-b border-[#F3F3F3] last:border-0 hover:bg-slate-50 cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-inset ${idx === LOCATION_OPTS.length - 1 ? 'rounded-b-lg' : ''}`}
-                      >
-                        <span className="text-[15px] text-[#4B5563] font-sans">{opt}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {/* One field, and it says which one. The dropdown that used to hang off
+                  this box offered the strings 'Region', 'Woreda' and 'Kebele' — the
+                  names of the levels, not values — so picking one filtered for a lead
+                  whose region was literally "Woreda". The value went out appended to
+                  `search_query` besides, which only ORs over name/phone/external_id. */}
+              <p className="mt-2 text-[13px] text-[#8E9AA0]">Matched from the start of the region name.</p>
             </div>
           </section>
 
@@ -496,7 +457,7 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
               setDateTo('');
               setQuickDate('');
 
-              setLocation('');
+              setRegion('');
               setTempIndex(4);
               setTempLoanTypes([]);
               setTempSources([]);
@@ -514,7 +475,10 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
                 quickDate,
                 dateFrom,
                 dateTo,
-                location,
+                // Trimmed on the way in, matching the count above (which already
+                // used `region.trim()`): a whitespace-only region is matched from
+                // the start of the name and empties the table.
+                region: region.trim(),
                 minAmount: activeRange.min,
                 maxAmount: activeRange.max,
                 loanType: tempLoanTypes,

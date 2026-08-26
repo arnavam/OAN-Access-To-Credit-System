@@ -4,40 +4,33 @@ import { useModalA11y } from '@/hooks/useModalA11y';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { Check, ChevronDown, SlidersHorizontal, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { clearAdvancedFilters, selectAdvancedFilters, setAdvancedFilters } from '../store/loanDashboardSlice';
-import { LOAN_FILTER_STATUS_OPTIONS, type FilterStatusOption } from '../constants/loans.constants';
+import {
+  clearAdvancedFilters,
+  selectAdvancedFilters,
+  selectLoanTypeOptions,
+  setAdvancedFilters,
+} from '../store/loanDashboardSlice';
+import {
+  ALL_AMOUNTS_INDEX,
+  loanAmountRange,
+  loanAmountRangeIndex,
+  LOAN_AMOUNT_RANGES,
+  LOAN_FILTER_STATUS_OPTIONS,
+  type FilterStatusOption,
+} from '../constants/loans.constants';
 
 interface LoanAdvancedFiltersProps {
   isOpen: boolean;
   onClose: () => void;
   /**
    * Which statuses this portal can filter on. Defaults to the dev-agent
-   * dashboard's list; the bank portals pass SELLER_FILTER_STATUS_OPTIONS.
+   * dashboard's list; the bank portals pass their own live pipeline stages,
+   * which is the one thing a fixed list can never get right for every tenant.
    * This is the *only* thing that differed between the two copies of this
    * drawer that used to exist.
    */
   statusOptions?: readonly FilterStatusOption[];
 }
-
-
-const RANGE_STEPS = [
-  { label: '0-25,000', value: '0-25000', min: 0, max: 25000, display: 'ETB 0 - 25,000' },
-  { label: '25,001 - 50,000', value: '25001-50000', min: 25001, max: 50000, display: 'ETB 25,001 - 50,000' },
-  { label: '50,001 - 1,00,000', value: '50001-100000', min: 50001, max: 100000, display: 'ETB 50,001 - 1,00,000' },
-  { label: '1,00,000 and above', value: '100000+', min: 100001, max: 10000000, display: 'ETB 100,000+' },
-  { label: 'All Amounts', value: '', min: null, max: null, display: 'All Amounts' },
-] as const;
-
-const getRangeStep = (index: number) => RANGE_STEPS[index] ?? RANGE_STEPS[4];
-
-const LOAN_TYPE_OPTS = [
-  'Input loan (seeds, agrochemicals)',
-  'Agricultural term loan',
-  'Smallholder short-term loan',
-  'Land loan',
-  'Farm equipment loan',
-  'Smallholder farmer direct loan'
-];
 
 export default function LoanAdvancedFilters({
   isOpen,
@@ -46,12 +39,16 @@ export default function LoanAdvancedFilters({
 }: LoanAdvancedFiltersProps) {
   const dispatch = useAppDispatch();
   const currentFilters = useAppSelector(selectAdvancedFilters);
+  // `loan_type` is free text on the doctype, so there is no enum to render — the
+  // options are the values actually seen in the data. The six hardcoded strings
+  // that stood here matched no record, so every pick returned an empty table.
+  const loanTypeOptions = useAppSelector(selectLoanTypeOptions);
 
   // Form states
   const [selStatuses, setSelStatuses] = useState<string[]>(currentFilters.status);
-  const [tempIndex, setTempIndex] = useState<number>(4); // 4 = All Amounts
+  const [tempIndex, setTempIndex] = useState<number>(ALL_AMOUNTS_INDEX);
   const [tempLoanTypes, setTempLoanTypes] = useState<string[]>(currentFilters.type || []);
-  const [location, setLocation] = useState(currentFilters.location || '');
+  const [region, setRegion] = useState(currentFilters.region || '');
   const [dateFrom, setDateFrom] = useState(currentFilters.dateFrom || '');
   const [dateTo, setDateTo] = useState(currentFilters.dateTo || '');
   const [quickDate, setQuickDate] = useState('');
@@ -69,21 +66,11 @@ export default function LoanAdvancedFilters({
     if (isOpen) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelStatuses(currentFilters.status);
-      setLocation(currentFilters.location);
+      setRegion(currentFilters.region);
       setDateFrom(currentFilters.dateFrom);
       setDateTo(currentFilters.dateTo);
       setTempLoanTypes(currentFilters.type || []);
-
-      const min = currentFilters.minLoan;
-      const max = currentFilters.maxLoan;
-      let amtIdx = 4;
-      if (min !== null && max !== null) {
-        if (min === 0 && max === 25000) amtIdx = 0;
-        else if (min === 25001 && max === 50000) amtIdx = 1;
-        else if (min === 50001 && max === 100000) amtIdx = 2;
-        else if (min === 100001 && max === 10000000) amtIdx = 3;
-      }
-      setTempIndex(amtIdx);
+      setTempIndex(loanAmountRangeIndex(currentFilters.minLoan, currentFilters.maxLoan));
 
       // Removed automatic date setting to 'Today'
       setQuickDate((q) => (currentFilters.dateFrom || currentFilters.dateTo ? '' : q));
@@ -101,8 +88,8 @@ export default function LoanAdvancedFilters({
   }, [isAmountOpen, isLoanTypeOpen]);
 
   const selectedAmountSummary = useMemo(() => {
-    if (tempIndex === 4) return '';
-    return getRangeStep(tempIndex).display;
+    if (tempIndex === ALL_AMOUNTS_INDEX) return '';
+    return loanAmountRange(tempIndex).display;
   }, [tempIndex]);
 
   const dialogRef = useModalA11y<HTMLElement>(isOpen, onClose);
@@ -112,12 +99,14 @@ export default function LoanAdvancedFilters({
   const toggleStatus = (s: string) => setSelStatuses(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s]);
 
   const handleApply = () => {
+    // Filter values only — the sort lives in the same slice object but this drawer
+    // has no sort control, and passing the whole object used to reset it on Apply.
     dispatch(setAdvancedFilters({
       status: selStatuses,
-      minLoan: getRangeStep(tempIndex).min,
-      maxLoan: getRangeStep(tempIndex).max,
+      minLoan: loanAmountRange(tempIndex).min,
+      maxLoan: loanAmountRange(tempIndex).max,
       type: tempLoanTypes,
-      location,
+      region,
       dateFrom,
       dateTo,
     }));
@@ -126,9 +115,9 @@ export default function LoanAdvancedFilters({
 
   const handleReset = () => {
     setSelStatuses([]);
-    setTempIndex(4);
+    setTempIndex(ALL_AMOUNTS_INDEX);
     setTempLoanTypes([]);
-    setLocation('');
+    setRegion('');
     setDateFrom('');
     setDateTo('');
     setQuickDate('');
@@ -137,14 +126,14 @@ export default function LoanAdvancedFilters({
     dispatch(clearAdvancedFilters());
   };
 
-  // Index 4 is "All Amounts" — i.e. no amount filter. Comparing against 3
-  // instead counted "All Amounts" as an active filter and left the last real
-  // range uncounted.
+  // ALL_AMOUNTS_INDEX is "All Amounts" — i.e. no amount filter. Comparing against
+  // the last real bucket instead counted "All Amounts" as an active filter and left
+  // the last real range uncounted.
   const activeCount =
     selStatuses.length +
-    (tempIndex !== 4 ? 1 : 0) +
+    (tempIndex !== ALL_AMOUNTS_INDEX ? 1 : 0) +
     (tempLoanTypes.length > 0 ? 1 : 0) +
-    (location ? 1 : 0) +
+    (region ? 1 : 0) +
     (dateFrom || dateTo ? 1 : 0);
 
   const sidebarContent = (
@@ -199,13 +188,13 @@ export default function LoanAdvancedFilters({
                         toggleStatus(opt.value);
                       }
                     }}
-                    className={`flex cursor-pointer items-center justify-between rounded-xl border px-3 py-3 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-2 ${sel ? 'border-green-500 bg-green-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}
+                    className={`flex cursor-pointer items-center justify-between rounded-xl border px-3 py-3 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A] focus-visible:ring-offset-2 ${sel ? 'border-[#16A34A] bg-green-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition ${sel ? 'border-green-600 bg-green-600' : 'border-gray-300 bg-white'}`}>
+                      <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition ${sel ? 'border-[#16A34A] bg-[#16A34A]' : 'border-gray-300 bg-white'}`}>
                         {sel && <Check size={12} strokeWidth={3} className="text-white" />}
                       </div>
-                      <span className={`text-base font-medium ${sel ? 'text-green-700' : 'text-[#232F34]'}`}>{opt.label}</span>
+                      <span className={`text-base font-medium ${sel ? 'text-[#10883c]' : 'text-[#232F34]'}`}>{opt.label}</span>
                     </div>
                     <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${opt.dot}`} />
                   </div>
@@ -221,12 +210,12 @@ export default function LoanAdvancedFilters({
               <button
                 type="button"
                 onClick={() => setIsAmountOpen(prev => !prev)}
-                className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-sm shadow-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-1 ${isAmountOpen ? 'border-green-600 bg-white ring-2 ring-green-600/15' : 'border-gray-200 bg-white hover:border-green-600/50'}`}
+                className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-sm shadow-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A] focus-visible:ring-offset-1 ${isAmountOpen ? 'border-[#16A34A] bg-white ring-2 ring-[#16A34A]/15' : 'border-gray-200 bg-white hover:border-[#16A34A]/50'}`}
               >
                 <span className={selectedAmountSummary ? 'text-[#232F34] font-medium' : 'text-[#8E9AA0]'}>
                   {selectedAmountSummary || 'Select Loan Amount'}
                 </span>
-                <ChevronDown size={14} className={`text-gray-400 transition-transform ${isAmountOpen ? 'rotate-180 text-green-600' : ''}`} />
+                <ChevronDown size={14} className={`text-gray-400 transition-transform ${isAmountOpen ? 'rotate-180 text-[#16A34A]' : ''}`} />
               </button>
 
               {isAmountOpen && (
@@ -240,20 +229,20 @@ export default function LoanAdvancedFilters({
                       <div className="h-3 w-full bg-[#D1D5DB] rounded-full relative">
                         <div
                           className="absolute left-0 top-0 h-full bg-[#16A34A] rounded-full"
-                          style={{ width: `${(tempIndex / 4) * 100}%` }}
+                          style={{ width: `${(tempIndex / ALL_AMOUNTS_INDEX) * 100}%` }}
                         />
                         <input
                           type="range"
                           min="0"
-                          max="4"
+                          max={ALL_AMOUNTS_INDEX}
                           step="1"
                           value={tempIndex}
                           onChange={e => setTempIndex(Number(e.target.value))}
                           className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
                         />
                         <div
-                          className="absolute w-7 h-7 bg-white border-[4px] border-[#4B8261] rounded-full -top-2 -ml-3.5 pointer-events-none transition-all shadow-sm"
-                          style={{ left: `${(tempIndex / 4) * 100}%` }}
+                          className="absolute w-7 h-7 bg-white border-[4px] border-[#16A34A] rounded-full -top-2 -ml-3.5 pointer-events-none transition-all shadow-sm"
+                          style={{ left: `${(tempIndex / ALL_AMOUNTS_INDEX) * 100}%` }}
                         />
                       </div>
                     </div>
@@ -266,14 +255,15 @@ export default function LoanAdvancedFilters({
                       </div>
 
                       <div className="absolute left-1/2 -translate-x-1/2 bg-[#D1FAE5] border border-[#A7F3D0] px-3 py-1.5 rounded-lg flex items-center justify-center min-w-[120px]">
-                        <span className="text-[13px] font-bold text-[#059669]">
-                          {getRangeStep(tempIndex).display}
+                        <span className="text-[13px] font-bold text-[#16A34A]">
+                          {loanAmountRange(tempIndex).display}
                         </span>
                       </div>
 
                       <div className="flex flex-col items-end leading-tight">
                         <span className="text-[10px] font-bold text-gray-500 tracking-wide">ETB</span>
-                        <span className="text-sm font-bold text-gray-700">1000000</span>
+                        {/* The top bucket has no ceiling, so the scale can't claim one. */}
+                        <span className="text-sm font-bold text-gray-700">100,000+</span>
                       </div>
                     </div>
                   </div>
@@ -281,22 +271,22 @@ export default function LoanAdvancedFilters({
                   <hr className="border-t border-[#F3F3F3] -mx-4" />
 
                   <div className="flex flex-col -mx-4 -mb-4">
-                    {RANGE_STEPS.slice(0, 4).map((opt, idx) => {
+                    {LOAN_AMOUNT_RANGES.slice(0, ALL_AMOUNTS_INDEX).map((opt, idx) => {
                       const isSel = tempIndex === idx;
                       return (
                         <div
-                          key={opt.value}
+                          key={opt.label}
                           role="button"
                           tabIndex={0}
                           aria-pressed={isSel}
-                          onClick={() => setTempIndex(isSel ? 4 : idx)}
+                          onClick={() => setTempIndex(isSel ? ALL_AMOUNTS_INDEX : idx)}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' || e.key === ' ') {
                               e.preventDefault();
-                              setTempIndex(isSel ? 4 : idx);
+                              setTempIndex(isSel ? ALL_AMOUNTS_INDEX : idx);
                             }
                           }}
-                          className="flex items-center gap-4 py-4 px-6 border-b border-[#F3F3F3] last:border-0 hover:bg-slate-50 cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-inset"
+                          className="flex items-center gap-4 py-4 px-6 border-b border-[#F3F3F3] last:border-0 hover:bg-slate-50 cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A] focus-visible:ring-inset"
                         >
                           <div className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-md border-2 transition-all ${isSel ? 'border-[#16A34A] bg-[#16A34A]' : 'border-gray-400 bg-white'}`}>
                             {isSel && <Check size={14} strokeWidth={4} className="text-white" />}
@@ -318,18 +308,22 @@ export default function LoanAdvancedFilters({
               <button
                 type="button"
                 onClick={() => setIsLoanTypeOpen(prev => !prev)}
-                className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-sm shadow-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-1 ${isLoanTypeOpen ? 'border-green-600 bg-white ring-2 ring-green-600/15' : 'border-[#EDEFF1] bg-white hover:border-green-600/50'}`}
+                className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-sm shadow-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A] focus-visible:ring-offset-1 ${isLoanTypeOpen ? 'border-[#16A34A] bg-white ring-2 ring-[#16A34A]/15' : 'border-[#EDEFF1] bg-white hover:border-[#16A34A]/50'}`}
               >
                 <span className={tempLoanTypes.length > 0 ? 'text-[#232F34] font-medium' : 'text-[#8E9AA0]'}>
                   {tempLoanTypes.length > 0 ? `${tempLoanTypes.length} Selected` : 'Select Loan Type'}
                 </span>
-                <ChevronDown size={14} className={`text-gray-400 transition-transform ${isLoanTypeOpen ? 'rotate-180 text-green-600' : ''}`} />
+                <ChevronDown size={14} className={`text-gray-400 transition-transform ${isLoanTypeOpen ? 'rotate-180 text-[#16A34A]' : ''}`} />
               </button>
 
               {isLoanTypeOpen && (
                 <div className="absolute left-0 right-0 z-30 mt-1 rounded-b-lg border border-gray-200 bg-white shadow-xl flex flex-col">
                   <div className="flex flex-col">
-                    {LOAN_TYPE_OPTS.map((opt, idx) => {
+                    {loanTypeOptions.length === 0 ? (
+                      <p className="px-6 py-4 text-[13px] text-[#8E9AA0]">
+                        No loan types seen yet — they appear as applications load.
+                      </p>
+                    ) : loanTypeOptions.map((opt, idx) => {
                       const isSel = tempLoanTypes.includes(opt);
                       return (
                         <div
@@ -344,7 +338,7 @@ export default function LoanAdvancedFilters({
                               setTempLoanTypes(prev => isSel ? prev.filter(x => x !== opt) : [...prev, opt]);
                             }
                           }}
-                          className={`flex items-center gap-4 py-4 px-6 border-b border-[#F3F3F3] last:border-0 hover:bg-slate-50 cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-inset ${idx === LOAN_TYPE_OPTS.length - 1 ? 'rounded-b-lg' : ''}`}
+                          className={`flex items-center gap-4 py-4 px-6 border-b border-[#F3F3F3] last:border-0 hover:bg-slate-50 cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A] focus-visible:ring-inset ${idx === loanTypeOptions.length - 1 ? 'rounded-b-lg' : ''}`}
                         >
                           <div className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-md border-2 transition-all ${isSel ? 'border-[#16A34A] bg-[#16A34A]' : 'border-gray-400 bg-white'}`}>
                             {isSel && <Check size={14} strokeWidth={4} className="text-white" />}
@@ -359,17 +353,21 @@ export default function LoanAdvancedFilters({
             </div>
           </section>
 
-          {/* Location */}
+          {/* Region */}
           <section>
-            <p className="mb-3 text-base font-semibold text-[#232F34]">Location</p>
+            <p className="mb-3 text-base font-semibold text-[#232F34]">Region</p>
             <div className="relative">
               <input
                 type="text"
-                value={location}
-                onChange={e => setLocation(e.target.value)}
-                placeholder="Enter Region, Woreda or Kebele"
-                className="w-full rounded-md border border-[#EDEFF1] bg-white py-3 px-4 text-sm text-[#232F34] placeholder:text-[#8E9AA0] focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/20 shadow-sm"
+                value={region}
+                onChange={e => setRegion(e.target.value)}
+                placeholder="Enter Region"
+                className="w-full rounded-md border border-[#EDEFF1] bg-white py-3 px-4 text-sm text-[#232F34] placeholder:text-[#8E9AA0] focus:border-[#16A34A] focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20 shadow-sm"
               />
+              {/* One field, and it says which one. It used to invite "Region, Woreda
+                  or Kebele" and send the lot as a `location` param that matches no
+                  column on A2C Loan Application — a 500 rather than a filter. */}
+              <p className="mt-2 text-[13px] text-[#8E9AA0]">Matched from the start of the region name.</p>
             </div>
           </section>
 

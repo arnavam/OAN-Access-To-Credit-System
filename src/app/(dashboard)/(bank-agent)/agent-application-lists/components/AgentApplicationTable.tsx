@@ -30,12 +30,20 @@ import AdvancedFiltersDrawer, { AdvancedFiltersState } from './filters/AdvancedF
 import LoanAmountFilter from './filters/LoanAmountFilter';
 import LoanTypeFilter from './filters/LoanTypeFilter';
 
+/**
+ * The status pill.
+ *
+ * Colour comes from the bank's own stage definition (`getStageStyle`), not from the
+ * archetype: two banks can call the same step different things and colour it their
+ * own way. `label` is the row's `stage_label`, falling back to the archetype for an
+ * application no stage has been applied to yet.
+ */
 function StatusBadge({ status, label }: { status: string; label: string }) {
   const stages = useAppSelector(selectBankStages);
   const style = getStageStyle(label || status, stages);
   return (
     <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-[13px] font-semibold select-none ${style.badge}`}>
-      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${style.dot}`} />
+      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${style.dot}`} aria-hidden="true" />
       {label || style.label}
     </span>
   );
@@ -111,9 +119,11 @@ export default function AgentApplicationTable({ onView }: AgentApplicationTableP
   const dispatch = useAppDispatch();
 
   // Rows come from `get_all_loans`, which the backend scopes to the caller's own
-  // bank (and hides Draft applications from bank users). Filtering, sorting and
-  // paging are therefore all server-side: doing any of it here would only ever
-  // narrow one page of an already-scoped result and report misleading totals.
+  // bank (and, via loan_application_scope_query, withholds Active applications —
+  // the Development Agent's and the farmer's private drafting stage). Filtering,
+  // sorting and paging are therefore all server-side: doing any of it here would
+  // only ever narrow one page of an already-scoped result and report misleading
+  // totals.
   const rows = useAppSelector(selectBankApplicationRows);
   const isLoading = useAppSelector(selectBankApplicationsLoading);
   const totalEntries = useAppSelector(selectBankTotalCount);
@@ -137,7 +147,7 @@ export default function AgentApplicationTable({ onView }: AgentApplicationTableP
     status: filters.status,
     loanAmount: filters.loanAmount,
     loanType: filters.loanType,
-    location: filters.location,
+    region: filters.region,
     dateRange: { from: filters.dateFrom, to: filters.dateTo },
   };
 
@@ -146,7 +156,7 @@ export default function AgentApplicationTable({ onView }: AgentApplicationTableP
       status: next.status,
       loanAmount: next.loanAmount,
       loanType: next.loanType,
-      location: next.location,
+      region: next.region,
       dateFrom: next.dateRange.from,
       dateTo: next.dateRange.to,
     }));
@@ -203,7 +213,7 @@ export default function AgentApplicationTable({ onView }: AgentApplicationTableP
     filters.status.length > 0 ||
     filters.loanType.length > 0 ||
     filters.loanAmount.length > 0 ||
-    Boolean(filters.location) ||
+    Boolean(filters.region) ||
     Boolean(filters.dateFrom) ||
     Boolean(filters.dateTo);
 

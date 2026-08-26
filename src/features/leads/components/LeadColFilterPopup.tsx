@@ -55,7 +55,7 @@ export function LeadColFilterPopup({ col, anchorRef, initialSelected = [], onApp
       onClick={(e) => e.stopPropagation()}
     >
       <div className="flex items-center gap-2 border-b border-gray-100 px-5 py-4 text-sm font-bold text-gray-500 uppercase tracking-wide">
-        <Filter size={16} className="text-emerald-600" />
+        <Filter size={16} className="text-[#16A34A]" />
         {col === 'CALL START TIME' ? 'FILTER BY DATE' : `FILTER BY ${col}`}
       </div>
       <div className="flex flex-col max-h-[300px] overflow-y-auto font-medium [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">

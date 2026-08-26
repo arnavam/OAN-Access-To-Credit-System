@@ -34,12 +34,15 @@ describe('api.schemas validation', () => {
     it('should validate correctly with valid fields and default null/missing values', () => {
       const validData = {
         application_id: 'APP-123',
-        status: 'Draft' as const,
+        status: 'In Transition' as const,
+        stage_label: 'Credit Committee',
         step: 1,
         lead_id: 'LEAD-123',
         loan_amount: 1000,
         loan_type: 'Agri',
-        location: 'Kabul',
+        region: 'Oromia',
+        woreda: 'Adama',
+        kebele: '01',
         phone_number: '1234567890',
         creation: '2026-06-24',
         first_name: 'John',
@@ -47,18 +50,27 @@ describe('api.schemas validation', () => {
       };
 
       const result = loanApplicationSummarySchema.parse(validData);
-      expect(result).toEqual(validData);
+      // The three location levels are carried through as sent, not blanked: they
+      // are the row's own values, and only a missing one resolves to undefined.
+      expect(result).toEqual({
+        ...validData,
+        is_terminal: false,
+        is_successful: false,
+      });
     });
 
-    it('should handle null location and null name fields', () => {
+    it('should leave null location, stage and name fields undefined', () => {
       const inputData = {
         application_id: 'APP-123',
-        status: 'Draft' as const,
+        status: 'Active' as const,
+        stage_label: null,
         step: 1,
         lead_id: 'LEAD-123',
         loan_amount: 1000,
         loan_type: 'Agri',
-        location: null,
+        region: null,
+        woreda: null,
+        kebele: null,
         phone_number: '1234567890',
         creation: '2026-06-24',
         first_name: null,
@@ -66,15 +78,23 @@ describe('api.schemas validation', () => {
       };
 
       const result = loanApplicationSummarySchema.parse(inputData);
-      expect(result.location).toBe('');
+      // Not '' — a blank string renders as a real but empty value, which is how the
+      // never-populated `location` field used to read as a legitimately empty cell.
+      expect(result.region).toBeUndefined();
+      expect(result.woreda).toBeUndefined();
+      expect(result.kebele).toBeUndefined();
+      // `stage_label` keeps its null rather than collapsing to undefined — every
+      // consumer reads it as `stage_label || status`, so absent and null are the
+      // same thing to them, and the raw value stays faithful to the payload.
+      expect(result.stage_label).toBeNull();
       expect(result.first_name).toBeUndefined();
       expect(result.last_name).toBeUndefined();
     });
 
-    it('should handle missing fields and use defaults', () => {
+    it('should handle missing optional fields', () => {
       const inputData = {
         application_id: 'APP-123',
-        status: 'Draft' as const,
+        status: 'Active' as const,
         step: 1,
         lead_id: 'LEAD-123',
         loan_amount: 1000,
@@ -84,9 +104,25 @@ describe('api.schemas validation', () => {
       };
 
       const result = loanApplicationSummarySchema.parse(inputData);
-      expect(result.location).toBe('');
+      expect(result.region).toBeUndefined();
+      expect(result.stage_label).toBeUndefined();
       expect(result.first_name).toBeUndefined();
       expect(result.last_name).toBeUndefined();
+    });
+
+    it('should reject a `location` field, which no longer exists on the doctype', () => {
+      const parsed = loanApplicationSummarySchema.parse({
+        application_id: 'APP-123',
+        status: 'Active' as const,
+        step: 1,
+        loan_amount: 1000,
+        loan_type: 'Agri',
+        phone_number: '1234567890',
+        creation: '2026-06-24',
+        location: 'Kabul',
+      });
+
+      expect(parsed).not.toHaveProperty('location');
     });
   });
 

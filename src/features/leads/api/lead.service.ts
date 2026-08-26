@@ -80,6 +80,9 @@ export const leadService = {
     if (params?.min_amount !== undefined) searchParams.set('min_loan_amount', params.min_amount.toString());
     if (params?.max_amount !== undefined) searchParams.set('max_loan_amount', params.max_amount.toString());
     if (params?.loan_type) searchParams.set('loan_type', params.loan_type);
+    // Its own param, not folded into search_query: `search_query` only ORs over
+    // name/phone/external_id, so appending a region to it guaranteed an empty page.
+    if (params?.region) searchParams.set('region', params.region);
     if (params?.assigned_to) searchParams.set('assigned_to', params.assigned_to);
     if (params?.sort_by) searchParams.set('sort_by', params.sort_by);
     if (params?.sort_order) searchParams.set('sort_order', params.sort_order);

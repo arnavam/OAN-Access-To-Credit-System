@@ -1,5 +1,6 @@
 'use client';
 
+import { DiscoverLoansCta } from '@/components/DiscoverLoansCta';
 import { MotionEffects } from '@/components/motion/MotionEffect';
 import { PanelLoader } from '@/components/ui/Loader';
 import { logger } from '@/lib/logger';
@@ -54,6 +55,10 @@ export default function FarmerDashboard() {
             <TopLoanOffersCard offers={data?.top_loan_offers || []} />
           </div>
         </div>
+
+        {/* The way into the catalogue. Sits directly under the loan types so the
+            row that shows what is on offer is followed by the way to browse it. */}
+        <DiscoverLoansCta href="/discover-loans" />
 
         {/* Middle Row */}
         <AvailableLoanTypes types={data?.available_loan_types || []} />

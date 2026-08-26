@@ -28,7 +28,7 @@ const navigationSections: NavSection[] = [
         label: 'Applications Lists',
         icon: FileText,
       },
-      // No Loan Discovery here. The catalog endpoints behind that page
+      // No Discover Loans here. The catalog endpoints behind that page
       // (`list_catalog`, `get_catalog_facets`) are @require_role([FARMER_ROLE,
       // DEVELOPMENT_AGENT_ROLE]), so every request a bank agent made from it
       // came back 403 — and /loan-discovery only exists under the (dev-agent)

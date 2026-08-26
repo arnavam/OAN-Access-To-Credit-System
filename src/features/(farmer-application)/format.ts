@@ -1,24 +1,15 @@
 /**
- * Display helpers for loan terms.
+ * Loan term display helpers.
  *
- * One rule, in one place: a term the data does not carry is shown as a dash, not
- * as a zero. `{rate || 0}%` and `{months || 0} mo` were rendering "0%" and "0 mo"
- * for products whose bank had published neither — an absence dressed up as the
- * most attractive offer on the page. Nulls are accepted alongside undefined
- * because the API sends JSON null for an unset field.
+ * The implementations live in `@/lib/format/loanTerms` so the shared catalog
+ * card — which now renders the bank's own products as well as the farmer's —
+ * can reach them without importing from this feature. Re-exported here so the
+ * existing farmer-side call sites keep their short relative import.
  */
-
-/** Shown wherever a value is missing. */
-export const NO_VALUE = '—';
-
-export function formatAmount(amount: number | null | undefined): string {
-  return amount == null ? NO_VALUE : `ETB ${amount.toLocaleString('en-US')}`;
-}
-
-export function formatRate(rate: number | null | undefined): string {
-  return rate == null ? NO_VALUE : `${rate}%`;
-}
-
-export function formatTenure(months: number | null | undefined): string {
-  return months == null ? NO_VALUE : `${months} mo`;
-}
+export {
+  NO_VALUE,
+  formatAmount,
+  formatRate,
+  formatRateRange,
+  formatTenure,
+} from '@/lib/format/loanTerms';

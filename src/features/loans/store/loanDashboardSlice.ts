@@ -1,15 +1,14 @@
 import { GetLoansParams, LoanApplicationSummary, loanService, LoanSummaryMetrics } from '@/features/loans/api/loan.service';
+import { archetypeOf, bucketStagesByArchetype, toPseudoStages } from '@/features/loans/utils/archetype';
 import { loanStagesService } from '@/features/loans/api/loanStages.service';
+import { formatLocation } from '@/features/loans/utils/formatLocation';
 import { getStageStyle, toStageFilterOptions } from '@/features/loans/utils/stageStyles';
-import type { LoanStage } from '@/lib/api/api.schemas';
+import { selectUserEmail } from '@/features/auth/store/authSlice';
+import type { LoanStage, LoanStatusMeta } from '@/lib/api/api.schemas';
+import { withCurrentSort } from '@/lib/filterSort';
 import type { ApiResponse } from '@/types/api';
 import { createAsyncThunk, createSelector, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import type { RootState } from '../../../store';
-
-// Sentinel sent to the API when the user has explicitly cleared all status
-// filters, signalling "match no statuses" (distinct from omitting the param,
-// which means "all statuses").
-const NO_STATUS_SENTINEL = '__NONE__';
 
 export const fetchLoans = createAsyncThunk(
   'loanDashboard/fetchLoans',
@@ -27,11 +26,20 @@ export const fetchLoans = createAsyncThunk(
   }
 );
 
+/**
+ * Loads the statuses the signed-in user can see.
+ *
+ * Reads `get_loan_metadata`, not the seller `get_stages` endpoint this used to
+ * call: `get_stages` is a bank API guarded by a bank binding, so the Development
+ * Agent driving this dashboard got a 403 and the filters were left with nothing
+ * to offer. `get_loan_metadata` resolves per role — the union across banks for a
+ * Dev Agent, the caller's own stages for a bank user.
+ */
 export const fetchLoanStages = createAsyncThunk(
   'loanDashboard/fetchLoanStages',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await loanStagesService.getStages();
+      const response = await loanService.getLoanMetadata();
       return response;
     } catch (error: unknown) {
       if (error instanceof Error && error.name === 'AbortError') {
@@ -56,11 +64,38 @@ export const fetchLoanSummary = createAsyncThunk(
   }
 );
 
+/**
+ * The signed-in bank's own pipeline, from the seller `get_stages` endpoint.
+ *
+ * Deliberately separate from `fetchLoanStages` above, which reads
+ * `get_loan_metadata` because that one has to serve the Development Agent too
+ * and `get_stages` 403s for anyone without a bank binding. This is only ever
+ * dispatched from the bank admin dashboard, and it is worth the second call:
+ * only `get_stages` carries `sequence` and `archetype_state`, which is what
+ * lets the status picker order a bank's stages and colour them by outcome
+ * instead of guessing from label text.
+ */
+export const fetchBankPipelineStages = createAsyncThunk(
+  'loanDashboard/fetchBankPipelineStages',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await loanStagesService.getStages();
+      return response.data.stages;
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw error;
+      }
+      const message = error instanceof Error ? error.message : 'Failed to fetch bank stages';
+      return rejectWithValue(message);
+    }
+  }
+);
+
 export const updateLoanStatus = createAsyncThunk(
   'loanDashboard/updateLoanStatus',
-  async ({ id, status, reason, notes }: { id: string; status: string; reason?: string; notes?: string }, { rejectWithValue, dispatch, getState }) => {
+  async ({ id, status, reason }: { id: string; status: string; reason?: string }, { rejectWithValue, dispatch, getState }) => {
     try {
-      const response = await loanService.updateLoanStatus(id, status, reason, notes);
+      const response = await loanService.updateLoanStatus(id, status, reason);
       // Re-fetch with the user's current filters/pagination (not the defaults) so the view doesn't silently reset.
       dispatch(fetchLoans(selectQueryParams(getState() as RootState)));
       return response;
@@ -71,8 +106,6 @@ export const updateLoanStatus = createAsyncThunk(
   }
 );
 
-const ALL_STATUS_VALUES = ['danger', 'info', 'neutral'];
-
 export interface MappedLoanRow extends Omit<LoanApplicationSummary, 'status'> {
   id: string;
   applicant: string;
@@ -81,7 +114,12 @@ export interface MappedLoanRow extends Omit<LoanApplicationSummary, 'status'> {
   phone: string;
   loanAmount: string;
   type: string;
+  /** Region · Woreda, built from the hierarchy fields the endpoint returns. */
+  location: string;
+  /** The archetype state — what the status filter and the API speak. */
   status: string;
+  /** What the badge shows: the owning bank's stage label, or the archetype. */
+  statusLabel: string;
   statusTone: string;
   updated: string;
   timestamp: number;
@@ -93,11 +131,37 @@ export interface AdvancedFilters {
   minLoan: number | null;
   maxLoan: number | null;
   type: string[];
-  location: string;
+  /** Prefix-matched against `region`. See BankApplicationFilters.region. */
+  region: string;
   dateFrom: string;
   dateTo: string;
   sortBy?: 'loan_amount' | 'creation';
   sortOrder?: 'asc' | 'desc';
+}
+
+/** What the drawer can set — everything except the sort, which it does not own. */
+export type AdvancedFilterValues = Omit<AdvancedFilters, 'sortBy' | 'sortOrder'>;
+
+/**
+ * The filter half of the current filter state, ready to hand back to
+ * `setAdvancedFilters` with one field changed.
+ *
+ * Call sites that tweak a single filter used to spread the whole `AdvancedFilters`
+ * object into the payload, which carried `sortBy`/`sortOrder` along with it and made
+ * every one of them a place the sort could be reset by accident. Fields are listed
+ * out rather than rest-destructured so adding one to `AdvancedFilters` is a type
+ * error here instead of a value that silently stops being sent.
+ */
+export function advancedFilterValues(filters: AdvancedFilters): AdvancedFilterValues {
+  return {
+    status: filters.status,
+    minLoan: filters.minLoan,
+    maxLoan: filters.maxLoan,
+    type: filters.type,
+    region: filters.region,
+    dateFrom: filters.dateFrom,
+    dateTo: filters.dateTo,
+  };
 }
 
 interface LoanDashboardState {
@@ -114,18 +178,35 @@ interface LoanDashboardState {
   isSummaryLoading: boolean;
   summaryError: string | null;
 
+  /** Raw caller-scoped status metadata from `get_loan_metadata`. */
+  statuses: LoanStatusMeta[];
+  /** The same list in `LoanStage` shape, for the badge/filter helpers. */
   stages: LoanStage[];
   isStagesLoading: boolean;
   stagesError: string | null;
 
+  /** The signed-in bank's own pipeline from `get_stages`. Bank users only —
+   *  stays empty for a Development Agent, who has no bank binding. */
+  pipelineStages: LoanStage[];
+  isPipelineStagesLoading: boolean;
+  pipelineStagesError: string | null;
+
   // UI State
-  dateRange: string;
-  selectedStatuses: string[];
   activityPage: number;
   activeTab: 'all' | 'my' | 'unassigned';
   searchQuery: string;
   tableStatusFilters: string[];
   tableTypeFilters: string[];
+  /**
+   * Every `loan_type` seen so far, unioned across fetches and never pruned.
+   *
+   * The loan-type filters cannot be derived from the rows on screen: filtering is
+   * server-side, so picking one type would shrink the option list to exactly that
+   * type and leave no way back. Accumulating means the list only grows as pages are
+   * visited, and a chosen value is always still selectable. (Same reasoning, and
+   * the same mechanism, as `knownLoanTypes` on bankApplicationsSlice.)
+   */
+  knownLoanTypes: string[];
   pageSize: number;
   advancedFilters: AdvancedFilters;
 }
@@ -137,7 +218,7 @@ const DEFAULT_ADVANCED_FILTERS: AdvancedFilters = {
   minLoan: null,
   maxLoan: null,
   type: [],
-  location: '',
+  region: '',
   dateFrom: '',
   dateTo: '',
 };
@@ -151,17 +232,20 @@ const initialState: LoanDashboardState = {
   isSummaryLoading: false,
   summaryError: null,
 
+  statuses: [],
   stages: [],
+  pipelineStages: [],
+  isPipelineStagesLoading: false,
+  pipelineStagesError: null,
   isStagesLoading: false,
   stagesError: null,
 
-  dateRange: 'last30',
-  selectedStatuses: [...ALL_STATUS_VALUES],
   activityPage: 1,
   activeTab: 'all',
   searchQuery: '',
   tableStatusFilters: [],
   tableTypeFilters: [],
+  knownLoanTypes: [],
   pageSize: 10,
   advancedFilters: { ...DEFAULT_ADVANCED_FILTERS },
 };
@@ -209,30 +293,6 @@ const loanDashboardSlice = createSlice({
       state.activeTab = action.payload;
       state.activityPage = 1; // Reset pagination on tab change
     },
-    setDateRange: (state, action: PayloadAction<string>) => {
-      state.dateRange = action.payload;
-    },
-    toggleStatus: (state, action: PayloadAction<string>) => {
-      const value = action.payload;
-      const index = state.selectedStatuses.indexOf(value);
-      if (index > -1) {
-        state.selectedStatuses.splice(index, 1);
-      } else {
-        state.selectedStatuses.push(value);
-      }
-      if (state.selectedStatuses.length === 0) {
-        state.selectedStatuses = [...ALL_STATUS_VALUES];
-      }
-      state.activityPage = 1;
-    },
-    toggleAllStatuses: (state) => {
-      if (state.selectedStatuses.length === ALL_STATUS_VALUES.length) {
-        state.selectedStatuses = [];
-      } else {
-        state.selectedStatuses = [...ALL_STATUS_VALUES];
-      }
-      state.activityPage = 1;
-    },
     setActivityPage: (state, action: PayloadAction<number>) => {
       state.activityPage = action.payload;
     },
@@ -240,25 +300,27 @@ const loanDashboardSlice = createSlice({
       state.pageSize = action.payload;
       state.activityPage = 1; // reset to page 1
     },
-    setAdvancedFilters: (state, action: PayloadAction<AdvancedFilters>) => {
-      state.advancedFilters = action.payload;
+    // Takes the filter values only, and keeps the current sort: the drawer has no
+    // sort control, so replacing the whole object with its payload silently reset
+    // the column sort every time someone pressed Apply.
+    setAdvancedFilters: (state, action: PayloadAction<AdvancedFilterValues>) => {
+      state.advancedFilters = withCurrentSort(action.payload, state.advancedFilters);
       state.activityPage = 1;
     },
     clearAdvancedFilters: (state) => {
-      state.advancedFilters = { ...DEFAULT_ADVANCED_FILTERS };
+      state.advancedFilters = withCurrentSort(DEFAULT_ADVANCED_FILTERS, state.advancedFilters);
       state.activityPage = 1;
     },
     // The toolbar's "Clear Filters" needs to reset every independent filter
     // surface (badges, column filters, advanced filters, search) in one go —
     // clearAdvancedFilters alone left tableStatusFilters/tableTypeFilters/
-    // selectedStatuses/searchQuery untouched, so a bad value picked from a
-    // column filter survived a "clear" and kept the same broken request firing.
+    // searchQuery untouched, so a bad value picked from a column filter survived
+    // a "clear" and kept the same broken request firing.
     resetAllFilters: (state) => {
       state.searchQuery = '';
-      state.selectedStatuses = [...ALL_STATUS_VALUES];
       state.tableStatusFilters = [];
       state.tableTypeFilters = [];
-      state.advancedFilters = { ...DEFAULT_ADVANCED_FILTERS };
+      state.advancedFilters = withCurrentSort(DEFAULT_ADVANCED_FILTERS, state.advancedFilters);
       state.activityPage = 1;
     },
     setLoanSort: (state, action: PayloadAction<{ sortBy?: 'loan_amount' | 'creation'; sortOrder?: 'asc' | 'desc' }>) => {
@@ -290,6 +352,16 @@ const loanDashboardSlice = createSlice({
         if (action.meta.requestId !== state.latestFetchRequestId) return;
         state.isLoading = false;
         state.rawActivityData = action.payload;
+
+        // Union, never replace — see `knownLoanTypes`. A server-side filter on
+        // loan_type would otherwise narrow its own option list to the one value
+        // already chosen.
+        for (const row of action.payload?.data ?? []) {
+          const loanType = row.loan_type;
+          if (loanType && !state.knownLoanTypes.includes(loanType)) {
+            state.knownLoanTypes.push(loanType);
+          }
+        }
       })
       .addCase(fetchLoans.rejected, (state, action) => {
         // Ignore aborted requests, and any response for a superseded request —
@@ -298,6 +370,38 @@ const loanDashboardSlice = createSlice({
         if (action.meta.requestId !== state.latestFetchRequestId) return;
         state.isLoading = false;
         state.loansError = action.payload as string;
+      })
+      // fetchLoanStages — without these three cases the thunk resolved into
+      // nowhere: `stages` stayed empty forever, so the status dropdown fell back
+      // to a hardcoded list and the KPI cards rendered dashes.
+      .addCase(fetchLoanStages.pending, (state) => {
+        state.isStagesLoading = true;
+        state.stagesError = null;
+      })
+      .addCase(fetchLoanStages.fulfilled, (state, action) => {
+        state.isStagesLoading = false;
+        const statuses: LoanStatusMeta[] = action.payload?.data?.statuses ?? [];
+        state.statuses = statuses;
+        state.stages = toPseudoStages(statuses);
+      })
+      .addCase(fetchLoanStages.rejected, (state, action) => {
+        if (action.meta.aborted) return;
+        state.isStagesLoading = false;
+        state.stagesError = action.payload as string;
+      })
+      // fetchBankPipelineStages
+      .addCase(fetchBankPipelineStages.pending, (state) => {
+        state.isPipelineStagesLoading = true;
+        state.pipelineStagesError = null;
+      })
+      .addCase(fetchBankPipelineStages.fulfilled, (state, action) => {
+        state.isPipelineStagesLoading = false;
+        state.pipelineStages = action.payload;
+      })
+      .addCase(fetchBankPipelineStages.rejected, (state, action) => {
+        if (action.meta.aborted) return;
+        state.isPipelineStagesLoading = false;
+        state.pipelineStagesError = action.payload as string;
       })
       // fetchLoanSummary
       .addCase(fetchLoanSummary.pending, (state) => {
@@ -316,9 +420,6 @@ const loanDashboardSlice = createSlice({
 });
 
 export const {
-  setDateRange,
-  toggleStatus,
-  toggleAllStatuses,
   setActivityPage,
   setActiveTab,
   setSearchQuery,
@@ -340,10 +441,9 @@ export const selectIsLoansLoading = (state: RootState) => state.loanDashboard.is
 export const selectLoansError = (state: RootState) => state.loanDashboard.loansError;
 export const selectRawSummaryData = (state: RootState) => state.loanDashboard.rawSummaryData;
 export const selectLoanStages = (state: RootState) => state.loanDashboard.stages;
+export const selectLoanStatusMeta = (state: RootState) => state.loanDashboard.statuses;
 export const selectIsLoanStagesLoading = (state: RootState) => state.loanDashboard.isStagesLoading;
 export const selectLoanStagesError = (state: RootState) => state.loanDashboard.stagesError;
-export const selectDateRange = (state: RootState) => state.loanDashboard.dateRange;
-export const selectSelectedStatuses = (state: RootState) => state.loanDashboard.selectedStatuses;
 export const selectActivityPage = (state: RootState) => state.loanDashboard.activityPage;
 export const selectActiveTab = (state: RootState) => state.loanDashboard.activeTab;
 export const selectSearchQuery = (state: RootState) => state.loanDashboard.searchQuery;
@@ -353,8 +453,39 @@ export const selectPageSize = (state: RootState) => state.loanDashboard.pageSize
 export const selectAdvancedFilters = (state: RootState) => state.loanDashboard.advancedFilters;
 export const selectLoanSortBy = (state: RootState) => state.loanDashboard.advancedFilters.sortBy;
 export const selectLoanSortOrder = (state: RootState) => state.loanDashboard.advancedFilters.sortOrder;
+const selectKnownLoanTypes = (state: RootState) => state.loanDashboard.knownLoanTypes;
+
+/**
+ * Loan types offered by the LOAN TYPE column filter and the advanced-filters drawer.
+ *
+ * `loan_type` is a free-text `Data` field on A2C Loan Application, filled from
+ * whatever the credit-information record carried — there is no enum to render, and
+ * the six hardcoded strings that used to stand in for one matched no real record.
+ * Everything seen so far, unioned with whatever is currently selected so a chosen
+ * value is never missing from the list meant to let you unselect it.
+ */
+export const selectLoanTypeOptions = createSelector(
+  [selectKnownLoanTypes, selectTableTypeFilters, selectAdvancedFilters],
+  (known, tableTypes, advanced) =>
+    Array.from(new Set([...known, ...tableTypes, ...advanced.type])).sort()
+);
 
 export const selectLoanStageOptions = createSelector([selectLoanStages], (stages) => toStageFilterOptions(stages));
+
+export const selectBankPipelineStages = (state: RootState) => state.loanDashboard.pipelineStages;
+export const selectBankPipelineStagesError = (state: RootState) => state.loanDashboard.pipelineStagesError;
+
+/**
+ * The bank's stages in pipeline order, for the status picker.
+ *
+ * Sorted by `sequence` rather than left in response order: the picker presents a
+ * progression, and a stage list that arrives unordered would read as an
+ * arbitrary jumble of the bank's own workflow.
+ */
+export const selectOrderedBankPipelineStages = createSelector(
+  [selectBankPipelineStages],
+  (stages) => [...stages].sort((a, b) => a.sequence - b.sequence)
+);
 
 // --- Derived Memoized Selectors ---
 export const selectPagedRowsData = createSelector(
@@ -376,9 +507,17 @@ export const selectPagedRowsData = createSelector(
       const firstName = row.first_name || '';
       const lastName = row.last_name || '';
       const applicantName = `${firstName} ${lastName}`.trim();
+      const location = formatLocation(row);
+      // 'Active' is the state create_loan_application stamps, so it is the
+      // fallback here — 'Draft' was never one of the four archetype states, and a
+      // row falling back to it produced a status the filter could not express.
+      const status = row.status || 'Active';
 
-      const displayStatus = row.stage_label || row.status || 'Draft';
-      const stageStyle = getStageStyle(row.stage_label || row.status || '', stages);
+      // The badge text: the owning bank's label for the step when it has one,
+      // otherwise the archetype. 'Draft' stood here as the fallback and was never
+      // one of the four archetype states.
+      const displayStatus = row.stage_label || status;
+      const stageStyle = getStageStyle(row.stage_label || status, stages);
 
       return {
         ...row,
@@ -387,7 +526,14 @@ export const selectPagedRowsData = createSelector(
         phone: row.phone_number || '',
         loanAmount: row.loan_amount ? row.loan_amount.toLocaleString() : '—',
         type: row.loan_type || 'Unknown Type',
-        status: displayStatus,
+        // A dash, not an empty cell: the record genuinely carries no location yet.
+        location: location || '—',
+        // The archetype — what the status filter and the API speak. Kept distinct
+        // from the badge text: assigning the stage label here made the value the
+        // filter sends and the value the badge shows one and the same string, so
+        // filtering by what you could see returned nothing.
+        status,
+        statusLabel: displayStatus,
         statusTone: stageStyle.tone,
         updated: `${dateStr} · ${timeStr}`,
         timestamp: rawDate.getTime(),
@@ -406,43 +552,64 @@ export const selectTotalCount = createSelector([selectPagedRowsData], (data) => 
 
 /**
  * KPI figures for the loan dashboard.
+ *
+ * `get_loan_summary` reports counts per *bank-defined stage label*, which the
+ * client cannot interpret on its own — one bank's "Underwriting" is another's
+ * "Credit Review". The caller-scoped status metadata is what classifies each
+ * label into an archetype bucket. (The previous fallback read
+ * `summary.by_status`, a key the endpoint has never sent, so these cards showed
+ * a permanent dash whenever the stage list was empty — which, for the
+ * Development Agent, was always.)
  */
 export const selectLiveMetrics = createSelector(
-  [selectRawSummaryData, selectLoanStages],
-  (rawSummaryData, stages) => {
-    // fetchApi automatically unwraps the "message" envelope
+  [selectRawSummaryData, selectLoanStatusMeta],
+  (rawSummaryData, statusMeta) => {
     const summaryData = rawSummaryData?.data;
-    const byStatus = summaryData?.by_status;
+    const counts = bucketStagesByArchetype(summaryData?.stages, statusMeta);
+    // Total comes from the endpoint's own figure, not the sum of the buckets: a
+    // loan sitting on a stage that was renamed between the two requests still
+    // has to be counted somewhere.
+    const total = summaryData?.total ?? counts.total;
     const show = (value: number | undefined) => (typeof value === 'number' ? value.toString() : '—');
 
-    if (stages.length > 0) {
-      let inTransition = 0;
-      let completed = 0;
-      let cancelled = 0;
-      let total = 0;
-      for (const stage of stages) {
-        const count = stage.application_count ?? 0;
-        total += count;
-        if (stage.archetype_state === 'In Transition') inTransition += count;
-        else if (stage.archetype_state === 'Completed') completed += count;
-        else if (stage.archetype_state === 'Rejected' || stage.archetype_state === 'Cancelled') cancelled += count;
-      }
-      if (total > 0) {
-        return {
-          total: { value: total.toString() },
-          in_transition: { value: inTransition.toString() },
-          completed: { value: completed.toString() },
-          cancelled: { value: cancelled.toString() },
-        };
-      }
-    }
-
     return {
-      total: { value: show(summaryData?.total) },
-      in_transition: { value: show(byStatus?.['In Transition']) },
-      completed: { value: show(byStatus?.['Completed']) },
-      cancelled: { value: show(byStatus?.['Cancelled']) },
+      total: { value: show(total) },
+      in_transition: { value: (counts.active + counts.inTransition).toString() },
+      completed: { value: counts.completed.toString() },
+      cancelled: { value: counts.cancelled.toString() },
     };
+  }
+);
+
+/**
+ * One KPI card per stage, for the cross-bank dashboard.
+ *
+ * The two halves come from different endpoints because neither has both:
+ * `get_loan_metadata` describes the pipeline (label, ordering, archetype) but
+ * carries no counts, while `get_loan_summary().stages` carries counts keyed by
+ * label but says nothing about what a label means or where it sits. Joined on
+ * the label, ordered by `sequence` so the row reads in the order an application
+ * actually travels.
+ *
+ * Spanning every bank, the union can hold two stages sharing a label — counts
+ * for those merge, which is the reading a cross-bank total wants anyway.
+ */
+export const selectLoanStageCards = createSelector(
+  [selectLoanStatusMeta, selectRawSummaryData],
+  (statusMeta, rawSummaryData) => {
+    const counts = rawSummaryData?.data?.stages ?? {};
+    const byLabel = new Map(
+      Object.entries(counts).map(([label, count]) => [label.toLowerCase(), count])
+    );
+
+    return [...statusMeta]
+      .sort((a, b) => (a.sequence ?? Number.MAX_SAFE_INTEGER) - (b.sequence ?? Number.MAX_SAFE_INTEGER))
+      .map((meta) => ({
+        key: meta.stage_id || meta.status,
+        label: meta.status,
+        archetype: archetypeOf(meta),
+        value: byLabel.get(meta.status.toLowerCase()) ?? 0,
+      }));
   }
 );
 
@@ -456,8 +623,8 @@ export const selectTabCounts = createSelector(
 
 
 export const selectQueryParams = createSelector(
-  [selectActivityPage, selectPageSize, selectDateRange, selectSelectedStatuses, selectSearchQuery, selectActiveTab, selectTableStatusFilters, selectTableTypeFilters, selectAdvancedFilters],
-  (activityPage, pageSize, dateRange, selectedStatuses, searchQuery, activeTab, tableStatusFilters, tableTypeFilters, advancedFilters) => {
+  [selectActivityPage, selectPageSize, selectSearchQuery, selectActiveTab, selectTableStatusFilters, selectTableTypeFilters, selectAdvancedFilters, selectLoanStatusMeta, selectUserEmail],
+  (activityPage, pageSize, searchQuery, activeTab, tableStatusFilters, tableTypeFilters, advancedFilters, statusMeta, userEmail) => {
     const params: GetLoansParams = {
       page: activityPage,
       page_size: pageSize,
@@ -465,32 +632,19 @@ export const selectQueryParams = createSelector(
 
     if (searchQuery) params.search_query = searchQuery;
     // Scope the queue server-side via loan_officer (get_all_loans): "My" → my
-    // email, "Unassigned" → the literal 'unassigned', "All" → omit.
-    if (activeTab === 'my') params.loan_officer = 'my';
-    else if (activeTab === 'unassigned') params.loan_officer = 'unassigned';
-
-    const getCutoffTimestamp = (range: string) => {
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-
-      const resolvers: Record<string, () => number> = {
-        'today': () => today,
-        'yesterday': () => today - 86400000,
-        'last7': () => today - 6 * 86400000,
-        'last30': () => today - 29 * 86400000,
-        'last3m': () => new Date(now.getFullYear(), now.getMonth() - 3, now.getDate()).getTime(),
-        'last6m': () => new Date(now.getFullYear(), now.getMonth() - 6, now.getDate()).getTime(),
-        'last1y': () => new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()).getTime(),
-      };
-      return resolvers[range]?.() ?? 0;
-    };
-
-    const ts = getCutoffTimestamp(dateRange);
-    if (ts > 0) {
-      const d = new Date(ts);
-      params.from_date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    // email, "Unassigned" → the literal 'unassigned', "All" → omit. `unassigned`
+    // is the only literal the filter understands; the 'my' this used to send was
+    // matched against the User table as if it were an address and returned an
+    // empty queue for everyone.
+    if (activeTab === 'my') {
+      if (userEmail) params.loan_officer = userEmail;
+    } else if (activeTab === 'unassigned') {
+      params.loan_officer = 'unassigned';
     }
 
+    // The only date window is the one someone picked in the drawer. A default
+    // "last 30 days" used to be applied here from a toolbar control that was never
+    // rendered, so anything older was invisible with no filter chip to explain it.
     if (advancedFilters.dateFrom) {
       const datePart = advancedFilters.dateFrom.split('T')[0];
       if (datePart) params.from_date = datePart;
@@ -500,42 +654,46 @@ export const selectQueryParams = createSelector(
       if (datePart) params.to_date = datePart;
     }
 
-    const allChecked = selectedStatuses.length === ALL_STATUS_VALUES.length;
-    let statusesToPass: string[] = [];
-
-    if (!allChecked && selectedStatuses.length > 0) {
-      if (selectedStatuses.includes('danger')) statusesToPass.push('Rejected', 'Action Required');
-      if (selectedStatuses.includes('neutral')) statusesToPass.push('Draft');
-      if (selectedStatuses.includes('info')) statusesToPass.push('Pending Review', 'Processed', 'Processing');
-      if (selectedStatuses.includes('success')) statusesToPass.push('Approved');
-    }
-
-    // Combine with table status filters
-    if (tableStatusFilters.length > 0) {
-      statusesToPass = [...new Set([...statusesToPass, ...tableStatusFilters])];
-    }
-
-    // Combine with advanced status filters
-    if (advancedFilters.status.length > 0) {
-      statusesToPass = [...new Set([...statusesToPass, ...advancedFilters.status])];
-    }
+    // Status filtering speaks the caller's *own* pipeline vocabulary.
+    //
+    // `get_all_loans` validates every value against the stages visible to the
+    // caller and answers 400 for anything it does not recognise — so a value
+    // that is not in the metadata is dropped here rather than sent and failed.
+    // (The retired fixed vocabulary this used to emit — 'Pending Review',
+    // 'Processing', 'Action Required', 'Draft' — 400s every request that carried
+    // it, taking the whole table down with it, and so did the `__NONE__`
+    // sentinel that stood for "no statuses selected".)
+    const requested = [...new Set([...tableStatusFilters, ...advancedFilters.status])];
+    const statusesToPass = statusMeta.length > 0
+      ? requested.filter((value) =>
+          statusMeta.some((meta) =>
+            meta.status.toLowerCase() === value.toLowerCase() ||
+            meta.stage_id?.toLowerCase() === value.toLowerCase()
+          )
+        )
+      : requested;
 
     if (statusesToPass.length > 0) {
-      params.status = statusesToPass.join(',');
-    } else if (selectedStatuses.length === 0 && tableStatusFilters.length === 0 && advancedFilters.status.length === 0) {
-      params.status = NO_STATUS_SENTINEL;
+      // JSON array rather than a comma-joined string: a bank is free to name a
+      // stage "Approved, Pending Disbursal", and splitting on the comma would
+      // turn one valid stage into two invalid ones.
+      params.status = JSON.stringify(statusesToPass);
     }
 
-    let typesToPass = [...tableTypeFilters];
-    if (advancedFilters.type.length > 0) {
-      typesToPass = [...new Set([...typesToPass, ...advancedFilters.type])];
-    }
-    if (typesToPass.length > 0) {
-      params.loan_type = typesToPass.join(',');
+    const types = new Set([...tableTypeFilters, ...advancedFilters.type]);
+    if (types.size > 0) {
+      params.loan_type = Array.from(types).join(',');
     }
 
-    if (advancedFilters.location) {
-      params.location = advancedFilters.location;
+    // `region`, not `location`: A2C Loan Application has no `location` column, and
+    // naming one put a nonexistent column in the WHERE clause — a 500, not a filter.
+    //
+    // Trimmed because the control is a free-text box matched from the start of the
+    // region name: an untrimmed "  " is truthy, so it went to the endpoint as
+    // `like '  %'` and emptied the table with no filter chip to explain why.
+    const region = advancedFilters.region?.trim();
+    if (region) {
+      params.region = region;
     }
 
     if (advancedFilters.minLoan !== null && advancedFilters.minLoan !== undefined) {

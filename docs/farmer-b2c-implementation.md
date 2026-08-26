@@ -501,9 +501,7 @@ def list_catalog(**kwargs):
   """Active loan products across every bank, for a signed-in farmer.
 
   Reads through get_list so loan_product_scope_query applies: farmers get the
-  Active-only, bank-unfiltered branch; anyone else keeps bank scoping. Modelled
-  on api.v1.loan_applications.get_products, which is the same shape for the
-  Development Agent.
+  Active-only, bank-unfiltered branch; anyone else keeps bank scoping.
   """
   frappe.has_permission("A2C Loan Product", "read", throw=True)
   ...
