@@ -4,7 +4,7 @@ import { Check } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 const languages = [
-  { code: 'en', label: 'English1', country: 'United States', flag: '🇺🇸' },
+  { code: 'en', label: 'English', country: 'United States', flag: '🇺🇸' },
   { code: 'am', label: 'Amharic', country: 'Ethiopia', flag: '🇪🇹' },
   { code: 'om', label: 'Afaan Oromo', country: 'Ethiopia', flag: '🇪🇹' },
   { code: 'ar', label: 'Arabic', country: 'Saudi Arabia', flag: '🇸🇦' },
