@@ -10,6 +10,7 @@ const FACETS: CatalogFacets = {
   max_interest_rate: 18,
 };
 
+/** A farmer's panel — the only one that offers bookmarks. */
 function renderSidebar(
   overrides: Partial<React.ComponentProps<typeof CatalogSidebarFilters>> = {}
 ) {
@@ -21,6 +22,7 @@ function renderSidebar(
       filters={{}}
       onApply={onApply}
       onReset={onReset}
+      showBookmarkFilter
       {...overrides}
     />
   );
@@ -28,6 +30,7 @@ function renderSidebar(
 }
 
 const bookmarkBox = () => screen.getByLabelText(/bookmarked only/i);
+const queryBookmarkBox = () => screen.queryByLabelText(/bookmarked only/i);
 
 describe('CatalogSidebarFilters — bookmarked-only filter', () => {
   it('applies is_saved when the box is ticked', () => {
@@ -102,5 +105,38 @@ describe('CatalogSidebarFilters — bookmarked-only filter', () => {
 
     expect(onReset).toHaveBeenCalled();
     expect(bookmarkBox()).not.toBeChecked();
+  });
+});
+
+describe('CatalogSidebarFilters — a view without bookmarks', () => {
+  it('offers no bookmark filter', () => {
+    // The bank portals render this panel over their own products. There is no
+    // saved list behind a bank login, so the box could only ever filter the
+    // panel down to nothing — and the cards beside it carry no bookmark button
+    // to explain what it means.
+    renderSidebar({ showBookmarkFilter: false });
+
+    expect(queryBookmarkBox()).not.toBeInTheDocument();
+    expect(screen.queryByText('Bookmarks')).not.toBeInTheDocument();
+  });
+
+  it('still offers every filter the catalog does support', () => {
+    renderSidebar({ showBookmarkFilter: false });
+
+    expect(screen.getByText('Tenure')).toBeInTheDocument();
+    expect(screen.getByText('Loan Types')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /apply filters/i })).toBeInTheDocument();
+  });
+
+  it('drops Apply when it has nothing left to commit', () => {
+    // Without the bookmark box, a facet-less catalog leaves the panel with no
+    // control at all; a button whose only effect is to apply {} is furniture.
+    renderSidebar({
+      showBookmarkFilter: false,
+      facets: { categories: [], tenures: [], amount_range: null, max_interest_rate: null },
+    });
+
+    expect(screen.getByText(/no catalog filters available/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /apply filters/i })).not.toBeInTheDocument();
   });
 });

@@ -14,6 +14,11 @@ interface CatalogSidebarFiltersProps {
   filters: CatalogFilters;
   onApply: (filters: CatalogFilters) => void;
   onReset: () => void;
+  /**
+   * Whether to offer the bookmarked-only filter. Opt-in: a view that cannot set
+   * a bookmark must not offer to filter by one.
+   */
+  showBookmarkFilter?: boolean;
 }
 
 function Section({
@@ -50,7 +55,7 @@ function Section({
 const formatETB = (value: number) =>
   new Intl.NumberFormat('en-ET', { maximumFractionDigits: 0 }).format(value);
 
-export default function CatalogSidebarFilters({ facets, hasFailed = false, onRetry, filters, onApply, onReset }: CatalogSidebarFiltersProps) {
+export default function CatalogSidebarFilters({ facets, hasFailed = false, onRetry, filters, onApply, onReset, showBookmarkFilter = false }: CatalogSidebarFiltersProps) {
   // Draft state: the sidebar is an "apply" form, so nothing refetches until the
   // farmer commits. Seeded from the applied filters so reopening shows the truth.
   const [draft, setDraft] = useState<CatalogFilters>(filters);
@@ -68,10 +73,10 @@ export default function CatalogSidebarFilters({ facets, hasFailed = false, onRet
 
   // Read defensively rather than behind an early return. These used to sit after
   // a `if (!facets) return`, which guaranteed the object; the bookmark filter
-  // below has to render whether or not the facets request landed, so the guard
-  // moved onto the individual sections. Each fallback renders nothing rather
-  // than throwing — including `tenures`, whose absence from the payload once took
-  // the whole page down with a TypeError instead of dropping one section.
+  // below renders whether or not the facets request landed, so the guard moved
+  // onto the individual sections. Each fallback renders nothing rather than
+  // throwing — including `tenures`, whose absence from the payload once took the
+  // whole page down with a TypeError instead of dropping one section.
   const amountMax = facets?.amount_range?.max ?? 0;
   const amountMin = facets?.amount_range?.min ?? 0;
   const hasAmountRange = amountMax > amountMin;
@@ -102,35 +107,41 @@ export default function CatalogSidebarFilters({ facets, hasFailed = false, onRet
 
       <hr className="border-gray-200 -mx-6" />
 
-      {/* The bookmark filter is the one control here that owes nothing to the
-          facets request — it narrows by the farmer's own saved list, not by the
-          shape of the catalog. So it renders in all three states below, failure
-          included: a facets outage must not be what hides the bookmarks the
-          farmer opened this panel to find. */}
-      <Section title="Bookmarks">
-        <label className="flex items-center gap-2.5 text-sm font-medium text-gray-700 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={draft.is_saved ?? false}
-            onChange={(e) => {
-              const next = { ...draft };
-              if (e.target.checked) {
-                next.is_saved = true;
-              } else {
-                // Deleted rather than set to false, as with the tenure chips:
-                // exactOptionalPropertyTypes treats absent and undefined as
-                // different types, and an `is_saved=0` on the wire would read as
-                // "products I have *not* saved" — not what unticking a box means.
-                delete next.is_saved;
-              }
-              setDraft(next);
-            }}
-            className="w-4 h-4 rounded accent-[#16A34A]"
-          />
-          <Bookmark className="w-4 h-4 text-[#16A34A] shrink-0" fill="currentColor" />
-          <span className="flex-1">Bookmarked only</span>
-        </label>
-      </Section>
+      {/* Farmer-only. Gated on the host's ability to *set* a bookmark rather
+          than on a role check here: a bank browsing its own products keeps no
+          saved list, so the box would filter the panel down to nothing, and the
+          cards it refers to carry no bookmark button either.
+
+          Where it does render it renders in all three facet states below,
+          failure included — it narrows by the farmer's own saved list, not by
+          the shape of the catalog, so a facets outage must not be what hides the
+          bookmarks the farmer opened this panel to find. */}
+      {showBookmarkFilter && (
+        <Section title="Bookmarks">
+          <label className="flex items-center gap-2.5 text-sm font-medium text-gray-700 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={draft.is_saved ?? false}
+              onChange={(e) => {
+                const next = { ...draft };
+                if (e.target.checked) {
+                  next.is_saved = true;
+                } else {
+                  // Deleted rather than set to false, as with the tenure chips:
+                  // exactOptionalPropertyTypes treats absent and undefined as
+                  // different types, and an `is_saved=0` on the wire would read
+                  // as "products I have *not* saved" — not what unticking means.
+                  delete next.is_saved;
+                }
+                setDraft(next);
+              }}
+              className="w-4 h-4 rounded accent-[#16A34A]"
+            />
+            <Bookmark className="w-4 h-4 text-[#16A34A] shrink-0" fill="currentColor" />
+            <span className="flex-1">Bookmarked only</span>
+          </label>
+        </Section>
+      )}
 
       {/* Failure is checked before loading: a failed request also leaves `facets`
           null, and "Loading filters…" forever is the one thing worse than saying
@@ -284,12 +295,15 @@ export default function CatalogSidebarFilters({ facets, hasFailed = false, onRet
         </Section>
       )}
 
-      {/* Unconditional, where it used to hang off hasAnyFacet: the bookmark
-          checkbox is committable on its own, so there is no longer a state of
-          this sidebar with nothing to apply. */}
-      <Button onClick={() => onApply(draft)} className="w-full">
-        Apply Filters
-      </Button>
+      {/* Hidden only when the panel holds nothing to commit. The bookmark
+          checkbox is committable on its own, so a farmer keeps the button
+          through a facets outage; a bank with no filterable products does not
+          get a button whose only effect would be to apply an empty filter. */}
+      {(hasAnyFacet || showBookmarkFilter) && (
+        <Button onClick={() => onApply(draft)} className="w-full">
+          Apply Filters
+        </Button>
+      )}
     </div>
   );
 }
