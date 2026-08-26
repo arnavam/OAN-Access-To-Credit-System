@@ -73,6 +73,17 @@ const isPastTimeForToday = (dateStr: string, timeStr: string): boolean => {
   return visitTime.getTime() < now.getTime();
 };
 
+/**
+ * Keeps a prefilled value selectable.
+ *
+ * The four location lists below are still hardcoded, so a visit saved against
+ * any other place would render its value (SelectField shows `value` whether or
+ * not it is an option) but vanish from the list the moment the agent opened it —
+ * leaving no way to pick it back after changing their mind.
+ */
+const withCurrent = (options: string[], value: string): string[] =>
+  value && !options.includes(value) ? [...options, value] : options;
+
 export const ScheduleNewVisitForm = ({
   asModal = false,
   isOpen = true,
@@ -81,16 +92,44 @@ export const ScheduleNewVisitForm = ({
 }: ScheduleNewVisitFormProps) => {
   const { visitSchedule } = useAppSelector(selectVisitState);
 
+  // Seeded from the visit already on the lead, so Reschedule reopens the place
+  // and time that were chosen the first time round instead of an empty form.
   const [date, setDate] = useState(visitSchedule?.date || '');
-  const [time, setTime] = useState('');
-  const [location] = useState('');
+  const [time, setTime] = useState(visitSchedule?.time || '');
+  // The raw meeting point, not visitSchedule.location — that one falls back to
+  // 'Region, Zone' for the card, and saving it here would write that synthesised
+  // display string into meeting_location on every reschedule.
+  const [location, setLocation] = useState(visitSchedule?.meetingLocation || '');
   const [agenda, setAgenda] = useState('');
-  const [region, setRegion] = useState('');
-  const [zone, setZone] = useState('');
-  const [woreda, setWoreda] = useState('');
-  const [kebele, setKebele] = useState('');
+  const [region, setRegion] = useState(visitSchedule?.region || '');
+  const [zone, setZone] = useState(visitSchedule?.zone || '');
+  const [woreda, setWoreda] = useState(visitSchedule?.woreda || '');
+  const [kebele, setKebele] = useState(visitSchedule?.kebele || '');
   const [isSaving, setIsSaving] = useState(false);
   const [errorFeedback, setErrorFeedback] = useState<string | null>(null);
+
+  // Reseed when a different visit becomes the active one.
+  //
+  // The modal opens with the schedule already in the store, so the initialisers
+  // above are enough there. The inline form on /leads/[id]/schedule is not —
+  // it mounts before `get_visit_schedules` answers, so it initialises against an
+  // empty store and would otherwise leave the agent retyping a place the server
+  // already knows.
+  //
+  // Adjusted during render rather than in an effect: an effect would cost a
+  // second render pass on every load, and keying off the schedule's identity
+  // means an unrelated re-render can never overwrite an edit in progress.
+  const [seededScheduleId, setSeededScheduleId] = useState(visitSchedule?.id ?? null);
+  if ((visitSchedule?.id ?? null) !== seededScheduleId) {
+    setSeededScheduleId(visitSchedule?.id ?? null);
+    setDate(visitSchedule?.date || '');
+    setTime(visitSchedule?.time || '');
+    setLocation(visitSchedule?.meetingLocation || '');
+    setRegion(visitSchedule?.region || '');
+    setZone(visitSchedule?.zone || '');
+    setWoreda(visitSchedule?.woreda || '');
+    setKebele(visitSchedule?.kebele || '');
+  }
 
   const dispatch = useAppDispatch();
   const params = useParams();
@@ -202,7 +241,7 @@ export const ScheduleNewVisitForm = ({
               <SelectField
                 label="Region"
                 placeholder="Select Region"
-                options={['Oromia', 'Amhara']}
+                options={withCurrent(['Oromia', 'Amhara'], region)}
                 value={region}
                 onChange={setRegion}
                 required
@@ -212,7 +251,7 @@ export const ScheduleNewVisitForm = ({
               <SelectField
                 label="Zone"
                 placeholder="Select Zone"
-                options={['Jimma']}
+                options={withCurrent(['Jimma'], zone)}
                 value={zone}
                 onChange={setZone}
                 required
@@ -226,7 +265,7 @@ export const ScheduleNewVisitForm = ({
               <SelectField
                 label="Woreda"
                 placeholder="Select Woreda"
-                options={['Limmu Kosa']}
+                options={withCurrent(['Limmu Kosa'], woreda)}
                 value={woreda}
                 onChange={setWoreda}
                 required
@@ -236,7 +275,7 @@ export const ScheduleNewVisitForm = ({
               <SelectField
                 label="Kebele"
                 placeholder="Select Kebele"
-                options={['Kebele 1']}
+                options={withCurrent(['Kebele 1'], kebele)}
                 value={kebele}
                 onChange={setKebele}
                 required

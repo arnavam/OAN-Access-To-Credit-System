@@ -86,6 +86,14 @@ export function PortalLoginForm({
     if (notice) passwordInputRef.current?.focus();
   }, [notice]);
 
+  // Drop any sign-in failure left in the store by the portal the user just came
+  // from. This form shows its own `errorMessage`, which resets on mount anyway —
+  // but the store's copy outlives the navigation, and the Development Agent
+  // portal reads it, so leaving one behind puts a stale error on a fresh form.
+  useEffect(() => {
+    dispatch(clearAuthError());
+  }, [dispatch]);
+
   const returnToSignIn = () => {
     setPendingPasswordChange(null);
     setPassword('');

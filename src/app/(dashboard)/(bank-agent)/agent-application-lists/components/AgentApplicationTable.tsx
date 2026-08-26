@@ -22,13 +22,15 @@ import {
   setBankSearchQuery,
   setBankSort,
 } from '@/features/loans/store/bankApplicationsSlice';
+import { TablePagination } from '@/components/ui/TablePagination';
 import { getStageStyle } from '@/features/loans/utils/stageStyles';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { ArrowDown, ArrowUp, ArrowUpDown, ChevronDown, Eye, Inbox, Loader2, Phone, Search, SlidersHorizontal } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { ArrowDown, ArrowUp, ArrowUpDown, Eye, Inbox, Loader2, Phone, Search, SlidersHorizontal } from 'lucide-react';
+import { useState } from 'react';
 import AdvancedFiltersDrawer, { AdvancedFiltersState } from './filters/AdvancedFilters';
 import LoanAmountFilter from './filters/LoanAmountFilter';
 import LoanTypeFilter from './filters/LoanTypeFilter';
+import StatusFilter from './filters/StatusFilter';
 
 /**
  * The status pill.
@@ -46,67 +48,6 @@ function StatusBadge({ status, label }: { status: string; label: string }) {
       <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${style.dot}`} aria-hidden="true" />
       {label || style.label}
     </span>
-  );
-}
-
-interface PaginationDropdownProps {
-  value: number;
-  options: number[];
-  onChange: (newValue: number) => void;
-}
-
-function PaginationDropdown({ value, options, onChange }: PaginationDropdownProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  return (
-    <div className="relative w-[75px]" ref={dropdownRef}>
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2 text-[14px] font-bold text-gray-700 shadow-sm transition-all duration-200 hover:border-emerald-500 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] cursor-pointer active:scale-95"
-      >
-        {value}
-        <ChevronDown
-          size={14}
-          className={`text-gray-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-        />
-      </button>
-
-      <div
-        className={`absolute bottom-full left-0 mb-1 w-full z-50 overflow-hidden rounded-lg border border-gray-100 bg-white shadow-lg transition-all duration-200 origin-bottom transform ${isOpen ? 'opacity-100 scale-100 visible translate-y-0' : 'opacity-0 scale-95 invisible translate-y-2'
-          }`}
-      >
-        <div className="p-1 flex flex-col gap-0.5">
-          {options.map((option) => (
-            <button
-              key={option}
-              type="button"
-              onClick={() => {
-                onChange(option);
-                setIsOpen(false);
-              }}
-              className={`w-full text-center rounded-md px-2 py-2 text-[13px] font-semibold transition-colors ${value === option
-                ? 'bg-emerald-50 text-emerald-700'
-                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                }`}
-            >
-              {option}
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -177,15 +118,6 @@ export default function AgentApplicationTable({ onView }: AgentApplicationTableP
     } else {
       dispatch(setBankSort({ sortBy: 'creation', sortOrder: 'desc' }));
     }
-  };
-
-  const displayOptions = [10, 20, 50, 100];
-
-  const getPageNumbers = () => {
-    if (totalPages <= 5) return Array.from({ length: totalPages }, (_, i) => i + 1);
-    if (currentPage <= 3) return [1, 2, 3, 4, '...', totalPages];
-    if (currentPage >= totalPages - 2) return [1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
-    return [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
   };
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -303,7 +235,13 @@ export default function AgentApplicationTable({ onView }: AgentApplicationTableP
                   </span>
                 </div>
               </th>
-              <th className="px-6 py-4 font-semibold text-center">Status</th>
+              <th className="px-6 py-4 font-bold text-gray-500 uppercase tracking-wider text-center">
+                <StatusFilter
+                  options={stageOptions}
+                  selectedValues={filters.status}
+                  onChange={(statuses) => dispatch(setBankFilters({ ...filters, status: statuses }))}
+                />
+              </th>
               <th className="px-6 py-4 font-semibold text-center">Actions</th>
             </tr>
           </thead>
@@ -436,57 +374,22 @@ export default function AgentApplicationTable({ onView }: AgentApplicationTableP
         </table >
       </div >
 
-      {/* Pagination Footer */}
-      {
-        rows.length > 0 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-gray-100 px-6 py-5 text-[14px] text-gray-500 bg-white rounded-b-lg">
-            <div className="flex items-center gap-3">
-              <span className="font-medium">Showing</span>
-              <PaginationDropdown
-                value={entriesPerPage}
-                options={displayOptions}
-                onChange={(val) => dispatch(setBankPageSize(val))}
-              />
-              <span className="font-medium">of {totalEntries.toLocaleString()} entries</span>
-            </div>
-
-            <div className="flex items-center gap-1.5 flex-wrap justify-center w-full sm:w-auto mt-2 sm:mt-0">
-              <button
-                onClick={() => dispatch(setBankPage(Math.max(1, currentPage - 1)))}
-                disabled={currentPage === 1}
-                className="flex items-center justify-center rounded-lg border border-gray-200 px-4 py-2.5 text-[14px] font-semibold text-gray-600 transition-all duration-200 hover:bg-gray-50 hover:shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none"
-              >
-                <span className='font-semibold'>&lt; Prev</span>
-              </button>
-
-              {getPageNumbers().map((pageNum, idx) => (
-                pageNum === '...' ? (
-                  <span key={`ellipsis-${idx}`} className="text-gray-400 px-1 font-bold">...</span>
-                ) : (
-                  <button
-                    key={`page-${pageNum}`}
-                    onClick={() => dispatch(setBankPage(pageNum as number))}
-                    className={`h-10 w-10 flex items-center justify-center rounded-lg text-[14px] font-bold transition-all duration-200 shadow-sm active:scale-95 ${currentPage === pageNum
-                      ? 'bg-[#16A34A] text-white'
-                      : 'border border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
-                      }`}
-                  >
-                    <span className='font-semibold'>{pageNum}</span>
-                  </button>
-                )
-              ))}
-
-              <button
-                onClick={() => dispatch(setBankPage(Math.min(totalPages, currentPage + 1)))}
-                disabled={currentPage === totalPages}
-                className="flex items-center justify-center rounded-lg border border-gray-200 px-4 py-2.5 text-[14px] font-semibold text-gray-600 transition-all duration-200 hover:bg-gray-50 hover:shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:shadow-none"
-              >
-                <span className='font-semibold'>Next &gt;</span>
-              </button>
-            </div>
-          </div>
-        )
-      }
+      {/* The shared footer, same as the Leads and Loan Application dashboards.
+          This list used to build its own — different wording ("entries"),
+          different button shapes, a page-size dropdown that opened upward on its
+          own markup — which is what made the bottom of this table look unlike
+          every other table in the app. */}
+      {rows.length > 0 && (
+        <TablePagination
+          visibleCount={rows.length}
+          totalCount={totalEntries}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          pageSize={entriesPerPage}
+          onPageChange={(page) => dispatch(setBankPage(page))}
+          onPageSizeChange={(size) => dispatch(setBankPageSize(size))}
+        />
+      )}
 
       <AdvancedFiltersDrawer
         isOpen={isAdvancedFiltersOpen}

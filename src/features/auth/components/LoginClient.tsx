@@ -72,6 +72,16 @@ export function LoginClient() {
 
   const [deniedError, setDeniedError] = useState<string | null>(null);
 
+  // `auth.error` lives in the store, but a failed sign-in belongs to the form
+  // that caused it. Without this, failing on /login/farmer and then switching
+  // portal greeted you with "Incorrect email/phone number or password" on a form
+  // you hadn't submitted yet: the farmer form keeps its message in local state,
+  // so only the store's copy survived the navigation — and this is the one
+  // portal that renders it.
+  useEffect(() => {
+    dispatch(clearAuthError());
+  }, [dispatch]);
+
   const handleSignInSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setDeniedError(null);
