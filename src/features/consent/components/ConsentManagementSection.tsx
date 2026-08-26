@@ -183,7 +183,7 @@ export function ConsentManagementSection({ leadId: leadIdProp, audience = 'agent
                 value={farmerId}
                 onChange={(e) => dispatch(setFarmerId(e.target.value))}
                 placeholder={isFarmer ? "Enter your Fayda ID or National ID" : "Search by Farmer ID or National ID"}
-                className="w-full sm:flex-1 h-[42px] min-h-[42px] rounded-md border border-[#D1D5DB] px-4 text-[15px] shadow-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 bg-white min-w-0"
+                className="flex w-full items-center justify-between rounded-lg border px-4 py-3 text-sm shadow-sm transition-all focus:outline-none focus-visible:ring-[0.02rem] focus-visible:ring-green-600 focus-visible:ring-offset-0 border-gray-200 hover:border-green-600 bg-white ring-1 ring-green-600/15"
               />
               <button
                 type="button"
@@ -193,7 +193,7 @@ export function ConsentManagementSection({ leadId: leadIdProp, audience = 'agent
                   }
                 }}
                 disabled={!farmerId?.trim() || isLoadingConsent || isSearchingFarmer}
-                className="w-full sm:w-auto h-[42px] min-h-[42px] px-6 rounded-md border border-[#16A34A] text-[15px] font-bold text-[#16A34A] hover:bg-[#F0FDFA] transition-colors bg-white shadow-sm flex items-center justify-center shrink-0 disabled:opacity-50"
+                className="w-full sm:w-auto h-[44px] min-h-[42px] px-6 rounded-md border border-[#16A34A] text-[15px] font-bold text-[#16A34A] hover:bg-[#F0FDFA] transition-colors bg-white shadow-sm flex items-center justify-center shrink-0 disabled:opacity-50"
               >
                 {isSearchingFarmer ? 'Searching...' : 'Search'}
               </button>

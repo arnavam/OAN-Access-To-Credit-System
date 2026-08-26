@@ -240,10 +240,10 @@ export function DatePickerField({ id, label, value, onChange, required, error, d
       )}
       <button ref={ref} id={id} type="button" onClick={() => { if (disabled) return; setIsOpen(o => !o); setMode('day'); }}
         aria-haspopup="dialog" aria-expanded={isOpen}
-        className={`flex w-full items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm shadow-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-1
+        className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-sm shadow-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-1 border-[#EDEFF1] bg-white hover:border-green-600/50
           ${disabled ? 'border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed'
             : error ? 'border-red-400 bg-red-50/40'
-              : isOpen ? 'border-green-600 bg-white ring-1 ring-green-600'
+              : isOpen ? 'border-green-600 bg-white ring-0 ring-green-600'
                 : 'border-[#16A34A] bg-white hover:border-green-600/50'}`}>
         <span className={`flex items-center gap-2 ${disabled ? 'text-gray-500' : displayValue ? 'text-[#111827]' : 'text-gray-400'}`}>
           <Calendar size={16} className="shrink-0 text-gray-400" />

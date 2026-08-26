@@ -436,14 +436,13 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
                   setIsLocationOpen(true);
                 }}
                 placeholder="Enter Region, Woreda or Kebele"
-                className="w-full rounded-xl border border-[#EDEFF1] bg-white py-3 px-4 text-sm text-[#232F34] placeholder:text-[#8E9AA0] focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/20 font-sans shadow-sm"
+                className="flex w-full items-center justify-between rounded-lg border px-4 py-3 text-sm shadow-sm transition-all focus:outline-none focus-visible:ring-1 focus-visible:ring-green-600 focus-visible:ring-offset-0 border-gray-200 hover:border-green-600 bg-white ring-1 ring-green-600/15"
+                style={{ boxShadow: 'rgba(0, 0, 0, 0.05) 0px 1px 2px' }}
               />
               {isLocationOpen && (
                 <div
                   className="absolute left-0 right-0 z-30 mt-1 rounded-b-lg border border-gray-200 bg-white shadow-xl flex flex-col"
-                  style={{
-                    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.05), 0px 1px 3px rgba(0, 0, 0, 0.07), 0px 1px 2px rgba(0, 0, 0, 0.06)'
-                  }}
+                  style={{ boxShadow: 'rgba(0, 0, 0, 0.05) 0px 1px 2px' }}
                 >
                   <div className="flex flex-col">
                     {LOCATION_OPTS.filter(opt => opt.toLowerCase().includes(location.toLowerCase())).map((opt, idx) => (
@@ -534,8 +533,8 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
             )}
           </button>
         </div>
-      </aside>
-    </Portal>
+      </aside >
+    </Portal >
   );
 }
 

@@ -80,13 +80,13 @@ export function CreditInformationSection() {
                 <div key={info.id} className="flex flex-row w-full border-b border-[#D4D4D4]/50 hover:bg-slate-50 transition-colors">
                   <div className="p-2 px-4 w-[140px] sm:w-[177px] shrink-0 flex flex-col justify-center">
                     <div className="inline-flex items-center px-2.5 py-1 gap-1.5 bg-[#F0FDFA] border border-[#CCFBF1] rounded-md w-fit">
-                      <span className="font-inter font-sm text-xs leading-4 text-[#1E6865]">
+                      <span className="font-inter text-xs leading-4 text-[#1E6865]">
                         {info.type}
                       </span>
                     </div>
                   </div>
                   <div className="p-2 px-4 w-[140px] sm:w-[177px] shrink-0 flex flex-col justify-center">
-                    <span className="font-inter font-sm text-sm leading-5 text-[#232F34]">
+                    <span className="font-inter text-sm leading-5 text-[#232F34]">
                       {info.amount}
                     </span>
                   </div>
