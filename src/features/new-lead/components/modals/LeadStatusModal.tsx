@@ -87,18 +87,18 @@ export default function LeadStatusModal({
         style={{ maxHeight: '90vh' }}
       >
         {/* Modal Header */}
-        <div className="flex flex-row justify-between items-center px-6 py-5 border-b border-[#F1F3F4] h-[93px]">
-          <div className="flex flex-col gap-1">
+        <div className="flex flex-row justify-between items-start sm:items-center px-6 py-5 border-b border-[#F1F3F4] min-h-[93px] gap-4 shrink-0">
+          <div className="flex flex-col gap-1 flex-1">
             <h2 id="lead-status-modal-title" className="font-inter font-bold text-2xl leading-8 text-[#232F34] m-0">
               {isFinalize ? 'Finalize Lead Processing' : 'Update Lead Status'}
             </h2>
-            <p className="font-inter font-normal text-base leading-6 text-[#414141] m-0">
+            <p className="font-inter font-normal text-base leading-6 text-[#414141] m-0 break-words">
               Lead ID: {leadId} {isFinalize && `(Current: ${currentStatus.toUpperCase()})`}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="flex items-center justify-center w-10 h-10 rounded-full bg-[#F1F3F4] hover:bg-[#E2E8F0] transition-colors"
+            className="flex items-center justify-center w-10 h-10 rounded-full bg-[#F1F3F4] hover:bg-[#E2E8F0] transition-colors shrink-0"
           >
             <X size={20} className="text-[#64748B]" />
           </button>
@@ -120,7 +120,7 @@ export default function LeadStatusModal({
               </p>
             </div>
 
-            <div className="flex flex-row gap-4">
+            <div className="flex flex-col sm:flex-row gap-4">
               {/* VERIFIED OPTION */}
               <button
                 type="button"
@@ -251,17 +251,17 @@ export default function LeadStatusModal({
         </div>
 
         {/* Modal Footer */}
-        <div className="flex flex-row justify-end items-center px-6 py-5 bg-[#F6F8FA] border-t border-[#F1F3F4] gap-4 font-semibold">
+        <div className="flex flex-col-reverse sm:flex-row justify-end items-center px-6 py-5 bg-[#F6F8FA] border-t border-[#F1F3F4] gap-3 sm:gap-4 font-semibold shrink-0">
           <button
             onClick={onClose}
-            className="px-6 py-[12px] bg-white border border-[#E5E7EB] rounded-lg font-inter font-semibold text-base leading-6 text-[#3A474E] hover:bg-slate-50 transition-colors"
+            className="w-full sm:w-auto px-6 py-[12px] bg-white border border-[#E5E7EB] rounded-lg font-inter font-semibold text-base leading-6 text-[#3A474E] hover:bg-slate-50 transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleConfirm}
             disabled={!isFormValid}
-            className={`flex flex-row items-center justify-center gap-2 px-6 py-[12px] rounded-lg font-inter font-semibold text-base leading-6 text-white shadow-[0px_1px_2px_rgba(0,0,0,0.05)] transition-colors ${
+            className={`w-full sm:w-auto flex flex-row items-center justify-center gap-2 px-6 py-[12px] rounded-lg font-inter font-semibold text-base leading-6 text-white shadow-[0px_1px_2px_rgba(0,0,0,0.05)] transition-colors ${
               isFormValid ? 'bg-[#16A34A] hover:bg-[#15803D] cursor-pointer' : 'bg-[#D1DACE] cursor-not-allowed'
             }`}
           >

@@ -20,6 +20,8 @@ export interface DateRangeFilterProps {
 
   fromLabel?: string;
   toLabel?: string;
+  usePortal?: boolean;
+  openUpwards?: boolean;
 }
 
 export function DateRangeFilter(props: DateRangeFilterProps) {
@@ -35,7 +37,9 @@ export function DateRangeFilter(props: DateRangeFilterProps) {
     onFromChange,
     onToChange,
     fromLabel = 'From',
-    toLabel = 'To'
+    toLabel = 'To',
+    usePortal = true,
+    openUpwards = false
   } = props;
 
   const actualFrom = dateFrom ?? fromValue ?? '';
@@ -100,6 +104,8 @@ export function DateRangeFilter(props: DateRangeFilterProps) {
           <DatePickerField
             value={actualFrom}
             onChange={handleFromChange}
+            usePortal={usePortal}
+            openUpwards={openUpwards}
           />
         </div>
 
@@ -112,6 +118,9 @@ export function DateRangeFilter(props: DateRangeFilterProps) {
           <DatePickerField
             value={actualTo}
             onChange={handleToChange}
+            usePortal={usePortal}
+            openUpwards={openUpwards}
+            align="right"
             {...(actualFrom ? { minDate: new Date(actualFrom) } : {})}
           />
         </div>

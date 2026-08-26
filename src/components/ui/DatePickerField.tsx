@@ -22,10 +22,11 @@ interface DatePickerFieldProps {
   maxDate?: Date;
   usePortal?: boolean;
   align?: 'left' | 'right';
+  openUpwards?: boolean;
   onOpenChange?: (isOpen: boolean) => void;
 }
 
-export function DatePickerField({ id, label, value, onChange, required, error, disabled, placeholder = 'dd/mm/yyyy', minDate, maxDate, usePortal = true, align = 'left', onOpenChange }: DatePickerFieldProps) {
+export function DatePickerField({ id, label, value, onChange, required, error, disabled, placeholder = 'dd/mm/yyyy', minDate, maxDate, usePortal = true, align = 'left', openUpwards = false, onOpenChange }: DatePickerFieldProps) {
   const today = new Date();
 
   // Use today as fallback if value is empty, but don't set it to state
@@ -74,10 +75,20 @@ export function DatePickerField({ id, label, value, onChange, required, error, d
         const rect = ref.current.getBoundingClientRect();
         let left = rect.left + window.scrollX;
         if (left + 280 > window.innerWidth) {
-          left = rect.right + window.scrollX - 280;
+          left = Math.max(0, rect.right + window.scrollX - 280);
         }
+
+        let top = rect.bottom + window.scrollY;
+        // Approximate calendar height is 340px
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const spaceAbove = rect.top;
+        if (spaceBelow < 340 && spaceAbove > spaceBelow) {
+          // Open upwards if not enough space below, and more space above
+          top = rect.top + window.scrollY - 350;
+        }
+
         setDropdownPos({
-          top: rect.bottom + window.scrollY,
+          top,
           left
         });
       }
@@ -233,7 +244,7 @@ export function DatePickerField({ id, label, value, onChange, required, error, d
           ${disabled ? 'border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed'
             : error ? 'border-red-400 bg-red-50/40'
               : isOpen ? 'border-green-600 bg-white ring-1 ring-green-600'
-                : 'border-[#D1D5DC] bg-white hover:border-green-600/50'}`}>
+                : 'border-[#16A34A] bg-white hover:border-green-600/50'}`}>
         <span className={`flex items-center gap-2 ${disabled ? 'text-gray-500' : displayValue ? 'text-[#111827]' : 'text-gray-400'}`}>
           <Calendar size={16} className="shrink-0 text-gray-400" />
           {displayValue || placeholder}
@@ -241,7 +252,7 @@ export function DatePickerField({ id, label, value, onChange, required, error, d
       </button>
 
       {isOpen && typeof document !== 'undefined' && (usePortal ? createPortal(
-        <div ref={dropdownRef} role="dialog" aria-modal="false" aria-labelledby={dialogTitleId} className="absolute z-[9999] mt-1.5 w-[280px] rounded-lg border border-gray-200 bg-white shadow-xl overflow-hidden origin-top"
+        <div ref={dropdownRef} role="dialog" aria-modal="false" aria-labelledby={dialogTitleId} className="absolute z-[99999] mt-1.5 w-[280px] rounded-lg border border-gray-200 bg-white shadow-xl overflow-hidden origin-top"
           style={{
             top: dropdownPos.top,
             left: dropdownPos.left
@@ -251,7 +262,7 @@ export function DatePickerField({ id, label, value, onChange, required, error, d
         </div>,
         document.body
       ) : (
-        <div ref={dropdownRef} role="dialog" aria-modal="false" aria-labelledby={dialogTitleId} className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} top-[calc(100%+4px)] z-50 w-[280px] rounded-lg border border-gray-200 bg-white shadow-xl overflow-hidden origin-top animate-in fade-in slide-in-from-top-2 duration-200`}>
+        <div ref={dropdownRef} role="dialog" aria-modal="false" aria-labelledby={dialogTitleId} className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} ${openUpwards ? 'bottom-[calc(100%+4px)] origin-bottom animate-in fade-in slide-in-from-bottom-2' : 'top-[calc(100%+4px)] origin-top animate-in fade-in slide-in-from-top-2'} z-50 w-[280px] rounded-lg border border-gray-200 bg-white shadow-xl overflow-hidden duration-200`}>
           <span id={dialogTitleId} className="sr-only">Choose date</span>
           {calendarBody}
         </div>

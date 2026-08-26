@@ -43,7 +43,7 @@ export default function TopBar({ searchQuery, onSearchChange, sortBy, onSortChan
     SORT_OPTIONS.find((opt) => opt.value === sortBy)?.label ?? SORT_OPTIONS[0]!.label;
 
   return (
-    <div className="flex flex-col gap-4 mb-6 bg-white border border-[#F1F3F4] rounded-xl p-4 shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.05),0px_2px_4px_-1px_rgba(0,0,0,0.03)] hover:-translate-y-1 hover:shadow-lg transition-all">
+    <div className="relative z-40 flex flex-col gap-4 mb-6 bg-white border border-[#F1F3F4] rounded-xl p-4 shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.05),0px_2px_4px_-1px_rgba(0,0,0,0.03)] hover:-translate-y-1 hover:shadow-lg transition-all">
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -83,11 +83,10 @@ export default function TopBar({ searchQuery, onSearchChange, sortBy, onSortChan
                     onSortChange(opt.value);
                     setIsDropdownOpen(false);
                   }}
-                  className={`w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${
-                    sortBy === opt.value
+                  className={`w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${sortBy === opt.value
                       ? 'bg-green-50/50 text-green-700 font-bold'
                       : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900 font-medium'
-                  }`}
+                    }`}
                 >
                   {opt.label}
                   {sortBy === opt.value && <Check className="w-4 h-4 text-green-600" strokeWidth={3} />}

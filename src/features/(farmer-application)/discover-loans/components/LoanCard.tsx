@@ -96,9 +96,8 @@ export default function LoanCard({ loan, onBookmarkToggle }: LoanCardProps) {
             disabled={isSaving}
             aria-pressed={isBookmarked}
             aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark this loan'}
-            className={`w-9 h-9 rounded-full bg-white/95 backdrop-blur-md border border-white/40 shadow-sm flex items-center justify-center transition-all hover:scale-110 disabled:opacity-60 ${
-              isBookmarked ? 'text-amber-500' : 'text-gray-400 hover:text-gray-600'
-            }`}
+            className={`w-9 h-9 rounded-full bg-white/95 backdrop-blur-md border border-white/40 shadow-sm flex items-center justify-center transition-all hover:scale-110 disabled:opacity-60 ${isBookmarked ? 'text-amber-500' : 'text-gray-400 hover:text-gray-600'
+              }`}
           >
             <Star className="w-4 h-4" fill={isBookmarked ? 'currentColor' : 'none'} />
           </button>
@@ -145,9 +144,10 @@ export default function LoanCard({ loan, onBookmarkToggle }: LoanCardProps) {
         <div className="pt-1 mt-auto">
           <Link
             href={`/discover-loans/apply/${loan.name}`}
-            className="w-full bg-[#16A34A] hover:bg-green-700 text-white font-bold py-2.5 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 text-sm"
+            className="w-full bg-[#16A34A] hover:bg-green-700 text-white font-bold py-3 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 text-md"
           >
-            Apply Now <ArrowRight className="w-4 h-4" />
+            <span className='text-white flex justify-between items-center gap-2'> Apply Now <ArrowRight className="w-4 h-4" /></span>
+
           </Link>
         </div>
       </div>

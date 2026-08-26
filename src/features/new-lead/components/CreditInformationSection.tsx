@@ -62,15 +62,15 @@ export function CreditInformationSection() {
 
       <div className="flex flex-col items-start px-4 sm:px-6 w-full overflow-hidden">
         <div className="w-full overflow-x-auto">
-          <div className="min-w-[500px] w-full">
+          <div className="w-full min-w-max sm:min-w-0">
             <div className="w-full bg-[#EEF4FB]/50 border-b border-[#D4D4D4] flex flex-row">
-              <div className="p-3 px-4 w-[140px] sm:w-[177px]">
+              <div className="p-3 px-4 w-[140px] sm:w-[177px] shrink-0">
                 <span className="font-inter font-semibold text-sm leading-4 tracking-wide text-[#4F4F58]">Loan Product</span>
               </div>
-              <div className="p-3 px-4 w-[140px] sm:w-[177px]">
+              <div className="p-3 px-4 w-[140px] sm:w-[177px] shrink-0">
                 <span className="font-roboto font-semibold text-sm leading-4 tracking-wide text-[#4F4F58]">Loan Amount</span>
               </div>
-              <div className="p-3 px-4 flex-1">
+              <div className="p-3 px-4 flex-1 min-w-[150px]">
                 <span className="font-roboto font-semibold text-sm leading-4 tracking-wide text-[#4F4F58]">Purpose Message</span>
               </div>
             </div>
@@ -78,19 +78,19 @@ export function CreditInformationSection() {
             <div className="flex flex-col w-full">
               {creditInfo.map((info) => (
                 <div key={info.id} className="flex flex-row w-full border-b border-[#D4D4D4]/50 hover:bg-slate-50 transition-colors">
-                  <div className="p-2 px-4 w-[140px] sm:w-[177px] flex flex-col justify-center">
+                  <div className="p-2 px-4 w-[140px] sm:w-[177px] shrink-0 flex flex-col justify-center">
                     <div className="inline-flex items-center px-2.5 py-1 gap-1.5 bg-[#F0FDFA] border border-[#CCFBF1] rounded-md w-fit">
                       <span className="font-inter font-sm text-xs leading-4 text-[#1E6865]">
                         {info.type}
                       </span>
                     </div>
                   </div>
-                  <div className="p-2 px-4 w-[140px] sm:w-[177px] flex flex-col justify-center">
+                  <div className="p-2 px-4 w-[140px] sm:w-[177px] shrink-0 flex flex-col justify-center">
                     <span className="font-inter font-sm text-sm leading-5 text-[#232F34]">
                       {info.amount}
                     </span>
                   </div>
-                  <div className="p-2 px-4 flex-1 flex flex-col justify-center">
+                  <div className="p-2 px-4 flex-1 min-w-[150px] flex flex-col justify-center">
                     <span className="font-roboto font-light text-sm leading-5 text-[#232F34]">
                       {info.purpose}
                     </span>
