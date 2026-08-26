@@ -65,7 +65,7 @@ export default function ApplyLoanClient({ productId }: ApplyLoanClientProps) {
 
             <div className="flex flex-col gap-6 mt-6">
               <ConsentManagement />
-              <CreditInformation />
+              <CreditInformation product={loanProduct} />
             </div>
           </>
         ) : (
