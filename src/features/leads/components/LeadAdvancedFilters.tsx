@@ -150,7 +150,7 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
         </div>
 
         {/* scrollable body */}
-        <div className="flex-1 space-y-6 overflow-y-auto px-5 py-5">
+        <div className="flex-1 space-y-6 overflow-y-auto px-5 pt-5 pb-96">
 
           {/* Status */}
           <section>
@@ -200,8 +200,8 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
               <button
                 type="button"
                 onClick={() => setIsAmountOpen(prev => !prev)}
-                className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-sm shadow-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-1 ${isAmountOpen
-                  ? 'border-green-600 bg-white ring-2 ring-green-600/15'
+                className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-2 ${isAmountOpen
+                  ? 'border-green-500 bg-white ring-2 ring-green-600/15'
                   : 'border-gray-200 bg-white hover:border-green-600/50'
                   }`}
               >
@@ -213,9 +213,9 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
 
               {isAmountOpen && (
                 <div
-                  className="absolute left-0 right-0 z-30 mt-1 rounded-b-lg border border-gray-200 bg-white shadow-xl flex flex-col p-4 gap-4"
+                  className="absolute left-0 right-0 z-30 mt-1 rounded-lg border border-green-500 bg-white flex flex-col p-4 gap-4"
                   style={{
-                    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.05), 0px 1px 3px rgba(0, 0, 0, 0.07), 0px 1px 2px rgba(0, 0, 0, 0.06)'
+                    boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.05)'
                   }}
                 >
                   <div className="flex flex-col gap-6 px-2 pt-4 pb-2">
@@ -303,9 +303,9 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
               <button
                 type="button"
                 onClick={() => setIsLoanTypeOpen(prev => !prev)}
-                className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-sm shadow-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-1 ${isLoanTypeOpen
-                  ? 'border-green-600 bg-white ring-2 ring-green-600/15'
-                  : 'border-[#EDEFF1] bg-white hover:border-green-600/50'
+                className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-2 ${isLoanTypeOpen
+                  ? 'border-green-500 bg-white ring-2 ring-green-600/15'
+                  : 'border-gray-200 bg-white hover:border-green-600/50'
                   }`}
                 style={{
                   boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.05)',
@@ -319,9 +319,9 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
 
               {isLoanTypeOpen && (
                 <div
-                  className="absolute left-0 right-0 z-30 mt-1 rounded-b-lg border border-gray-200 bg-white shadow-xl flex flex-col"
+                  className="absolute left-0 right-0 z-30 mt-1 rounded-lg border border-green-500 bg-white flex flex-col"
                   style={{
-                    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.05), 0px 1px 3px rgba(0, 0, 0, 0.07), 0px 1px 2px rgba(0, 0, 0, 0.06)'
+                    boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.05)'
                   }}
                 >
                   <div className="flex flex-col">
@@ -366,9 +366,9 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
               <button
                 type="button"
                 onClick={() => setIsSourcesOpen(prev => !prev)}
-                className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-sm shadow-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-1 ${isSourcesOpen
-                  ? 'border-green-600 bg-white ring-2 ring-green-600/15'
-                  : 'border-[#EDEFF1] bg-white hover:border-green-600/50'
+                className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-2 ${isSourcesOpen
+                  ? 'border-green-500 bg-white ring-2 ring-green-600/15'
+                  : 'border-gray-200 bg-white hover:border-green-600/50'
                   }`}
                 style={{
                   boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.05)',
@@ -383,9 +383,9 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
               {/* Dropdown List */}
               {isSourcesOpen && (
                 <div
-                  className="absolute left-0 right-0 z-30 mt-1 rounded-b-lg border border-gray-200 bg-white shadow-xl flex flex-col"
+                  className="absolute left-0 right-0 z-30 mt-1 rounded-lg border border-green-500 bg-white flex flex-col"
                   style={{
-                    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.05), 0px 1px 3px rgba(0, 0, 0, 0.07), 0px 1px 2px rgba(0, 0, 0, 0.06)'
+                    boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.05)'
                   }}
                 >
                   <div className="flex flex-col">
@@ -436,13 +436,21 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
                   setIsLocationOpen(true);
                 }}
                 placeholder="Enter Region, Woreda or Kebele"
-                className="w-full rounded-xl border border-[#EDEFF1] bg-white py-3 px-4 text-sm text-[#232F34] placeholder:text-[#8E9AA0] focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/20 font-sans shadow-sm"
+                className={`w-full rounded-lg border px-4 py-3 text-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-2 text-[#232F34] placeholder:text-[#8E9AA0] ${
+                  isLocationOpen
+                    ? 'border-green-500 bg-white ring-2 ring-green-600/15'
+                    : 'border-gray-200 bg-white hover:border-green-600/50'
+                }`}
+
+                style={{
+                  boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.05)',
+                }}
               />
               {isLocationOpen && (
                 <div
-                  className="absolute left-0 right-0 z-30 mt-1 rounded-b-lg border border-gray-200 bg-white shadow-xl flex flex-col"
+                  className="absolute left-0 right-0 z-30 mt-1 rounded-lg border border-green-500 bg-white flex flex-col overflow-hidden"
                   style={{
-                    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.05), 0px 1px 3px rgba(0, 0, 0, 0.07), 0px 1px 2px rgba(0, 0, 0, 0.06)'
+                    boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.05)'
                   }}
                 >
                   <div className="flex flex-col">
@@ -482,7 +490,7 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
             onDateToChange={(v) => { setDateTo(v); setQuickDate(''); }}
             onQuickDateChange={(label, from, to) => { setQuickDate(label); setDateFrom(from); setDateTo(to); }}
             usePortal={false}
-            openUpwards={true}
+            openUpwards={false}
           />
         </div>
 

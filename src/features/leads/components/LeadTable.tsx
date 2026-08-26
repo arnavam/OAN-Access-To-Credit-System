@@ -116,7 +116,7 @@ function LeadTable({
 
   const getCellClassName = (align: Align, isHeader = false) => {
     const alignClass = align === 'center' ? 'text-center' : align === 'right' ? 'text-right' : 'text-left';
-    const typoClass = isHeader ? '' : 'font-sans font-sm text-base text-[#232F34]';
+    const typoClass = isHeader ? '' : 'font-sans text-base text-[#232F34]';
     return `${CELL_CLASS} ${alignClass} ${typoClass}`.trim();
   };
 

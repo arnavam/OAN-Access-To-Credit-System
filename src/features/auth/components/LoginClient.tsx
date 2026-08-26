@@ -6,11 +6,11 @@ import {
   Check,
   ChevronDown,
   Eye,
-  EyeOff, Globe, Lock, UserRound, User
+  EyeOff, Lock, User
 } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 
 import { LanguageSelector } from '@/app/(portal-account)/components/LanguageSelector';
 import { ForgotPasswordModal } from '@/features/auth/components/ForgotPasswordModal';

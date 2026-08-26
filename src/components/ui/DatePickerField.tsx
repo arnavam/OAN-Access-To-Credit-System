@@ -23,10 +23,11 @@ interface DatePickerFieldProps {
   usePortal?: boolean;
   align?: 'left' | 'right';
   openUpwards?: boolean;
+  forcePosition?: 'bottom' | 'top' | undefined;
   onOpenChange?: (isOpen: boolean) => void;
 }
 
-export function DatePickerField({ id, label, value, onChange, required, error, disabled, placeholder = 'dd/mm/yyyy', minDate, maxDate, usePortal = true, align = 'left', openUpwards = false, onOpenChange }: DatePickerFieldProps) {
+export function DatePickerField({ id, label, value, onChange, required, error, disabled, placeholder = 'dd/mm/yyyy', minDate, maxDate, usePortal = true, align = 'left', openUpwards = false, forcePosition, onOpenChange }: DatePickerFieldProps) {
   const today = new Date();
 
   // Use today as fallback if value is empty, but don't set it to state
@@ -82,9 +83,19 @@ export function DatePickerField({ id, label, value, onChange, required, error, d
         // Approximate calendar height is 340px
         const spaceBelow = window.innerHeight - rect.bottom;
         const spaceAbove = rect.top;
-        if (spaceBelow < 340 && spaceAbove > spaceBelow) {
+        if (forcePosition === 'top' || (forcePosition !== 'bottom' && spaceBelow < 340 && spaceAbove > spaceBelow)) {
           // Open upwards if not enough space below, and more space above
           top = rect.top + window.scrollY - 350;
+        }
+
+        // Prevent calendar from going off the top of the screen
+        if (top < window.scrollY + 8) {
+          top = window.scrollY + 8;
+        }
+
+        // Prevent calendar from going off the bottom of the screen if opened downwards
+        if (forcePosition === 'bottom' && top + 350 > window.scrollY + window.innerHeight) {
+          top = window.scrollY + window.innerHeight - 350 - 8;
         }
 
         setDropdownPos({
@@ -240,11 +251,14 @@ export function DatePickerField({ id, label, value, onChange, required, error, d
       )}
       <button ref={ref} id={id} type="button" onClick={() => { if (disabled) return; setIsOpen(o => !o); setMode('day'); }}
         aria-haspopup="dialog" aria-expanded={isOpen}
-        className={`flex w-full items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm shadow-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-1
+        className={`flex w-full items-center justify-between gap-2 rounded-lg border px-4 py-3 text-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-green-600 focus-visible:ring-offset-2
           ${disabled ? 'border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed'
             : error ? 'border-red-400 bg-red-50/40'
-              : isOpen ? 'border-green-600 bg-white ring-1 ring-green-600'
-                : 'border-[#16A34A] bg-white hover:border-green-600/50'}`}>
+              : isOpen ? 'border-green-500 bg-white ring-2 ring-green-600/15'
+                : 'border-gray-200 bg-white hover:border-green-600/50'}`}
+        style={{
+          boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.05)',
+        }}>
         <span className={`flex items-center gap-2 ${disabled ? 'text-gray-500' : displayValue ? 'text-[#111827]' : 'text-gray-400'}`}>
           <Calendar size={16} className="shrink-0 text-gray-400" />
           {displayValue || placeholder}
@@ -252,17 +266,18 @@ export function DatePickerField({ id, label, value, onChange, required, error, d
       </button>
 
       {isOpen && typeof document !== 'undefined' && (usePortal ? createPortal(
-        <div ref={dropdownRef} role="dialog" aria-modal="false" aria-labelledby={dialogTitleId} className="absolute z-[99999] mt-1.5 w-[280px] rounded-lg border border-gray-200 bg-white shadow-xl overflow-hidden origin-top"
+        <div ref={dropdownRef} role="dialog" aria-modal="false" aria-labelledby={dialogTitleId} className="absolute z-[99999] mt-1.5 w-[280px] rounded-lg border border-green-500 bg-white overflow-hidden origin-top"
           style={{
             top: dropdownPos.top,
-            left: dropdownPos.left
+            left: dropdownPos.left,
+            boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.05)'
           }}>
           <span id={dialogTitleId} className="sr-only">Choose date</span>
           {calendarBody}
         </div>,
         document.body
       ) : (
-        <div ref={dropdownRef} role="dialog" aria-modal="false" aria-labelledby={dialogTitleId} className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} ${openUpwards ? 'bottom-[calc(100%+4px)] origin-bottom animate-in fade-in slide-in-from-bottom-2' : 'top-[calc(100%+4px)] origin-top animate-in fade-in slide-in-from-top-2'} z-50 w-[280px] rounded-lg border border-gray-200 bg-white shadow-xl overflow-hidden duration-200`}>
+        <div ref={dropdownRef} role="dialog" aria-modal="false" aria-labelledby={dialogTitleId} className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} ${openUpwards ? 'bottom-[calc(100%+4px)] origin-bottom animate-in fade-in slide-in-from-bottom-2' : 'top-[calc(100%+4px)] origin-top animate-in fade-in slide-in-from-top-2'} z-50 w-[280px] rounded-lg border border-green-500 bg-white overflow-hidden duration-200`} style={{ boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.05)' }}>
           <span id={dialogTitleId} className="sr-only">Choose date</span>
           {calendarBody}
         </div>
