@@ -6,12 +6,12 @@ import {
 } from '@/features/loans/api/loan.service';
 import { loanStagesService } from '@/features/loans/api/loanStages.service';
 import { formatLocation } from '@/features/loans/utils/formatLocation';
+import { bucketStagesByArchetype, stageToStatusMeta, toPseudoStages } from '@/features/loans/utils/archetype';
 import { getStageStyle, toStageFilterOptions } from '@/features/loans/utils/stageStyles';
 import type { LoanStage } from '@/lib/api/api.schemas';
 import type { ApiResponse } from '@/types/api';
 import { createAsyncThunk, createSelector, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import type { RootState } from '../../../store';
-import { BANK_FILTER_STATUS_OPTIONS } from '../constants/loans.constants';
 
 // The bank-side Applications List reads the same `get_all_loans` endpoint as the
 // Development Agent's dashboard, but it is deliberately NOT the loanDashboard
@@ -31,7 +31,8 @@ import { BANK_FILTER_STATUS_OPTIONS } from '../constants/loans.constants';
 /** Backend status -> fallback label if no matching stage is found. */
 const STATUS_LABELS: Record<string, string> = {
   Approved: 'Granted',
-  Processing: 'Processing',
+  Processing: 'Processed',
+  Processed: 'Processed',
   Rejected: 'Rejected',
   Draft: 'Draft',
 };
@@ -44,23 +45,13 @@ export function bankStatusLabel(status: string, stages?: readonly LoanStage[]): 
   return STATUS_LABELS[status] ?? status;
 }
 
-/**
- * Fallback statuses for a bank if dynamic stages have not yet resolved.
- *
- * Derived from the one archetype list in loans.constants so this fallback cannot
- * drift from what the workflow actually defines. It used to name Processing /
- * Approved / Rejected / Draft, none of which are workflow states any more.
- *
- * `Active` is excluded there, not here: it is the Development Agent's (or the
- * farmer's) private drafting stage and `loan_application_scope_query` withholds it
- * from every bank user.
- */
-export const BANK_STATUS_OPTIONS: ReadonlyArray<{ value: string; label: string; color: string }> =
-  BANK_FILTER_STATUS_OPTIONS.map((opt) => ({
-    value: opt.value,
-    label: opt.label,
-    color: opt.dot,
-  }));
+// There is deliberately no hardcoded status fallback here.
+//
+// `get_all_loans` validates every status against the stages visible to the
+// caller and answers 400 for anything else, and a stage label is tenant free
+// text — no fixed list is correct for every bank. Offering one before the real
+// stages arrive means offering a filter that takes the table down. Until the
+// pipeline resolves the filter has nothing to show, and says so.
 
 /** Amount buckets offered by LoanAmountFilter / AdvancedFilters, in ETB. */
 const AMOUNT_BUCKETS: Record<string, { min: number; max: number | null }> = {
@@ -217,11 +208,27 @@ export const fetchBankApplications = createAsyncThunk(
   }
 );
 
+/**
+ * Where a screen gets its pipeline from.
+ *
+ *  - `seller`: `loan_stages.get_stages`, which carries live `application_count`
+ *    per stage. Bank portals only — it is guarded by a bank binding, so a
+ *    Development Agent calling it gets 403.
+ *  - `metadata`: `loan_applications.get_loan_metadata`, resolved per role, with
+ *    no counts. This is what the Development Agent's copy of this list uses.
+ */
+export type StageSource = 'seller' | 'metadata';
+
 export const fetchBankStages = createAsyncThunk(
   'bankApplications/fetchStages',
-  async (_, { rejectWithValue }) => {
+  async (source: StageSource = 'seller', { rejectWithValue }) => {
     try {
-      return await loanStagesService.getStages();
+      if (source === 'metadata') {
+        const response = await loanService.getLoanMetadata();
+        return toPseudoStages(response?.data?.statuses ?? []);
+      }
+      const response = await loanStagesService.getStages();
+      return response?.data?.stages ?? [];
     } catch (error: unknown) {
       if (error instanceof Error && error.name === 'AbortError') {
         throw error;
@@ -308,7 +315,7 @@ const bankApplicationsSlice = createSlice({
       })
       .addCase(fetchBankStages.fulfilled, (state, action) => {
         state.isStagesLoading = false;
-        state.stages = action.payload?.data?.stages ?? [];
+        state.stages = action.payload ?? [];
       })
       .addCase(fetchBankStages.rejected, (state, action) => {
         if (action.meta.aborted) return;
@@ -354,12 +361,7 @@ export const selectBankSortBy = (state: RootState) => state.bankApplications.sor
 export const selectBankSortOrder = (state: RootState) => state.bankApplications.sortOrder;
 const selectSummary = (state: RootState) => state.bankApplications.summary;
 
-export const selectBankStageOptions = createSelector([selectBankStages], (stages) => {
-  if (stages.length === 0) {
-    return BANK_STATUS_OPTIONS;
-  }
-  return toStageFilterOptions(stages);
-});
+export const selectBankStageOptions = createSelector([selectBankStages], toStageFilterOptions);
 
 // --- Derived selectors ---
 const selectRowsData = createSelector([selectRaw, selectBankStages], (raw, stages) => {
@@ -437,9 +439,13 @@ export const selectBankLoanTypeOptions = createSelector(
 
 /**
  * Bank-side KPI figures, bucketed by archetype state.
+ *
+ * The stage list is preferred because it carries live per-stage counts. When it
+ * has not resolved (or reports nothing), fall back to `get_loan_summary`'s
+ * per-label counts classified through the same stage list — not to
+ * `summary.by_status`, which the endpoint has never sent.
  */
 export const selectBankMetrics = createSelector([selectSummary, selectBankStages], (summary, stages) => {
-  const byStatus = summary?.data?.by_status;
   if (stages.length > 0) {
     let inTransition = 0;
     let completed = 0;
@@ -453,30 +459,40 @@ export const selectBankMetrics = createSelector([selectSummary, selectBankStages
       else if (stage.archetype_state === 'Rejected' || stage.archetype_state === 'Cancelled') cancelled += count;
     }
     if (total > 0) {
-      return {
-        total,
-        inTransition,
-        completed,
-        cancelled,
-      };
+      return { total, inTransition, completed, cancelled };
     }
   }
 
+  const counts = bucketStagesByArchetype(summary?.data?.stages, stages.map(stageToStatusMeta));
+
   return {
-    total: summary?.data?.total ?? 0,
-    inTransition: byStatus?.['In Transition'] ?? 0,
-    completed: byStatus?.['Completed'] ?? 0,
-    cancelled: byStatus?.['Cancelled'] ?? 0,
+    total: summary?.data?.total ?? counts.total,
+    inTransition: counts.active + counts.inTransition,
+    completed: counts.completed,
+    cancelled: counts.cancelled,
   };
 });
 
 export const selectBankQueryParams = createSelector(
-  [selectBankPage, selectBankPageSize, selectBankSearchQuery, selectBankFilters, selectBankSortBy, selectBankSortOrder],
-  (page, pageSize, searchQuery, filters, sortBy, sortOrder): GetLoansParams => {
+  [selectBankPage, selectBankPageSize, selectBankSearchQuery, selectBankFilters, selectBankSortBy, selectBankSortOrder, selectBankStages],
+  (page, pageSize, searchQuery, filters, sortBy, sortOrder, stages): GetLoansParams => {
     const params: GetLoansParams = { page, page_size: pageSize };
 
     if (searchQuery) params.search_query = searchQuery;
-    if (filters.status.length > 0) params.status = filters.status.join(',');
+
+    // Only statuses the caller's own pipeline actually defines. An unrecognised
+    // one is a 400 from `get_all_loans`, which fails the whole list — so a stale
+    // selection (a stage renamed since it was picked) drops out here instead of
+    // taking the table with it. Sent as a JSON array, not comma-joined: a bank
+    // may legitimately name a stage "Approved, Pending Disbursal".
+    const selectable = filters.status.filter((value) =>
+      stages.some(
+        (stage) =>
+          stage.label.toLowerCase() === value.toLowerCase() ||
+          stage.stage_id.toLowerCase() === value.toLowerCase()
+      )
+    );
+    if (selectable.length > 0) params.status = JSON.stringify(selectable);
     if (filters.loanType.length > 0) params.loan_type = filters.loanType.join(',');
     // Trimmed: the region control is free text matched from the start of the name,
     // so a whitespace-only value is truthy but matches nothing — an empty table

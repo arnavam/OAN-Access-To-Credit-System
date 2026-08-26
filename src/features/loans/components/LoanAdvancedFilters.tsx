@@ -24,8 +24,8 @@ interface LoanAdvancedFiltersProps {
   onClose: () => void;
   /**
    * Which statuses this portal can filter on. Defaults to the dev-agent
-   * dashboard's list; the bank portals pass BANK_FILTER_STATUS_OPTIONS, which
-   * omits the one archetype state a bank user is never shown.
+   * dashboard's list; the bank portals pass their own live pipeline stages,
+   * which is the one thing a fixed list can never get right for every tenant.
    * This is the *only* thing that differed between the two copies of this
    * drawer that used to exist.
    */

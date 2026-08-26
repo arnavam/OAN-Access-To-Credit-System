@@ -2,7 +2,6 @@ import { configureStore } from '@reduxjs/toolkit';
 import type { RootState } from '@/store';
 import { describe, expect, it } from 'vitest';
 import {
-  BANK_STATUS_OPTIONS,
   bankApplicationsReducer,
   clearBankFilters,
   selectBankApplicationRows,
@@ -28,25 +27,6 @@ const baseFilters = {
   dateFrom: '',
   dateTo: '',
 };
-
-describe('BANK_STATUS_OPTIONS', () => {
-  it('offers only archetype states the backend will accept', () => {
-    // `GetAllLoansSchema.validate_statuses` checks every member against the
-    // A2C Loan Application Workflow's states and rejects the whole request with a
-    // 400 on the first unknown one — so a display label here breaks the list.
-    expect(BANK_STATUS_OPTIONS.map((o) => o.value)).toEqual([
-      'In Transition',
-      'Completed',
-      'Cancelled',
-    ]);
-  });
-
-  it('omits Active, which no bank user is ever shown', () => {
-    // loan_application_scope_query appends `status != 'Active'` for bank users:
-    // Active is the Development Agent's or the farmer's private drafting stage.
-    expect(BANK_STATUS_OPTIONS.map((o) => o.value)).not.toContain('Active');
-  });
-});
 
 describe('selectBankQueryParams', () => {
   it('sends nothing but paging and the default sort when no filter is set', () => {
@@ -75,10 +55,37 @@ describe('selectBankQueryParams', () => {
 
   it('sends archetype status values', () => {
     const store = createTestStore();
-    store.dispatch(setBankFilters({ ...baseFilters, status: ['In Transition', 'Completed'] }));
+    store.dispatch({
+      type: 'bankApplications/fetchStages/fulfilled',
+      payload: [
+        {
+          name: 'c2f9d14a80',
+          bank: 'HDFC Bank',
+          stage_id: 'approved-a8f3b2',
+          label: 'Approved',
+          archetype_state: 'Completed',
+          sequence: 1,
+          external_code: null,
+          description: 'Approved',
+          application_count: 14,
+        },
+        {
+          name: 'd3e8c25b91',
+          bank: 'HDFC Bank',
+          stage_id: 'rejected-b9e4c3',
+          label: 'Rejected',
+          archetype_state: 'Cancelled',
+          sequence: 2,
+          external_code: null,
+          description: 'Rejected',
+          application_count: 20,
+        },
+      ],
+    });
+    store.dispatch(setBankFilters({ ...baseFilters, status: ['Approved', 'Rejected'] }));
 
     expect(selectBankQueryParams(asRootState(store.getState())).status).toBe(
-      'In Transition,Completed'
+      JSON.stringify(['Approved', 'Rejected'])
     );
   });
 
@@ -265,35 +272,30 @@ describe('selectBankApplicationRows', () => {
     const store = createTestStore();
     store.dispatch({
       type: 'bankApplications/fetchStages/fulfilled',
-      payload: {
-        data: {
+      payload: [
+        {
+          name: 'c2f9d14a80',
           bank: 'HDFC Bank',
-          stages: [
-            {
-              name: 'c2f9d14a80',
-              bank: 'HDFC Bank',
-              stage_id: 'submitted-a8f3b2',
-              label: 'Submitted',
-              archetype_state: 'In Transition',
-              sequence: 1,
-              external_code: null,
-              description: 'Initial application submission',
-              application_count: 14,
-            },
-            {
-              name: 'd3e8c25b91',
-              bank: 'HDFC Bank',
-              stage_id: 'disbursed-b9e4c3',
-              label: 'Disbursed',
-              archetype_state: 'Completed',
-              sequence: 2,
-              external_code: null,
-              description: 'Loan disbursed',
-              application_count: 20,
-            },
-          ],
+          stage_id: 'submitted-a8f3b2',
+          label: 'Submitted',
+          archetype_state: 'In Transition',
+          sequence: 1,
+          external_code: null,
+          description: 'Initial application submission',
+          application_count: 14,
         },
-      },
+        {
+          name: 'd3e8c25b91',
+          bank: 'HDFC Bank',
+          stage_id: 'disbursed-b9e4c3',
+          label: 'Disbursed',
+          archetype_state: 'Completed',
+          sequence: 2,
+          external_code: null,
+          description: 'Loan disbursed',
+          application_count: 20,
+        },
+      ],
     });
 
     const state = store.getState();

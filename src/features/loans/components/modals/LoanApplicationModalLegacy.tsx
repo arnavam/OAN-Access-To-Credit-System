@@ -29,12 +29,12 @@ export default function LoanApplicationModalLegacy({ isOpen, onClose, data }: Lo
 
   const extraEntries = fullProfile
     ? Object.entries(fullProfile).filter(
-        ([key, value]) =>
-          !PINNED_OR_META_KEYS.has(key) &&
-          value !== null &&
-          value !== '' &&
-          typeof value !== 'object'
-      )
+      ([key, value]) =>
+        !PINNED_OR_META_KEYS.has(key) &&
+        value !== null &&
+        value !== '' &&
+        typeof value !== 'object'
+    )
     : [];
 
   const modalContent = (
@@ -49,7 +49,7 @@ export default function LoanApplicationModalLegacy({ isOpen, onClose, data }: Lo
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-[#387f50] px-8 py-5 flex justify-between items-start">
+        <div className="bg-[#16A34A] px-8 py-5 flex justify-between items-start">
           <div>
             <h2 id="loan-application-legacy-modal-title" className="text-xl font-bold text-white mb-1">Application Summary</h2>
             <p className="text-emerald-100 text-[13px] font-medium tracking-wide">
@@ -68,8 +68,8 @@ export default function LoanApplicationModalLegacy({ isOpen, onClose, data }: Lo
         <div className="bg-emerald-50/80 px-8 py-4 flex items-center gap-3 border-b border-emerald-100/50">
           <CheckCircle2 size={24} className="text-emerald-500 fill-emerald-100 shrink-0" />
           <div>
-            <h3 className="text-sm font-bold text-emerald-800">Submitted &amp; {data.status}</h3>
-            <p className="text-xs font-medium text-emerald-600">Transmitted to Cooperative Bank of Oromia via SFTP</p>
+            <h3 className="text-sm font-bold text-[#16A34A]">Submitted &amp; {data.status}</h3>
+            <p className="text-xs font-medium text-[#10883c]">Transmitted to Cooperative Bank of Oromia via SFTP</p>
           </div>
         </div>
 
@@ -180,9 +180,9 @@ export default function LoanApplicationModalLegacy({ isOpen, onClose, data }: Lo
           </span>
           <button
             onClick={onClose}
-            className="bg-[#387f50] hover:bg-[#2c633f] text-white px-6 py-2.5 rounded-lg text-sm font-bold shadow-sm transition-colors active:scale-95"
+            className="bg-[#16A34A] hover:bg-[#10883c] text-white px-6 py-2.5 rounded-lg text-sm font-bold shadow-sm transition-colors active:scale-95"
           >
-            Close
+            <span className='font-semibold'>Close</span>
           </button>
         </div>
 

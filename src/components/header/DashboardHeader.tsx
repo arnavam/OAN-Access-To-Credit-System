@@ -111,7 +111,7 @@ export function DashboardHeader({ onMenuClick, title = 'Dashboard', subtitle }: 
 
   return (
     <>
-      <header className="bg-white border-b border-gray-100 shadow-md h-20 shrink-0 flex items-center justify-between px-6 md:px-10 sticky top-0 z-30">
+      <header className="bg-white border-b border-gray-100 shadow-md h-20 shrink-0 flex items-center justify-between px-6 md:px-10 sticky top-0 z-40">
 
         <div className="flex items-center gap-4">
           {/* Only render the sidebar toggle when a handler is wired up (i.e. a
@@ -195,7 +195,7 @@ export function DashboardHeader({ onMenuClick, title = 'Dashboard', subtitle }: 
                   className="w-full flex items-center gap-3.5 px-5 py-3 text-sm font-medium text-gray-900 hover:bg-gray-50 transition-colors border-b border-gray-100 text-left whitespace-nowrap"
                 >
                   <UserRound className="w-5 h-5 text-[#16A34A] shrink-0" />
-                  <span>My Profile</span>
+                  <span className='font-medium'>My Profile</span>
                 </button>
 
                 {canManageOrganization && (
@@ -226,7 +226,7 @@ export function DashboardHeader({ onMenuClick, title = 'Dashboard', subtitle }: 
                   className="w-full flex items-center gap-3.5 px-5 py-3 text-sm font-bold text-[#FF4D4D] hover:bg-red-50/60 transition-colors text-left whitespace-nowrap"
                 >
                   <LogOut className="w-5 h-5 text-[#FF4D4D] shrink-0" />
-                  <span>Logout</span>
+                  <span className='font-medium'>Logout</span>
                 </button>
               </div>
             )}

@@ -179,15 +179,10 @@ const statusOption = (status: LoanArchetypeStatus): FilterStatusOption => ({
 export const LOAN_FILTER_STATUS_OPTIONS: readonly FilterStatusOption[] =
   LOAN_ARCHETYPE_STATUSES.map(statusOption);
 
-/**
- * Status options for the bank-side lists (bank admin, bank agent, seller dashboard).
- *
- * `Active` is omitted because `loan_application_scope_query` appends
- * `status != 'Active'` for every bank user: an Active application is still private to
- * the Development Agent or the farmer who is drafting it. Offering it here would be a
- * filter that is guaranteed to return nothing — which is the one thing this file
- * exists to prevent.
- */
-export const BANK_FILTER_STATUS_OPTIONS: readonly FilterStatusOption[] =
-  LOAN_ARCHETYPE_STATUSES.filter((status) => status !== 'Active').map(statusOption);
+// There is deliberately no bank-side counterpart to the list above.
+//
+// The bank portals filter on their own pipeline, read live from the store and
+// passed to the drawer as `statusOptions`. A stage label is tenant free text and
+// `get_all_loans` 400s on anything the caller's stages do not define, so a fixed
+// bank list could only ever be a filter that empties the table.
 

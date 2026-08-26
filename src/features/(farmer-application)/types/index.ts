@@ -1,3 +1,22 @@
+/**
+ * Catalog types live in `src/types/loan-catalog.ts` so the shared catalog
+ * components under `src/components/loan-catalog` can use them without importing
+ * from this feature. Re-exported here because they are still part of the farmer
+ * feature's vocabulary and every existing import path keeps working.
+ */
+export type {
+  CatalogCategoryFacet,
+  CatalogFacets,
+  CatalogFilters,
+  CatalogProduct,
+  CatalogQuery,
+  CatalogSortKey,
+  FarmerLoanProduct,
+} from '@/types/loan-catalog';
+export { resolveCategory } from '@/types/loan-catalog';
+
+import type { CatalogProduct } from '@/types/loan-catalog';
+
 export interface Pagination {
   page: number;
   limit: number;
@@ -17,27 +36,7 @@ export interface ApiResponse<T = void> {
   message: string;
 }
 
-export interface FarmerLoanProduct {
-  name: string;
-  product_name: string;
-  slug: string;
-  bank: string;
-  bank_name?: string;
-  bank_logo?: string | null;
-  min_interest_rate?: number;
-  max_interest_rate?: number;
-  min_amount?: number;
-  max_amount?: number;
-  tenure_months?: number;
-  image?: string | null;
-  image_url?: string | null;
-  categories?: string[];
-  /** Whether the calling farmer has bookmarked this product. Sent by the catalog
-   *  endpoint so a reload does not reset every card to un-bookmarked. */
-  is_saved?: boolean;
-}
-
-export interface DetailedLoanProduct extends FarmerLoanProduct {
+export interface DetailedLoanProduct extends CatalogProduct {
   status?: string;
   description?: string;
   image?: string;
@@ -65,7 +64,28 @@ export interface BankDetails {
 
 export interface FarmerLoanApplication {
   application_id: string;
-  status: 'Draft' | 'Under Review' | 'Disbursed' | 'Rejected';
+  /**
+   * Where the application stands, in the *owning bank's* own words.
+   *
+   * Not a fixed set: every bank names the stages of its pipeline itself, so this
+   * is `Active` while the application is still a draft with the farmer, and
+   * after submission whatever that bank calls the stage it has reached. It was
+   * typed as `'Draft' | 'Under Review' | 'Disbursed' | 'Rejected'` — four values
+   * the endpoint has never returned, which left every tab reading zero.
+   *
+   * To decide what an application *means*, read the flags below rather than
+   * matching this string.
+   */
+  status: string;
+  /** Absent while the application is still a draft (`Active`). */
+  stage_id?: string | null;
+  stage_label?: string | null;
+  /** Position in the owning bank's pipeline; orders the stages for display. */
+  sequence?: number | null;
+  /** The application has stopped moving. */
+  is_terminal?: boolean;
+  /** How it stopped: true = completed, false = rejected. Only meaningful with `is_terminal`. */
+  is_successful?: boolean;
   loan_amount: number;
   requested_amount: number;
   loan_product: string;
@@ -75,9 +95,25 @@ export interface FarmerLoanApplication {
   loan_reason?: string;
   /** Terms the application was made under, snapshotted from the product when it
    *  was created. Null for applications made before the snapshot existed — the
-   *  card shows a placeholder rather than inventing a rate for them. */
+   *  card shows a placeholder rather than inventing a rate for them.
+   *
+   *  Note: `list_applications` does not currently send either field, so the list
+   *  view shows the placeholder for every card. They are populated only where a
+   *  caller has hydrated them from the product catalogue. */
   interest_rate?: number | null;
   tenure_months?: number | null;
+}
+
+/**
+ * True while the application is still with the farmer and has not been sent to
+ * a bank.
+ *
+ * A draft sits on no stage, which is what distinguishes it — not the label
+ * `Draft`, which is not a status this API produces at all (the backend calls the
+ * pre-submission state `Active`). Submission is only offered for these.
+ */
+export function isDraftApplication(application: Pick<FarmerLoanApplication, 'stage_id'>): boolean {
+  return !application.stage_id;
 }
 
 /** Shape returned by api.v1.farmer.dashboard.get_dashboard_summary.
@@ -123,54 +159,6 @@ export interface FarmerDashboardSummary {
   top_loan_offers: FarmerDashboardOffer[];
   available_loan_types: string[];
   recent_applications: FarmerDashboardApplication[];
-}
-
-/** Sort keys the catalog endpoint accepts. Kept in step with _SORT_COLUMNS in
- *  api/v1/farmer/catalog.py — anything else is rejected by the schema. */
-export type CatalogSortKey =
-  | 'product_name'
-  | 'interest_low_high'
-  | 'interest_high_low'
-  | 'amount_low_high'
-  | 'amount_high_low'
-  | 'tenure_low_high'
-  | 'newest';
-
-export interface CatalogCategoryFacet {
-  name: string;
-  count: number;
-}
-
-/** Filter options derived from the live catalog. Every entry is backed by at
- *  least one visible product, so the sidebar can only offer filters that return
- *  something. There is no region facet: a loan product has no region. */
-export interface CatalogFacets {
-  categories: CatalogCategoryFacet[];
-  tenures: number[];
-  amount_range: { min: number; max: number } | null;
-  max_interest_rate: number | null;
-}
-
-export interface CatalogFilters {
-  category?: string;
-  /** One exact tenure, sent as both bounds of the endpoint's tenure range.
-   *
-   *  Single-valued, not a set: `list_catalog` filters tenure as a min/max span, so
-   *  a multi-select of non-adjacent tenures cannot be expressed — the span between
-   *  them would drag in every tenure the farmer did not tick. */
-  tenure_months?: number;
-  /** Amount bounds are the farmer's borrowing range, not the product's. The
-   *  endpoint keeps any product whose own range overlaps this one. */
-  min_amount?: number;
-  max_amount?: number;
-  /** Ceiling on the headline rate the card displays (min_interest_rate). */
-  max_interest_rate?: number;
-  /** Restrict the catalog to products this user has bookmarked.
-   *
-   *  Only ever true or absent. `is_saved=false` on the wire would read as "show
-   *  me what I have *not* saved", which is not what an unticked box means — the
-   *  key is deleted instead. */
-  is_saved?: true;
 }
 
 export interface CreateApplicationPayload {

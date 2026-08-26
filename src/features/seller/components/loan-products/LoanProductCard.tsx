@@ -1,14 +1,14 @@
 'use client';
 
-import { ProductCard } from '@/components/ProductCard';
+import CatalogCard from '@/components/loan-catalog/CatalogCard';
 import { getLoanProductStatusPresentation } from '@/features/seller/constants/loan-product-status';
 import type { LoanProductSummary } from '@/lib/api/api.schemas';
-import { formatAmount, formatRateRange, formatTenure } from '@/lib/loanFormat';
+import type { CatalogProduct } from '@/types/loan-catalog';
 import { CalendarDays, Eye, Pencil, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { ReviewProductModal } from '../product-approvals/ReviewProductModal';
 import { DeleteLoanProductModal } from './DeleteLoanProductModal';
 import { EditLoanProductModal } from './EditLoanProductModal';
-import { ReviewProductModal } from '../product-approvals/ReviewProductModal';
 
 function formatCurrencyRange(minAmount: number | null | undefined, maxAmount: number): string {
   const min = minAmount === null || minAmount === undefined ? '0' : minAmount.toLocaleString('en-US');
@@ -20,6 +20,36 @@ function formatCreationDate(value: string | null | undefined): string {
   if (!value) return 'Created date unavailable';
   const date = new Date(value.replace(' ', 'T'));
   return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+/**
+ * Adapts a `list_products` row to the catalog card's shape.
+ *
+ * The two endpoints describe the same product with different nullability —
+ * `list_products` sends JSON null for anything the bank left unset, where the
+ * catalog simply omits the key. Optional fields are therefore spread in only
+ * when they carry a value, which is also what `exactOptionalPropertyTypes`
+ * requires.
+ */
+function toCatalogProduct(product: LoanProductSummary): CatalogProduct {
+  return {
+    name: product.name,
+    product_name: product.product_name,
+    // `slug` is only ever read for display fallbacks; the record name is the
+    // stable identifier when a product predates the slug field.
+    slug: product.slug ?? product.name,
+    bank: product.bank ?? '',
+    status: product.status,
+    min_interest_rate: product.min_interest_rate,
+    max_amount: product.max_amount,
+    tenure_months: product.tenure_months,
+    categories: product.categories,
+    applications_count: product.applications_count,
+    image: product.image ?? null,
+    ...(product.bank_name ? { bank_name: product.bank_name } : {}),
+    ...(product.max_interest_rate != null ? { max_interest_rate: product.max_interest_rate } : {}),
+    ...(product.min_amount != null ? { min_amount: product.min_amount } : {}),
+  };
 }
 
 export interface LoanProductCardProps {
@@ -37,12 +67,12 @@ export function canEditLoanProduct(status: string | null | undefined): boolean {
 /**
  * A loan product as the owning bank sees it.
  *
- * Same shell as the farmer's Discover Loans card (`@/components/ProductCard`) —
- * these were two different components for one product and had drifted in wording,
- * spacing and colour. What the bank gets instead of Apply is a status pill and
- * one of Edit or View, decided by whether this viewer may still change the
- * product: a live or in-review product is read-only for everyone, and only a bank
- * admin (`canDelete`) may archive.
+ * Same shell as the farmer's Discover Loans card (`@/components/loan-catalog/CatalogCard`)
+ * — these were two different components for one product and had drifted in
+ * wording, spacing and colour. What the bank gets instead of Apply is a status
+ * pill and one of Edit or View, decided by whether this viewer may still change
+ * the product: a live or in-review product is read-only for everyone, and only a
+ * bank admin (`canDelete`) may archive.
  */
 export function LoanProductCard({ product, variant = 'default', canDelete = true }: LoanProductCardProps) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -50,40 +80,31 @@ export function LoanProductCard({ product, variant = 'default', canDelete = true
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
 
-  // Extract the LAST category if given more than one
-  const categories = product.categories || [];
-  const lastCategoryRaw = categories.length > 0 ? categories[categories.length - 1] : '';
-  const categoryKey = (lastCategoryRaw || '').replace(/^category[-_]/i, '').toLowerCase();
-
   const canEdit = canEditLoanProduct(product.status);
   const isApproval = variant === 'approval';
   const status = getLoanProductStatusPresentation(product.status);
 
   const applicantsCount = product.applications_count ?? 0;
-  const bankLabel = product.bank_name || product.bank || null;
+  const catalogProduct = toCatalogProduct(product);
 
   return (
     <>
-      <ProductCard
-        productName={product.product_name}
-        subtitle={bankLabel}
-        imageUrl={product.image}
-        bankName={bankLabel}
-        category={categoryKey || null}
-        status={status}
-        terms={[
-          { value: formatAmount(product.max_amount), label: 'Max Amount' },
-          {
-            value: formatRateRange(product.min_interest_rate, product.max_interest_rate),
-            label: 'Interest p.a',
-          },
-          { value: formatTenure(product.tenure_months), label: 'Tenure' },
-        ]}
+      <CatalogCard
+        product={catalogProduct}
+        showRateRange
+        badge={
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-bold shadow-sm ${status.badgeClasses}`}
+          >
+            <span className={`h-1.5 w-1.5 rounded-full ${status.dotClasses}`} />
+            {status.label}
+          </span>
+        }
         meta={
           // The bank's own operational detail, which the farmer card has no use
-          // for: the full lending span (the terms strip above shows only the
+          // for: the full lending span (the terms strip below shows only the
           // ceiling, as it does for farmers) plus reach or provenance.
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 font-medium text-gray-500">
             <span className="font-semibold text-gray-700">
               {formatCurrencyRange(product.min_amount, product.max_amount)}
             </span>
@@ -105,46 +126,48 @@ export function LoanProductCard({ product, variant = 'default', canDelete = true
             )}
           </div>
         }
-        action={
-          isApproval ? (
-            <button
-              type="button"
-              onClick={() => setIsReviewModalOpen(true)}
-              className="w-full bg-[#16A34A] hover:bg-[#15803d] text-white font-bold py-2.5 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 text-sm"
-            >
-              Review
-            </button>
-          ) : canEdit ? (
-            <button
-              type="button"
-              onClick={() => setIsEditModalOpen(true)}
-              aria-label={`Edit ${product.product_name}`}
-              className="w-full bg-[#16A34A] hover:bg-[#15803d] text-white font-bold py-2.5 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 text-sm"
-            >
-              <Pencil className="w-4 h-4" /> Edit
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setIsViewModalOpen(true)}
-              aria-label={`View ${product.product_name}`}
-              className="w-full bg-white hover:bg-gray-50 text-gray-700 font-bold py-2.5 rounded-xl border border-gray-200 shadow-sm transition-all flex items-center justify-center gap-2 text-sm"
-            >
-              <Eye className="w-4 h-4" /> View
-            </button>
-          )
-        }
-        secondaryAction={
-          !isApproval && canDelete ? (
-            <button
-              type="button"
-              onClick={() => setIsDeleteModalOpen(true)}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-500 transition-colors hover:bg-red-100 active:scale-95"
-              aria-label={`Archive ${product.product_name}`}
-            >
-              <Trash2 size={16} />
-            </button>
-          ) : null
+        actions={
+          <div className="flex items-center gap-2">
+            <div className="flex-1 min-w-0">
+              {isApproval ? (
+                <button
+                  type="button"
+                  onClick={() => setIsReviewModalOpen(true)}
+                  className="w-full bg-[#16A34A] hover:bg-[#15803d] text-white font-bold py-2.5 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 text-sm"
+                >
+                  Review
+                </button>
+              ) : canEdit ? (
+                <button
+                  type="button"
+                  onClick={() => setIsEditModalOpen(true)}
+                  aria-label={`Edit ${product.product_name}`}
+                  className="w-full bg-[#16A34A] hover:bg-[#15803d] text-white font-bold py-2.5 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 text-sm"
+                >
+                  <Pencil className="w-4 h-4" /> Edit
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsViewModalOpen(true)}
+                  aria-label={`View ${product.product_name}`}
+                  className="w-full bg-white hover:bg-gray-50 text-gray-700 font-bold py-2.5 rounded-xl border border-gray-200 shadow-sm transition-all flex items-center justify-center gap-2 text-sm"
+                >
+                  <Eye className="w-4 h-4" /> View
+                </button>
+              )}
+            </div>
+            {!isApproval && canDelete ? (
+              <button
+                type="button"
+                onClick={() => setIsDeleteModalOpen(true)}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-500 transition-colors hover:bg-red-100 active:scale-95"
+                aria-label={`Archive ${product.product_name}`}
+              >
+                <Trash2 size={16} />
+              </button>
+            ) : null}
+          </div>
         }
       />
 

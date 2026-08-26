@@ -243,7 +243,7 @@ export default function AgentApplicationTable({ onView }: AgentApplicationTableP
           </button>
         </div>
 
-        <div className="flex items-center gap-4 shrink-0">
+        <div className="flex flex-wrap sm:flex-nowrap items-center justify-between sm:justify-end gap-4 shrink-0 w-full sm:w-auto">
           <button
             onClick={() => setIsAdvancedFiltersOpen(true)}
             className="flex items-center gap-2 px-4 py-2.5 text-[14px] font-semibold text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors shadow-sm"
@@ -260,7 +260,7 @@ export default function AgentApplicationTable({ onView }: AgentApplicationTableP
         </div>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto custom-scrollbar pb-2">
         <table className="w-full min-w-[1000px] border-collapse bg-white text-left text-base text-gray-500 whitespace-nowrap">
           <thead className="bg-[#fafafa] text-[13px] font-bold uppercase tracking-wider text-gray-500 border-b border-gray-200">
             <tr>
@@ -450,7 +450,7 @@ export default function AgentApplicationTable({ onView }: AgentApplicationTableP
               <span className="font-medium">of {totalEntries.toLocaleString()} entries</span>
             </div>
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap justify-center w-full sm:w-auto mt-2 sm:mt-0">
               <button
                 onClick={() => dispatch(setBankPage(Math.max(1, currentPage - 1)))}
                 disabled={currentPage === 1}

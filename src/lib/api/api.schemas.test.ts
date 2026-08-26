@@ -50,7 +50,13 @@ describe('api.schemas validation', () => {
       };
 
       const result = loanApplicationSummarySchema.parse(validData);
-      expect(result).toEqual(validData);
+      // The three location levels are carried through as sent, not blanked: they
+      // are the row's own values, and only a missing one resolves to undefined.
+      expect(result).toEqual({
+        ...validData,
+        is_terminal: false,
+        is_successful: false,
+      });
     });
 
     it('should leave null location, stage and name fields undefined', () => {

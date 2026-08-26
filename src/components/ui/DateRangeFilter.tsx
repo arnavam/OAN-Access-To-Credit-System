@@ -11,13 +11,13 @@ export interface DateRangeFilterProps {
   onDateFromChange?: (v: string) => void;
   onDateToChange?: (v: string) => void;
   onQuickDateChange?: (label: string, from: string, to: string) => void;
-  
+
   // Fallback interface
   fromValue?: string;
   toValue?: string;
   onFromChange?: (val: string) => void;
   onToChange?: (val: string) => void;
-  
+
   fromLabel?: string;
   toLabel?: string;
 }
@@ -40,7 +40,7 @@ export function DateRangeFilter(props: DateRangeFilterProps) {
 
   const actualFrom = dateFrom ?? fromValue ?? '';
   const actualTo = dateTo ?? toValue ?? '';
-  
+
   const handleFromChange = (val: string) => {
     onDateFromChange?.(val);
     onFromChange?.(val);
@@ -53,7 +53,7 @@ export function DateRangeFilter(props: DateRangeFilterProps) {
 
   const formatDate = (date: Date) => {
     const offset = date.getTimezoneOffset();
-    const localDate = new Date(date.getTime() - (offset*60*1000));
+    const localDate = new Date(date.getTime() - (offset * 60 * 1000));
     return localDate.toISOString().split('T')[0] || '';
   };
 
@@ -97,19 +97,19 @@ export function DateRangeFilter(props: DateRangeFilterProps) {
               {fromLabel}
             </label>
           )}
-          <DatePickerField 
+          <DatePickerField
             value={actualFrom}
             onChange={handleFromChange}
           />
         </div>
-        
+
         <div className="flex flex-col gap-1.5">
           {toLabel && (
             <label className="text-sm font-medium text-gray-700">
               {toLabel}
             </label>
           )}
-          <DatePickerField 
+          <DatePickerField
             value={actualTo}
             onChange={handleToChange}
             {...(actualFrom ? { minDate: new Date(actualFrom) } : {})}
@@ -122,13 +122,13 @@ export function DateRangeFilter(props: DateRangeFilterProps) {
           <button
             key={option}
             onClick={() => handleQuickSelect(option)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors border ${
-              quickDate === option
-                ? 'bg-emerald-50 text-[#16A34A] border-[#16A34A]'
-                : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50 hover:text-gray-700'
-            }`}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors border ${quickDate === option
+              ? 'bg-emerald-50 text-[#16A34A] border-[#16A34A]'
+              : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50 hover:text-gray-700'
+              }`}
           >
-            {option}
+            <span className='font-semibold'>{option}</span>
+
           </button>
         ))}
       </div>

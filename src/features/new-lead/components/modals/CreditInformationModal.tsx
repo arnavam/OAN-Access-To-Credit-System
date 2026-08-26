@@ -1,7 +1,9 @@
 import { Portal } from '@/components/Portal';
 import { SelectField } from '@/components/ui/SelectField';
-// eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
-import { loanService, type BrowseProductItem } from '@/features/loans/api/loan.service';
+// eslint-disable-next-line boundaries/dependencies -- Lead creation modal consumes marketplace catalog to populate loan product dropdown
+import { getCatalog } from '@/features/(farmer-application)/api/farmerApi';
+// eslint-disable-next-line boundaries/dependencies -- Lead creation modal consumes marketplace catalog to populate loan product dropdown
+import type { FarmerLoanProduct } from '@/features/(farmer-application)/types';
 import { X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { NumericInput } from '@/components/ui/NumericInput';
@@ -14,7 +16,7 @@ interface CreditInformationModalProps {
 }
 
 export function CreditInformationModal({ isOpen, onClose, onSubmit }: CreditInformationModalProps) {
-  const [products, setProducts] = useState<BrowseProductItem[]>([]);
+  const [products, setProducts] = useState<FarmerLoanProduct[]>([]);
 
   const [loanType, setLoanType] = useState('');
   const [loanAmount, setLoanAmount] = useState('');
@@ -25,8 +27,7 @@ export function CreditInformationModal({ isOpen, onClose, onSubmit }: CreditInfo
 
   useEffect(() => {
     if (isOpen) {
-      loanService
-        .browseProducts({ limit: 100 })
+      getCatalog({ limit: 100 })
         .then((res) => {
           setProducts(res?.data?.products || []);
         })

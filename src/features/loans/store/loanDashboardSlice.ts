@@ -1,8 +1,10 @@
 import { GetLoansParams, LoanApplicationSummary, loanService, LoanSummaryMetrics } from '@/features/loans/api/loan.service';
+import { archetypeOf, bucketStagesByArchetype, toPseudoStages } from '@/features/loans/utils/archetype';
 import { loanStagesService } from '@/features/loans/api/loanStages.service';
 import { formatLocation } from '@/features/loans/utils/formatLocation';
 import { getStageStyle, toStageFilterOptions } from '@/features/loans/utils/stageStyles';
-import type { LoanStage } from '@/lib/api/api.schemas';
+import { selectUserEmail } from '@/features/auth/store/authSlice';
+import type { LoanStage, LoanStatusMeta } from '@/lib/api/api.schemas';
 import { withCurrentSort } from '@/lib/filterSort';
 import type { ApiResponse } from '@/types/api';
 import { createAsyncThunk, createSelector, createSlice, PayloadAction } from '@reduxjs/toolkit';
@@ -24,11 +26,20 @@ export const fetchLoans = createAsyncThunk(
   }
 );
 
+/**
+ * Loads the statuses the signed-in user can see.
+ *
+ * Reads `get_loan_metadata`, not the seller `get_stages` endpoint this used to
+ * call: `get_stages` is a bank API guarded by a bank binding, so the Development
+ * Agent driving this dashboard got a 403 and the filters were left with nothing
+ * to offer. `get_loan_metadata` resolves per role — the union across banks for a
+ * Dev Agent, the caller's own stages for a bank user.
+ */
 export const fetchLoanStages = createAsyncThunk(
   'loanDashboard/fetchLoanStages',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await loanStagesService.getStages();
+      const response = await loanService.getLoanMetadata();
       return response;
     } catch (error: unknown) {
       if (error instanceof Error && error.name === 'AbortError') {
@@ -53,11 +64,38 @@ export const fetchLoanSummary = createAsyncThunk(
   }
 );
 
+/**
+ * The signed-in bank's own pipeline, from the seller `get_stages` endpoint.
+ *
+ * Deliberately separate from `fetchLoanStages` above, which reads
+ * `get_loan_metadata` because that one has to serve the Development Agent too
+ * and `get_stages` 403s for anyone without a bank binding. This is only ever
+ * dispatched from the bank admin dashboard, and it is worth the second call:
+ * only `get_stages` carries `sequence` and `archetype_state`, which is what
+ * lets the status picker order a bank's stages and colour them by outcome
+ * instead of guessing from label text.
+ */
+export const fetchBankPipelineStages = createAsyncThunk(
+  'loanDashboard/fetchBankPipelineStages',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await loanStagesService.getStages();
+      return response.data.stages;
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw error;
+      }
+      const message = error instanceof Error ? error.message : 'Failed to fetch bank stages';
+      return rejectWithValue(message);
+    }
+  }
+);
+
 export const updateLoanStatus = createAsyncThunk(
   'loanDashboard/updateLoanStatus',
-  async ({ id, status, reason, notes }: { id: string; status: string; reason?: string; notes?: string }, { rejectWithValue, dispatch, getState }) => {
+  async ({ id, status, reason }: { id: string; status: string; reason?: string }, { rejectWithValue, dispatch, getState }) => {
     try {
-      const response = await loanService.updateLoanStatus(id, status, reason, notes);
+      const response = await loanService.updateLoanStatus(id, status, reason);
       // Re-fetch with the user's current filters/pagination (not the defaults) so the view doesn't silently reset.
       dispatch(fetchLoans(selectQueryParams(getState() as RootState)));
       return response;
@@ -140,9 +178,18 @@ interface LoanDashboardState {
   isSummaryLoading: boolean;
   summaryError: string | null;
 
+  /** Raw caller-scoped status metadata from `get_loan_metadata`. */
+  statuses: LoanStatusMeta[];
+  /** The same list in `LoanStage` shape, for the badge/filter helpers. */
   stages: LoanStage[];
   isStagesLoading: boolean;
   stagesError: string | null;
+
+  /** The signed-in bank's own pipeline from `get_stages`. Bank users only —
+   *  stays empty for a Development Agent, who has no bank binding. */
+  pipelineStages: LoanStage[];
+  isPipelineStagesLoading: boolean;
+  pipelineStagesError: string | null;
 
   // UI State
   activityPage: number;
@@ -185,7 +232,11 @@ const initialState: LoanDashboardState = {
   isSummaryLoading: false,
   summaryError: null,
 
+  statuses: [],
   stages: [],
+  pipelineStages: [],
+  isPipelineStagesLoading: false,
+  pipelineStagesError: null,
   isStagesLoading: false,
   stagesError: null,
 
@@ -320,6 +371,38 @@ const loanDashboardSlice = createSlice({
         state.isLoading = false;
         state.loansError = action.payload as string;
       })
+      // fetchLoanStages — without these three cases the thunk resolved into
+      // nowhere: `stages` stayed empty forever, so the status dropdown fell back
+      // to a hardcoded list and the KPI cards rendered dashes.
+      .addCase(fetchLoanStages.pending, (state) => {
+        state.isStagesLoading = true;
+        state.stagesError = null;
+      })
+      .addCase(fetchLoanStages.fulfilled, (state, action) => {
+        state.isStagesLoading = false;
+        const statuses: LoanStatusMeta[] = action.payload?.data?.statuses ?? [];
+        state.statuses = statuses;
+        state.stages = toPseudoStages(statuses);
+      })
+      .addCase(fetchLoanStages.rejected, (state, action) => {
+        if (action.meta.aborted) return;
+        state.isStagesLoading = false;
+        state.stagesError = action.payload as string;
+      })
+      // fetchBankPipelineStages
+      .addCase(fetchBankPipelineStages.pending, (state) => {
+        state.isPipelineStagesLoading = true;
+        state.pipelineStagesError = null;
+      })
+      .addCase(fetchBankPipelineStages.fulfilled, (state, action) => {
+        state.isPipelineStagesLoading = false;
+        state.pipelineStages = action.payload;
+      })
+      .addCase(fetchBankPipelineStages.rejected, (state, action) => {
+        if (action.meta.aborted) return;
+        state.isPipelineStagesLoading = false;
+        state.pipelineStagesError = action.payload as string;
+      })
       // fetchLoanSummary
       .addCase(fetchLoanSummary.pending, (state) => {
         state.isSummaryLoading = true;
@@ -358,6 +441,7 @@ export const selectIsLoansLoading = (state: RootState) => state.loanDashboard.is
 export const selectLoansError = (state: RootState) => state.loanDashboard.loansError;
 export const selectRawSummaryData = (state: RootState) => state.loanDashboard.rawSummaryData;
 export const selectLoanStages = (state: RootState) => state.loanDashboard.stages;
+export const selectLoanStatusMeta = (state: RootState) => state.loanDashboard.statuses;
 export const selectIsLoanStagesLoading = (state: RootState) => state.loanDashboard.isStagesLoading;
 export const selectLoanStagesError = (state: RootState) => state.loanDashboard.stagesError;
 export const selectActivityPage = (state: RootState) => state.loanDashboard.activityPage;
@@ -387,6 +471,21 @@ export const selectLoanTypeOptions = createSelector(
 );
 
 export const selectLoanStageOptions = createSelector([selectLoanStages], (stages) => toStageFilterOptions(stages));
+
+export const selectBankPipelineStages = (state: RootState) => state.loanDashboard.pipelineStages;
+export const selectBankPipelineStagesError = (state: RootState) => state.loanDashboard.pipelineStagesError;
+
+/**
+ * The bank's stages in pipeline order, for the status picker.
+ *
+ * Sorted by `sequence` rather than left in response order: the picker presents a
+ * progression, and a stage list that arrives unordered would read as an
+ * arbitrary jumble of the bank's own workflow.
+ */
+export const selectOrderedBankPipelineStages = createSelector(
+  [selectBankPipelineStages],
+  (stages) => [...stages].sort((a, b) => a.sequence - b.sequence)
+);
 
 // --- Derived Memoized Selectors ---
 export const selectPagedRowsData = createSelector(
@@ -453,43 +552,64 @@ export const selectTotalCount = createSelector([selectPagedRowsData], (data) => 
 
 /**
  * KPI figures for the loan dashboard.
+ *
+ * `get_loan_summary` reports counts per *bank-defined stage label*, which the
+ * client cannot interpret on its own — one bank's "Underwriting" is another's
+ * "Credit Review". The caller-scoped status metadata is what classifies each
+ * label into an archetype bucket. (The previous fallback read
+ * `summary.by_status`, a key the endpoint has never sent, so these cards showed
+ * a permanent dash whenever the stage list was empty — which, for the
+ * Development Agent, was always.)
  */
 export const selectLiveMetrics = createSelector(
-  [selectRawSummaryData, selectLoanStages],
-  (rawSummaryData, stages) => {
-    // fetchApi automatically unwraps the "message" envelope
+  [selectRawSummaryData, selectLoanStatusMeta],
+  (rawSummaryData, statusMeta) => {
     const summaryData = rawSummaryData?.data;
-    const byStatus = summaryData?.by_status;
+    const counts = bucketStagesByArchetype(summaryData?.stages, statusMeta);
+    // Total comes from the endpoint's own figure, not the sum of the buckets: a
+    // loan sitting on a stage that was renamed between the two requests still
+    // has to be counted somewhere.
+    const total = summaryData?.total ?? counts.total;
     const show = (value: number | undefined) => (typeof value === 'number' ? value.toString() : '—');
 
-    if (stages.length > 0) {
-      let inTransition = 0;
-      let completed = 0;
-      let cancelled = 0;
-      let total = 0;
-      for (const stage of stages) {
-        const count = stage.application_count ?? 0;
-        total += count;
-        if (stage.archetype_state === 'In Transition') inTransition += count;
-        else if (stage.archetype_state === 'Completed') completed += count;
-        else if (stage.archetype_state === 'Rejected' || stage.archetype_state === 'Cancelled') cancelled += count;
-      }
-      if (total > 0) {
-        return {
-          total: { value: total.toString() },
-          in_transition: { value: inTransition.toString() },
-          completed: { value: completed.toString() },
-          cancelled: { value: cancelled.toString() },
-        };
-      }
-    }
-
     return {
-      total: { value: show(summaryData?.total) },
-      in_transition: { value: show(byStatus?.['In Transition']) },
-      completed: { value: show(byStatus?.['Completed']) },
-      cancelled: { value: show(byStatus?.['Cancelled']) },
+      total: { value: show(total) },
+      in_transition: { value: (counts.active + counts.inTransition).toString() },
+      completed: { value: counts.completed.toString() },
+      cancelled: { value: counts.cancelled.toString() },
     };
+  }
+);
+
+/**
+ * One KPI card per stage, for the cross-bank dashboard.
+ *
+ * The two halves come from different endpoints because neither has both:
+ * `get_loan_metadata` describes the pipeline (label, ordering, archetype) but
+ * carries no counts, while `get_loan_summary().stages` carries counts keyed by
+ * label but says nothing about what a label means or where it sits. Joined on
+ * the label, ordered by `sequence` so the row reads in the order an application
+ * actually travels.
+ *
+ * Spanning every bank, the union can hold two stages sharing a label — counts
+ * for those merge, which is the reading a cross-bank total wants anyway.
+ */
+export const selectLoanStageCards = createSelector(
+  [selectLoanStatusMeta, selectRawSummaryData],
+  (statusMeta, rawSummaryData) => {
+    const counts = rawSummaryData?.data?.stages ?? {};
+    const byLabel = new Map(
+      Object.entries(counts).map(([label, count]) => [label.toLowerCase(), count])
+    );
+
+    return [...statusMeta]
+      .sort((a, b) => (a.sequence ?? Number.MAX_SAFE_INTEGER) - (b.sequence ?? Number.MAX_SAFE_INTEGER))
+      .map((meta) => ({
+        key: meta.stage_id || meta.status,
+        label: meta.status,
+        archetype: archetypeOf(meta),
+        value: byLabel.get(meta.status.toLowerCase()) ?? 0,
+      }));
   }
 );
 
@@ -503,8 +623,8 @@ export const selectTabCounts = createSelector(
 
 
 export const selectQueryParams = createSelector(
-  [selectActivityPage, selectPageSize, selectSearchQuery, selectActiveTab, selectTableStatusFilters, selectTableTypeFilters, selectAdvancedFilters],
-  (activityPage, pageSize, searchQuery, activeTab, tableStatusFilters, tableTypeFilters, advancedFilters) => {
+  [selectActivityPage, selectPageSize, selectSearchQuery, selectActiveTab, selectTableStatusFilters, selectTableTypeFilters, selectAdvancedFilters, selectLoanStatusMeta, selectUserEmail],
+  (activityPage, pageSize, searchQuery, activeTab, tableStatusFilters, tableTypeFilters, advancedFilters, statusMeta, userEmail) => {
     const params: GetLoansParams = {
       page: activityPage,
       page_size: pageSize,
@@ -512,9 +632,15 @@ export const selectQueryParams = createSelector(
 
     if (searchQuery) params.search_query = searchQuery;
     // Scope the queue server-side via loan_officer (get_all_loans): "My" → my
-    // email, "Unassigned" → the literal 'unassigned', "All" → omit.
-    if (activeTab === 'my') params.loan_officer = 'my';
-    else if (activeTab === 'unassigned') params.loan_officer = 'unassigned';
+    // email, "Unassigned" → the literal 'unassigned', "All" → omit. `unassigned`
+    // is the only literal the filter understands; the 'my' this used to send was
+    // matched against the User table as if it were an address and returned an
+    // empty queue for everyone.
+    if (activeTab === 'my') {
+      if (userEmail) params.loan_officer = userEmail;
+    } else if (activeTab === 'unassigned') {
+      params.loan_officer = 'unassigned';
+    }
 
     // The only date window is the one someone picked in the drawer. A default
     // "last 30 days" used to be applied here from a toolbar control that was never
@@ -528,16 +654,30 @@ export const selectQueryParams = createSelector(
       if (datePart) params.to_date = datePart;
     }
 
-    // Both status surfaces (the column dropdown and the drawer) send archetype
-    // states straight through. They used to be mapped from badge *tones* into
-    // display labels — 'Approved', 'Pending Review', 'Action Required' — none of
-    // which are workflow states, so `GetAllLoansSchema` answered 400 and the list
-    // showed an error instead of filtered rows. Sending nothing means "no status
-    // filter", which is also what deselecting everything now means; the old
-    // __NONE__ sentinel it sent instead was likewise rejected as an unknown state.
-    const statuses = new Set([...tableStatusFilters, ...advancedFilters.status]);
-    if (statuses.size > 0) {
-      params.status = Array.from(statuses).join(',');
+    // Status filtering speaks the caller's *own* pipeline vocabulary.
+    //
+    // `get_all_loans` validates every value against the stages visible to the
+    // caller and answers 400 for anything it does not recognise — so a value
+    // that is not in the metadata is dropped here rather than sent and failed.
+    // (The retired fixed vocabulary this used to emit — 'Pending Review',
+    // 'Processing', 'Action Required', 'Draft' — 400s every request that carried
+    // it, taking the whole table down with it, and so did the `__NONE__`
+    // sentinel that stood for "no statuses selected".)
+    const requested = [...new Set([...tableStatusFilters, ...advancedFilters.status])];
+    const statusesToPass = statusMeta.length > 0
+      ? requested.filter((value) =>
+          statusMeta.some((meta) =>
+            meta.status.toLowerCase() === value.toLowerCase() ||
+            meta.stage_id?.toLowerCase() === value.toLowerCase()
+          )
+        )
+      : requested;
+
+    if (statusesToPass.length > 0) {
+      // JSON array rather than a comma-joined string: a bank is free to name a
+      // stage "Approved, Pending Disbursal", and splitting on the comma would
+      // turn one valid stage into two invalid ones.
+      params.status = JSON.stringify(statusesToPass);
     }
 
     const types = new Set([...tableTypeFilters, ...advancedFilters.type]);

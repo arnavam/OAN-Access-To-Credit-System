@@ -6,10 +6,6 @@
  * for products whose bank had published neither — an absence dressed up as the
  * most attractive offer on the page. Nulls are accepted alongside undefined
  * because the API sends JSON null for an unset field.
- *
- * These live in `lib` rather than in the farmer feature because the shared
- * `ProductCard` renders the same three terms for the bank's own catalogue, and a
- * shared component cannot reach into a feature for them.
  */
 
 /** Shown wherever a value is missing. */
@@ -32,8 +28,9 @@ export function formatTenure(months: number | null | undefined): string {
  * single figure when it published one.
  *
  * The bank's own catalogue lists `1% - 2.5% p.a.` where the farmer's card shows
- * only the floor. Keeping both shapes here means the card does not have to know
- * which caller it is rendering for.
+ * only the floor, which is the figure the catalog sorts and filters on. Keeping
+ * both shapes here means the card does not have to know which caller it is
+ * rendering for.
  */
 export function formatRateRange(
   min: number | null | undefined,

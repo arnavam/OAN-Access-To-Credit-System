@@ -12,7 +12,7 @@ import { startApplication, submitApplication } from '../../api/farmerApi';
 import type { DetailedLoanProduct } from '../../types';
 
 interface CreditInformationProps {
-  product?: DetailedLoanProduct | null;
+  product: DetailedLoanProduct;
 }
 
 export default function CreditInformation({ product }: CreditInformationProps) {
@@ -22,7 +22,7 @@ export default function CreditInformation({ product }: CreditInformationProps) {
 
   const isConsentCompleted = isConsentApproved(farmerDetails, consentDate);
 
-  const defaultAmount = product?.min_amount ? String(product.min_amount) : '100000';
+  const defaultAmount = product.min_amount ? String(product.min_amount) : '100000';
 
   const [requestedAmount, setRequestedAmount] = useState(defaultAmount);
   const [loanPurpose, setLoanPurpose] = useState('');
@@ -38,7 +38,7 @@ export default function CreditInformation({ product }: CreditInformationProps) {
   };
 
   const handleSaveDraft = async () => {
-    if (!product?.name) {
+    if (!product.name) {
       toast.error('Missing loan product reference.');
       return;
     }
@@ -71,7 +71,7 @@ export default function CreditInformation({ product }: CreditInformationProps) {
   };
 
   const handleSubmitApplication = async () => {
-    if (!product?.name) {
+    if (!product.name) {
       toast.error('Missing loan product reference.');
       return;
     }
@@ -144,7 +144,7 @@ export default function CreditInformation({ product }: CreditInformationProps) {
             placeholder="e.g. 150000"
             className="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#16A34A] focus:border-[#16A34A] placeholder:text-gray-400 transition-all"
           />
-          {product?.min_amount !== undefined && product?.max_amount !== undefined && (
+          {product.min_amount !== undefined && product.max_amount !== undefined && (
             <p className="text-[11px] text-gray-400 mt-1">
               Min: ETB {product.min_amount.toLocaleString()} - Max: ETB {product.max_amount.toLocaleString()}
             </p>

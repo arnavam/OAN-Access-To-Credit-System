@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import type { CatalogFacets, CatalogFilters } from '../../types';
-import SidebarFilters from './SidebarFilters';
+import type { CatalogFacets, CatalogFilters } from '@/types/loan-catalog';
+import CatalogSidebarFilters from './CatalogSidebarFilters';
 
 const FACETS: CatalogFacets = {
   categories: [{ name: 'Input Loan', count: 3 }],
@@ -11,12 +11,12 @@ const FACETS: CatalogFacets = {
 };
 
 function renderSidebar(
-  overrides: Partial<React.ComponentProps<typeof SidebarFilters>> = {}
+  overrides: Partial<React.ComponentProps<typeof CatalogSidebarFilters>> = {}
 ) {
   const onApply = vi.fn();
   const onReset = vi.fn();
   render(
-    <SidebarFilters
+    <CatalogSidebarFilters
       facets={FACETS}
       filters={{}}
       onApply={onApply}
@@ -29,7 +29,7 @@ function renderSidebar(
 
 const bookmarkBox = () => screen.getByLabelText(/bookmarked only/i);
 
-describe('SidebarFilters — bookmarked-only filter', () => {
+describe('CatalogSidebarFilters — bookmarked-only filter', () => {
   it('applies is_saved when the box is ticked', () => {
     const { onApply } = renderSidebar();
 

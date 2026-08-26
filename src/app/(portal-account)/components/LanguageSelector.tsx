@@ -4,7 +4,7 @@ import { Check } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 const languages = [
-  { code: 'en', label: 'English', country: 'United States', flag: '🇺🇸' },
+  { code: 'en', label: 'English1', country: 'United States', flag: '🇺🇸' },
   { code: 'am', label: 'Amharic', country: 'Ethiopia', flag: '🇪🇹' },
   { code: 'om', label: 'Afaan Oromo', country: 'Ethiopia', flag: '🇪🇹' },
   { code: 'ar', label: 'Arabic', country: 'Saudi Arabia', flag: '🇸🇦' },
@@ -30,7 +30,7 @@ export function LanguageSelector() {
     <div className="relative" ref={languageMenuRef}>
       <button
         onClick={() => setIsLanguageMenuOpen(!isLanguageMenuOpen)}
-        className={`flex items-center gap-2 text-sm font-bold transition-all duration-300 group border rounded-full px-3.5 py-1.5 hover:shadow-sm cursor-pointer ${isLanguageMenuOpen ? 'border-[#16A34A] bg-[#16A34A]/5 text-[#16A34A] shadow-sm' : 'border-gray-300 bg-white text-gray-700 hover:border-blue-400 hover:bg-gray-50'}`}
+        className={`flex items-center gap-2 text-sm font-bold transition-all duration-300 group border rounded-full px-3.5 py-1.5 hover:shadow-sm cursor-pointer ${isLanguageMenuOpen ? 'border-[#16A34A] bg-[#16A34A]/5 text-[#16A34A] shadow-sm' : 'border-gray-300 bg-white text-gray-700 hover:border-[#16A34A] hover:bg-gray-50'}`}
       >
         <span className={`text-base transition-transform duration-300 ${isLanguageMenuOpen ? 'scale-110' : 'group-hover:scale-110 group-hover:-rotate-12'}`}>
           {activeLanguage.flag}

@@ -1,17 +1,24 @@
 "use client";
 import { PanelLoader } from '@/components/ui/Loader';
+import type { LoanStatusMeta } from '@/lib/api/api.schemas';
 import { logger } from '@/lib/logger';
-import { useCallback, useEffect, useState } from 'react';
-import { getMyApplications } from '../api/farmerApi';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { getAllMyApplications, getLoanStatusMetadata } from '../api/farmerApi';
 import type { FarmerLoanApplication } from '../types';
 import ApplicationList from './components/ApplicationList';
 import ApplicationSummary from './components/ApplicationSummary';
+import { ALL_TAB, buildStageTabs } from './counts';
 
-export type TabType = 'total' | 'Draft' | 'Under Review' | 'Disbursed' | 'Rejected';
+/**
+ * `ALL_TAB`, or a stage label belonging to one of the banks this farmer has
+ * applied to. Not an enum — the labels come from the API.
+ */
+export type TabType = string;
 
 export default function MyApplicationsPage() {
-    const [activeTab, setActiveTab] = useState<TabType>('total');
+    const [activeTab, setActiveTab] = useState<TabType>(ALL_TAB);
     const [applications, setApplications] = useState<FarmerLoanApplication[]>([]);
+    const [statuses, setStatuses] = useState<LoanStatusMeta[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     // A swallowed failure rendered as "no applications", which for someone who
     // has applied is not a neutral message — it is the app telling them their
@@ -27,9 +34,27 @@ export default function MyApplicationsPage() {
             setIsLoading(true);
             setLoadFailed(false);
             try {
-                const res = await getMyApplications();
-                if (isMounted && res.data) {
-                    setApplications(res.data);
+                // The applications are the page; the stage metadata only names
+                // and orders the tabs. So a failure to load the metadata is not
+                // a failure of the page — the tabs fall back to the stages the
+                // applications themselves report.
+                const [applicationsResult, statusesResult] = await Promise.allSettled([
+                    getAllMyApplications(),
+                    getLoanStatusMetadata(),
+                ]);
+
+                if (!isMounted) return;
+
+                if (applicationsResult.status === 'rejected') {
+                    throw applicationsResult.reason;
+                }
+                setApplications(applicationsResult.value);
+
+                if (statusesResult.status === 'fulfilled') {
+                    setStatuses(statusesResult.value.data?.statuses ?? []);
+                } else {
+                    logger.warn('Failed to load loan status metadata', statusesResult.reason);
+                    setStatuses([]);
                 }
             } catch (e) {
                 logger.error('Failed to load farmer applications', e);
@@ -41,6 +66,15 @@ export default function MyApplicationsPage() {
         fetchApps();
         return () => { isMounted = false; };
     }, [attempt]);
+
+    const tabs = useMemo(() => buildStageTabs(applications, statuses), [applications, statuses]);
+
+    // A stage the farmer no longer has anything in can disappear between
+    // refreshes; falling back to "all" keeps the list from rendering empty with
+    // a tab selected that no longer exists.
+    const selectedTab = activeTab === ALL_TAB || tabs.some((tab) => tab.value === activeTab)
+        ? activeTab
+        : ALL_TAB;
 
     return (
         <div className="w-full mx-auto pb-8">
@@ -65,15 +99,17 @@ export default function MyApplicationsPage() {
                 </div>
             ) : (
                 <>
-                    <ApplicationSummary 
-                        activeTab={activeTab} 
-                        onTabChange={(tab: string) => setActiveTab(tab as TabType)} 
-                        applications={applications}
+                    <ApplicationSummary
+                        activeTab={selectedTab}
+                        onTabChange={setActiveTab}
+                        total={applications.length}
+                        tabs={tabs}
                     />
-                    <ApplicationList 
-                        activeTab={activeTab} 
-                        onTabChange={(tab: string) => setActiveTab(tab as TabType)} 
+                    <ApplicationList
+                        activeTab={selectedTab}
+                        onTabChange={setActiveTab}
                         applications={applications}
+                        tabs={tabs}
                         onRefresh={retry}
                     />
                 </>
