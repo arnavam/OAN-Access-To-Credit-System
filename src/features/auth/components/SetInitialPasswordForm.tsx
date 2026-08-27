@@ -1,5 +1,6 @@
 'use client';
 
+import { ErrorAlert } from '@/components/ui/ErrorAlert';
 import { setInitialPassword } from '@/features/auth/api/authApi';
 import { strongPasswordSchema } from '@/lib/api/api.schemas';
 import { logger } from '@/lib/logger';
@@ -110,14 +111,7 @@ export function SetInitialPasswordForm({
         </p>
       </div>
 
-      {errorMessage && (
-        <div
-          role="alert"
-          className="w-full mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium"
-        >
-          {errorMessage}
-        </div>
-      )}
+      {errorMessage && <ErrorAlert className="mb-6">{errorMessage}</ErrorAlert>}
 
       <form onSubmit={handleSubmit} className="w-full space-y-6">
         <div className="space-y-4">

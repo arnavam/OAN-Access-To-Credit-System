@@ -128,7 +128,7 @@ export default function RegisterPage() {
     <div className="flex-1 w-full flex flex-col bg-[#F8F9FA]">
       <div className="max-w-5xl mx-auto w-full pb-12 pt-8 px-4 sm:px-6">
         {/* Not a <Link> to /login/bank-admin. Everyone who reaches this page is a
-            signed-in bank_admin — the only ways in are BankAdminLoginForm and the
+            signed-in bank_admin — the only ways in are the /login/bank-admin portal and the
             dashboard's onboarding gate — and proxy.ts bounces an authenticated
             visitor off every /login route to their home route, which the gate then
             bounces straight back here. The link therefore looked inert. Leaving
