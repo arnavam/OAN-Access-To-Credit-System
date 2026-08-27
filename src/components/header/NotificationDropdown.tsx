@@ -3,9 +3,10 @@
 import {
   clearNotifications,
   fetchNotifications,
+  getNotificationId,
+  isItemUnread,
   markNotificationsRead
 } from '@/features/notifications/store/notificationSlice';
-import type { NotificationItem } from '@/features/notifications/api/notification.service';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { CheckCircle2, FileText, Loader2, Trash2, X, XCircle } from 'lucide-react';
 import React, { useEffect, useRef } from 'react';
@@ -13,25 +14,6 @@ import React, { useEffect, useRef } from 'react';
 interface NotificationDropdownProps {
   isOpen: boolean;
   onClose: () => void;
-}
-
-function getNotificationId(item: NotificationItem, index: number): string {
-  return (
-    item.name ||
-    (item as { id?: string }).id ||
-    (item as { notification_id?: string }).notification_id ||
-    `notif-${index}`
-  );
-}
-
-function checkIsUnread(readStatus: unknown): boolean {
-  return (
-    readStatus === 0 ||
-    readStatus === false ||
-    readStatus === '0' ||
-    readStatus === null ||
-    readStatus === undefined
-  );
 }
 
 export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOpen, onClose }) => {
@@ -148,7 +130,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOp
           <div className="py-8 text-center text-xs text-gray-400">No notifications found</div>
         ) : (
           items.map((item, index) => {
-            const isUnread = checkIsUnread(item.read);
+            const isUnread = isItemUnread(item);
             const notifId = getNotificationId(item, index);
             return (
               <div

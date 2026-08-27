@@ -54,4 +54,8 @@ export const PINNED_OR_META_KEYS = new Set([
   'applicant',
   'phone',
   'phone_number',
+
+  // Metadata / Timestamps
+  'stage_id',
+  'creation',
 ]);

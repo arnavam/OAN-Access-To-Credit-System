@@ -4,9 +4,11 @@ import { SelectField } from '@/components/ui/SelectField';
 import { getCatalog } from '@/features/(farmer-application)/api/farmerApi';
 // eslint-disable-next-line boundaries/dependencies -- Lead creation modal consumes marketplace catalog to populate loan product dropdown
 import type { FarmerLoanProduct } from '@/features/(farmer-application)/types';
+import { resolveCategory } from '@/types/loan-catalog';
 import { Building2, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { NumericInput } from '@/components/ui/NumericInput';
+import { formatAmount, formatRateRange, formatTenure } from '@/lib/format/loanTerms';
 import { creditInfoSchema, type CreditInfoFormData } from '../../schemas/credit.schema';
 
 interface CreditInformationModalProps {
@@ -106,6 +108,7 @@ export function CreditInformationModal({ isOpen, onClose, onSubmit }: CreditInfo
   };
 
   const selectedProduct = products.find((p) => p.product_name === loanType);
+  const selectedCategory = selectedProduct ? resolveCategory(selectedProduct) : undefined;
 
   const productOptions = [...new Set(products.map((p) => p.product_name))];
 
@@ -214,9 +217,9 @@ export function CreditInformationModal({ isOpen, onClose, onSubmit }: CreditInfo
                       <Building2 size={15} className="text-[#16A34A] shrink-0" />
                       <span>{selectedProduct.bank_name || selectedProduct.bank || 'Lending Institution'}</span>
                     </div>
-                    {selectedProduct.category && (
+                    {selectedCategory && (
                       <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-[#DCFCE7] text-[#15803D] capitalize">
-                        {selectedProduct.category.replace(/-/g, ' ')}
+                        {selectedCategory.replace(/-/g, ' ')}
                       </span>
                     )}
                   </div>
@@ -225,25 +228,27 @@ export function CreditInformationModal({ isOpen, onClose, onSubmit }: CreditInfo
                     <div>
                       <span className="text-[#4B5563] text-[11px] block font-medium">Allowable Amount</span>
                       <span className="font-semibold text-[#111827]">
-                        {selectedProduct.min_amount != null || selectedProduct.max_amount != null
-                          ? `ETB ${selectedProduct.min_amount?.toLocaleString() ?? 0} – ${selectedProduct.max_amount ? `ETB ${selectedProduct.max_amount.toLocaleString()}` : 'No limit'}`
-                          : 'Not specified'}
+                        {selectedProduct.min_amount != null && selectedProduct.max_amount != null
+                          ? `${formatAmount(selectedProduct.min_amount)} – ${formatAmount(selectedProduct.max_amount)}`
+                          : selectedProduct.max_amount != null
+                            ? `Up to ${formatAmount(selectedProduct.max_amount)}`
+                            : selectedProduct.min_amount != null
+                              ? `From ${formatAmount(selectedProduct.min_amount)}`
+                              : '—'}
                       </span>
                     </div>
 
                     <div>
                       <span className="text-[#4B5563] text-[11px] block font-medium">Interest Rate</span>
                       <span className="font-semibold text-[#111827]">
-                        {selectedProduct.min_interest_rate != null
-                          ? `${selectedProduct.min_interest_rate}%${selectedProduct.max_interest_rate && selectedProduct.max_interest_rate !== selectedProduct.min_interest_rate ? ` – ${selectedProduct.max_interest_rate}%` : ''}`
-                          : '—'}
+                        {formatRateRange(selectedProduct.min_interest_rate, selectedProduct.max_interest_rate)}
                       </span>
                     </div>
 
                     <div>
-                      <span className="text-[#4B5563] text-[11px] block font-medium">Tenor</span>
+                      <span className="text-[#4B5563] text-[11px] block font-medium">Tenure</span>
                       <span className="font-semibold text-[#111827]">
-                        {selectedProduct.tenure_months ? `${selectedProduct.tenure_months} Months` : '—'}
+                        {formatTenure(selectedProduct.tenure_months)}
                       </span>
                     </div>
                   </div>

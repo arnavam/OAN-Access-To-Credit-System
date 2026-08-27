@@ -22,16 +22,17 @@ const initialState: NotificationState = {
   error: null,
 };
 
-function getItemId(item: NotificationItem): string | undefined {
+export function getNotificationId(item: NotificationItem, fallbackIndex?: number): string {
   return (
     item.name ||
     (item as { id?: string }).id ||
-    (item as { notification_id?: string }).notification_id
+    (item as { notification_id?: string }).notification_id ||
+    (fallbackIndex != null ? `notif-${fallbackIndex}` : '')
   );
 }
 
-function isItemUnread(item: NotificationItem): boolean {
-  const readVal = item.read as unknown;
+export function isItemUnread(item: NotificationItem | { read?: unknown }): boolean {
+  const readVal = item?.read as unknown;
   return (
     readVal === 0 ||
     readVal === false ||
@@ -120,9 +121,9 @@ export const notificationSlice = createSlice({
         state.loading = false;
         state.error = action.payload ?? 'Error fetching notifications';
       })
-      // Mark Read (Optimistic on pending)
-      .addCase(markNotificationsRead.pending, (state, action) => {
-        const arg = action.meta.arg;
+      // Mark Read (mutate on fulfilled)
+      .addCase(markNotificationsRead.fulfilled, (state, action: PayloadAction<MarkReadParams>) => {
+        const arg = action.payload;
         if (arg.mark_all) {
           state.items.forEach((item) => {
             item.read = 1;
@@ -131,7 +132,7 @@ export const notificationSlice = createSlice({
         } else if (arg.notification_ids?.length) {
           const ids = new Set(arg.notification_ids);
           state.items.forEach((item) => {
-            const id = getItemId(item);
+            const id = getNotificationId(item);
             if (id && ids.has(id)) {
               item.read = 1;
             }
@@ -139,20 +140,26 @@ export const notificationSlice = createSlice({
           state.unreadCount = state.items.filter(isItemUnread).length;
         }
       })
-      // Clear Notifications (Optimistic on pending)
-      .addCase(clearNotifications.pending, (state, action) => {
-        const arg = action.meta.arg;
+      .addCase(markNotificationsRead.rejected, (state, action) => {
+        state.error = action.payload ?? 'Failed to mark notifications as read';
+      })
+      // Clear Notifications (mutate on fulfilled)
+      .addCase(clearNotifications.fulfilled, (state, action: PayloadAction<ClearNotificationsParams>) => {
+        const arg = action.payload;
         if (arg.clear_all) {
           state.items = [];
           state.unreadCount = 0;
         } else if (arg.notification_ids?.length) {
           const ids = new Set(arg.notification_ids);
           state.items = state.items.filter((item) => {
-            const id = getItemId(item);
+            const id = getNotificationId(item);
             return !id || !ids.has(id);
           });
           state.unreadCount = state.items.filter(isItemUnread).length;
         }
+      })
+      .addCase(clearNotifications.rejected, (state, action) => {
+        state.error = action.payload ?? 'Failed to clear notifications';
       });
   },
 });
