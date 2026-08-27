@@ -17,6 +17,10 @@ import type {
 export async function getCatalog(params: CatalogQuery = {}): Promise<CatalogListResponse> {
   const query = new URLSearchParams();
   if (params.search) query.append('search', params.search);
+  // Bank-side only. Left out entirely when nothing is selected, which is what
+  // gets the endpoint's default for a bank user (every status but Archived);
+  // a farmer caller is pinned to Active server-side either way.
+  if (params.status) query.append('status', params.status);
   if (params.min_amount !== undefined) query.append('min_amount', params.min_amount.toString());
   if (params.max_amount !== undefined) query.append('max_amount', params.max_amount.toString());
   if (params.max_interest_rate !== undefined) query.append('max_interest_rate', params.max_interest_rate.toString());
@@ -28,7 +32,11 @@ export async function getCatalog(params: CatalogQuery = {}): Promise<CatalogList
     query.append('min_tenure_months', params.tenure_months.toString());
     query.append('max_tenure_months', params.tenure_months.toString());
   }
-  if (params.category) query.append('category', params.category);
+  // Comma-joined rather than repeated: `list_catalog` reads this through
+  // parse_multi_value, and Frappe's form parsing keeps only the last value of a
+  // repeated query param — so `?category=a&category=b` would silently filter by
+  // b alone. Nothing is sent when no loan type is ticked.
+  if (params.categories?.length) query.append('category', params.categories.join(','));
   // Sent only when set. FarmerCatalogSchema types this as `bool | None`, and
   // pydantic's lax mode reads the string '1' as True; omitting the param leaves
   // it None, which is the "no bookmark filter" branch on the backend.

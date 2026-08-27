@@ -9,6 +9,7 @@ import type {
   CatalogFilters,
   CatalogProduct,
   CatalogSortKey,
+  CatalogStatusOption,
 } from '@/types/loan-catalog';
 import { Search } from 'lucide-react';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
@@ -56,6 +57,12 @@ interface CatalogBrowserProps {
    * current page and the facet options.
    */
   refreshToken?: number;
+  /**
+   * Approval statuses this view may filter by, handed straight to the sidebar.
+   * Bank-side only — the farmer catalog is pinned to Active server-side, so
+   * offering the control there would be offering a filter with one legal value.
+   */
+  statusOptions?: ReadonlyArray<CatalogStatusOption>;
   emptyTitle?: string;
   emptySubtitle?: string;
 }
@@ -66,6 +73,7 @@ export default function CatalogBrowser({
   onBookmarkToggle,
   header,
   refreshToken,
+  statusOptions,
   emptyTitle = 'No loans found',
   emptySubtitle = 'No loan products are available yet. Please check back soon.',
 }: CatalogBrowserProps) {
@@ -235,6 +243,7 @@ export default function CatalogBrowser({
             onApply={setFilters}
             onReset={() => setFilters({})}
             showBookmarkFilter={Boolean(onBookmarkToggle)}
+            {...(statusOptions ? { statusOptions } : {})}
           />
         </div>
 

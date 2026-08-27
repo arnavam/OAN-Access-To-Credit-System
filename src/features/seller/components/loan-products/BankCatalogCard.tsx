@@ -76,6 +76,10 @@ export function BankCatalogCard({ product }: BankCatalogCardProps) {
   // live or in-review product would otherwise have its terms changed underneath
   // farmers already applying, or underneath the admin's own approval queue.
   const canEdit = canEditLoanProduct(product.status);
+  // Archiving an archived product is a no-op the backend answers with "Product is
+  // already Archived". Now that these are listed, the button would be offering
+  // an action with nothing behind it.
+  const isArchived = product.status === 'Archived';
 
   const status = getLoanProductStatusPresentation(product.status);
   const summary = toProductSummary(product);
@@ -117,7 +121,7 @@ export function BankCatalogCard({ product }: BankCatalogCardProps) {
                 <Eye size={15} />
               </button>
             )}
-            {isBankAdmin && (
+            {isBankAdmin && !isArchived && (
               <button
                 type="button"
                 onClick={() => setIsDeleteModalOpen(true)}

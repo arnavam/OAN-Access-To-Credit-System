@@ -3,7 +3,7 @@
 import Button from '@/components/ui/Button';
 import { Bookmark, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
-import type { CatalogFacets, CatalogFilters } from '@/types/loan-catalog';
+import type { CatalogFacets, CatalogFilters, CatalogStatusOption } from '@/types/loan-catalog';
 
 interface CatalogSidebarFiltersProps {
   /** Options derived from the live catalog; null while loading or after a failure. */
@@ -19,6 +19,15 @@ interface CatalogSidebarFiltersProps {
    * a bookmark must not offer to filter by one.
    */
   showBookmarkFilter?: boolean;
+  /**
+   * Approval statuses this view may filter by. Empty for the farmer catalog,
+   * which only ever lists Active products.
+   *
+   * Passed in rather than built here so the shared catalog components keep no
+   * seller vocabulary of their own — "Approved" is the bank's word for Active,
+   * and it belongs with the badge presentation that already owns it.
+   */
+  statusOptions?: ReadonlyArray<CatalogStatusOption>;
 }
 
 function Section({
@@ -100,7 +109,7 @@ function CustomRangeSlider({ min, max, step, value, onChange, ariaLabel }: {
 const formatETB = (value: number) =>
   new Intl.NumberFormat('en-ET', { maximumFractionDigits: 0 }).format(value);
 
-export default function CatalogSidebarFilters({ facets, hasFailed = false, onRetry, filters, onApply, onReset, showBookmarkFilter = false }: CatalogSidebarFiltersProps) {
+export default function CatalogSidebarFilters({ facets, hasFailed = false, onRetry, filters, onApply, onReset, showBookmarkFilter = false, statusOptions = [] }: CatalogSidebarFiltersProps) {
   // Draft state: the sidebar is an "apply" form, so nothing refetches until the
   // farmer commits. Seeded from the applied filters so reopening shows the truth.
   const [draft, setDraft] = useState<CatalogFilters>(filters);
@@ -188,6 +197,55 @@ export default function CatalogSidebarFilters({ facets, hasFailed = false, onRet
         </Section>
       )}
 
+      {/* Bank-only, like Bookmarks is farmer-only — and rendered in every facet
+          state for the same reason: the statuses are a fixed enum on
+          A2C Loan Product, not something derived from the catalog, so a facets
+          outage has no bearing on whether a bank can find its own archived
+          products. */}
+      {statusOptions.length > 0 && (
+        <Section title="Status">
+          <div className="flex flex-wrap gap-2">
+            {statusOptions.map((option) => {
+              const selected = draft.status === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => {
+                    // One at a time: list_catalog takes a single status, so a
+                    // multi-select here could not be sent honestly. Clicking the
+                    // selected chip clears it, which is the only way back to the
+                    // default without Reset All. Deleted rather than set to
+                    // undefined — exactOptionalPropertyTypes treats absent and
+                    // undefined as different types.
+                    const next = { ...draft };
+                    if (selected) {
+                      delete next.status;
+                    } else {
+                      next.status = option.value;
+                    }
+                    setDraft(next);
+                  }}
+                  aria-pressed={selected}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${selected
+                    ? 'bg-[#16A34A] text-white border-[#16A34A]'
+                    : 'bg-white text-gray-700 border-gray-200 hover:border-[#16A34A]'
+                    }`}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+          {/* The endpoint's default for a bank user is every status but
+              Archived. Without saying so, a bank that archived a product has no
+              way to tell it from one that was deleted. */}
+          <p className="mt-2.5 text-xs font-medium leading-relaxed text-gray-500">
+            Archived products are kept out of the default list. Select Archived to see them.
+          </p>
+        </Section>
+      )}
+
       {/* Failure is checked before loading: a failed request also leaves `facets`
           null, and "Loading filters…" forever is the one thing worse than saying
           so. It is reported as a failure, too — substituting an all-empty facet
@@ -210,9 +268,20 @@ export default function CatalogSidebarFilters({ facets, hasFailed = false, onRet
       ) : !facets ? (
         <p className="text-sm font-medium text-gray-500">Loading filters…</p>
       ) : !hasAnyFacet ? (
-        <p className="text-sm font-medium text-gray-500">
-          No catalog filters available — the catalog is empty.
-        </p>
+        // "The catalog is empty" is a statement about the catalog, so it is only
+        // honest while nothing else in the panel contradicts it. The status chips
+        // above are a fixed enum rather than something derived from the products,
+        // so they render for a bank with nothing published — and saying there are
+        // no filters directly beneath them would be describing a different panel.
+        !(showBookmarkFilter || statusOptions.length > 0) ? (
+          <p className="text-sm font-medium text-gray-500">
+            No catalog filters available — the catalog is empty.
+          </p>
+        ) : (
+          <p className="text-sm font-medium text-gray-500">
+            No loan products to filter by amount, rate or type yet.
+          </p>
+        )
       ) : null}
 
       {hasAmountRange && (
@@ -304,34 +373,46 @@ export default function CatalogSidebarFilters({ facets, hasFailed = false, onRet
         <Section title="Loan Types">
           <div className="flex flex-col gap-2">
             {categories.map((cat) => {
-              const selected = draft.category === cat.name;
+              const selected = draft.categories?.includes(cat.id) ?? false;
               return (
                 <label
-                  key={cat.name}
+                  key={cat.id}
                   className="flex items-center gap-3 text-sm font-medium text-gray-700 cursor-pointer group"
                 >
-                  <div className="relative flex items-center justify-center w-4 h-4 shrink-0">
-                    <input
-                      type="radio"
-                      name="loan-category"
-                      checked={selected}
-                      // Clicking the selected category clears it. A radio group with
-                      // no "any" option is otherwise a one-way door: once a farmer
-                      // picks a type, only Reset All gets them back to everything.
-                      onClick={() => {
-                        if (!selected) return;
-                        const next = { ...draft };
-                        delete next.category;
-                        setDraft(next);
-                      }}
-                      onChange={() => setDraft({ ...draft, category: cat.name })}
-                      className="peer absolute w-full h-full opacity-0 cursor-pointer z-10"
-                    />
-                    <div className="w-full h-full border-2 border-gray-300 rounded-full peer-checked:border-[#16A34A] group-hover:border-[#16A34A] transition-colors duration-200"></div>
-                    <div className="absolute w-2 h-2 bg-[#16A34A] rounded-full scale-0 peer-checked:scale-100 transition-transform duration-200 ease-in-out"></div>
-                  </div>
+                  {/* Checkboxes, not a radio group: loan types are a union, and a
+                      farmer looking for either a crop-input loan or an equipment
+                      loan had to run the search twice. The old radio also needed
+                      a click-the-selected-one-to-clear trick, because a radio
+                      group with no "any" option is a one-way door; a checkbox
+                      just unticks. */}
+                  <input
+                    type="checkbox"
+                    checked={selected}
+                    onChange={(e) => {
+                      const current = draft.categories ?? [];
+                      const next = { ...draft };
+                      const remaining = e.target.checked
+                        ? [...current, cat.id]
+                        : current.filter((id) => id !== cat.id);
+                      if (remaining.length > 0) {
+                        next.categories = remaining;
+                      } else {
+                        // Deleted rather than left as an empty array, as with the
+                        // bookmark box: an empty array counts as an active filter
+                        // in `hasActiveFilters`, so the results panel would blame
+                        // the filters for an empty catalog.
+                        delete next.categories;
+                      }
+                      setDraft(next);
+                    }}
+                    className="w-4 h-4 rounded accent-[#16A34A] shrink-0 cursor-pointer"
+                  />
+                  {/* The label the farmer reads; `cat.id` above is what the
+                      endpoint filters on. */}
                   <span className="flex-1 group-hover:text-gray-900 transition-colors duration-200">{cat.name}</span>
-                  <span className="text-xs font-bold text-gray-400">{cat.count}</span>
+                  {cat.count !== undefined && (
+                    <span className="text-xs font-bold text-gray-400">{cat.count}</span>
+                  )}
                 </label>
               );
             })}
@@ -340,10 +421,11 @@ export default function CatalogSidebarFilters({ facets, hasFailed = false, onRet
       )}
 
       {/* Hidden only when the panel holds nothing to commit. The bookmark
-          checkbox is committable on its own, so a farmer keeps the button
-          through a facets outage; a bank with no filterable products does not
-          get a button whose only effect would be to apply an empty filter. */}
-      {(hasAnyFacet || showBookmarkFilter) && (
+          checkbox and the status chips are each committable on their own, so a
+          farmer keeps the button through a facets outage and a bank keeps it
+          with an empty catalog — the one filter that finds its archived
+          products must stay applicable. */}
+      {(hasAnyFacet || showBookmarkFilter || statusOptions.length > 0) && (
         <Button onClick={() => onApply(draft)} className="w-full">
           Apply Filters
         </Button>
