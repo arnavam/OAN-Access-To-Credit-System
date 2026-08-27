@@ -27,7 +27,7 @@ export function CreditInformationModal({ isOpen, onClose, onSubmit }: CreditInfo
     if (isOpen) {
       loanService
         .browseProducts({ limit: 100 })
-        .then((res) => {
+        .then((res: any) => {
           setProducts(res?.data?.products || []);
         })
         .catch(() => {

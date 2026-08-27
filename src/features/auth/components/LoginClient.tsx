@@ -217,6 +217,7 @@ export function LoginClient() {
                       />
                       <button
                         type="button"
+                        aria-label={isPasswordVisible ? 'Hide password' : 'Show password'}
                         onClick={(e) => {
                           e.preventDefault();
                           setIsPasswordVisible(!isPasswordVisible);

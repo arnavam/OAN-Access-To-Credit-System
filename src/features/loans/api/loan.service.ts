@@ -102,7 +102,7 @@ export interface GetLoansParams {
   sort_order?: 'asc' | 'desc';
 }
 
-export interface BrowseProductsParams {
+export interface GetProductsParams {
   search?: string;
   bank?: string;
   loan_product?: string;
@@ -111,8 +111,9 @@ export interface BrowseProductsParams {
   limit?: number;
   start?: number;
 }
+export type BrowseProductsParams = GetProductsParams;
 
-export interface BrowseProductItem {
+export interface LoanProductItem {
   name: string;
   product_name: string;
   slug?: string | null;
@@ -123,9 +124,10 @@ export interface BrowseProductItem {
   max_amount: number;
   tenure_months: number;
 }
+export type BrowseProductItem = LoanProductItem;
 
 export const loanService = {
-  async browseProducts(params?: BrowseProductsParams, options?: RequestInit): Promise<ApiResponse<{ products: BrowseProductItem[] }>> {
+  async getProducts(params?: GetProductsParams, options?: RequestInit): Promise<ApiResponse<{ products: LoanProductItem[] }>> {
     const searchParams = new URLSearchParams();
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
@@ -134,8 +136,12 @@ export const loanService = {
         }
       });
     }
-    const path = `oan_a2c.api.v1.loan_applications.browse_products?${searchParams.toString()}`;
-    return fetchApi(path, options) as Promise<ApiResponse<{ products: BrowseProductItem[] }>>;
+    const path = `oan_a2c.api.v1.loan_applications.get_products?${searchParams.toString()}`;
+    return fetchApi(path, options) as Promise<ApiResponse<{ products: LoanProductItem[] }>>;
+  },
+
+  async browseProducts(params?: GetProductsParams, options?: RequestInit): Promise<ApiResponse<{ products: LoanProductItem[] }>> {
+    return this.getProducts(params, options);
   },
 
   async getLoans(params?: GetLoansParams, options?: RequestInit): Promise<ApiResponse<LoanApplicationSummary[]>> {
@@ -203,7 +209,7 @@ export const loanService = {
   async submitApplication(application_id: string): Promise<ApiResponse<null>> {
     return fetchApi('oan_a2c.api.v1.loan_applications.update_loan_status', {
       method: 'POST',
-      body: JSON.stringify({ application_id, status: 'Processing' }),
+      body: JSON.stringify({ application_id, status: 'Processed' }),
     }) as Promise<ApiResponse<null>>;
   },
 
