@@ -82,7 +82,6 @@ export interface CreateLoanApplicationResponse {
     last_name: string;
     loan_type: string;
     loan_amount: number;
-    current_step: number | null;
   };
 }
 
