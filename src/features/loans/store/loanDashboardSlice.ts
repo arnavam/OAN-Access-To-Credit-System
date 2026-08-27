@@ -116,9 +116,12 @@ export interface MappedLoanRow extends Omit<LoanApplicationSummary, 'status'> {
   type: string;
   /** Region · Woreda, built from the hierarchy fields the endpoint returns. */
   location: string;
-  /** The archetype state — what the status filter and the API speak. */
+  /**
+   * The application's status as the owning bank decided it — the backend resolves
+   * the stage, the client only renders it. Also what the status filter speaks.
+   */
   status: string;
-  /** What the badge shows: the owning bank's stage label, or the archetype. */
+  /** What the badge shows. Same string as `status`. */
   statusLabel: string;
   statusTone: string;
   updated: string;
@@ -508,16 +511,8 @@ export const selectPagedRowsData = createSelector(
       const lastName = row.last_name || '';
       const applicantName = `${firstName} ${lastName}`.trim();
       const location = formatLocation(row);
-      // 'Active' is the state create_loan_application stamps, so it is the
-      // fallback here — 'Draft' was never one of the four archetype states, and a
-      // row falling back to it produced a status the filter could not express.
-      const status = row.status || 'Active';
-
-      // The badge text: the owning bank's label for the step when it has one,
-      // otherwise the archetype. 'Draft' stood here as the fallback and was never
-      // one of the four archetype states.
-      const displayStatus = row.stage_label || status;
-      const stageStyle = getStageStyle(row.stage_label || status, stages);
+      const status = row.status;
+      const stageStyle = getStageStyle(status, stages);
 
       return {
         ...row,
@@ -528,12 +523,11 @@ export const selectPagedRowsData = createSelector(
         type: row.loan_type || 'Unknown Type',
         // A dash, not an empty cell: the record genuinely carries no location yet.
         location: location || '—',
-        // The archetype — what the status filter and the API speak. Kept distinct
-        // from the badge text: assigning the stage label here made the value the
-        // filter sends and the value the badge shows one and the same string, so
-        // filtering by what you could see returned nothing.
+        // Badge text and filter value are deliberately the same string: the
+        // backend decides the status, so what you can see is what you can
+        // filter on.
         status,
-        statusLabel: displayStatus,
+        statusLabel: status,
         statusTone: stageStyle.tone,
         updated: `${dateStr} · ${timeStr}`,
         timestamp: rawDate.getTime(),

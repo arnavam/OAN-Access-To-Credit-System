@@ -2,6 +2,7 @@ import { logger } from '@/lib/logger';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import {
+  farmerLoanApplicationSchema,
     loanApplicationFullSchema, loanApplicationSummarySchema, validateResponse
 } from './api.schemas';
 
@@ -34,8 +35,7 @@ describe('api.schemas validation', () => {
     it('should validate correctly with valid fields and default null/missing values', () => {
       const validData = {
         application_id: 'APP-123',
-        status: 'In Transition' as const,
-        stage_label: 'Credit Committee',
+        status: 'Credit Committee' as const,
         step: 1,
         lead_id: 'LEAD-123',
         loan_amount: 1000,
@@ -59,11 +59,10 @@ describe('api.schemas validation', () => {
       });
     });
 
-    it('should leave null location, stage and name fields undefined', () => {
+    it('should leave null location and name fields undefined', () => {
       const inputData = {
         application_id: 'APP-123',
         status: 'Active' as const,
-        stage_label: null,
         step: 1,
         lead_id: 'LEAD-123',
         loan_amount: 1000,
@@ -83,10 +82,6 @@ describe('api.schemas validation', () => {
       expect(result.region).toBeUndefined();
       expect(result.woreda).toBeUndefined();
       expect(result.kebele).toBeUndefined();
-      // `stage_label` keeps its null rather than collapsing to undefined — every
-      // consumer reads it as `stage_label || status`, so absent and null are the
-      // same thing to them, and the raw value stays faithful to the payload.
-      expect(result.stage_label).toBeNull();
       expect(result.first_name).toBeUndefined();
       expect(result.last_name).toBeUndefined();
     });
@@ -105,7 +100,6 @@ describe('api.schemas validation', () => {
 
       const result = loanApplicationSummarySchema.parse(inputData);
       expect(result.region).toBeUndefined();
-      expect(result.stage_label).toBeUndefined();
       expect(result.first_name).toBeUndefined();
       expect(result.last_name).toBeUndefined();
     });
@@ -153,6 +147,67 @@ describe('api.schemas validation', () => {
       expect(result.gender).toBeUndefined();
       expect(result.marital_status).toBeUndefined();
       expect(result.education_level).toBeUndefined();
+    });
+  });
+
+  describe('farmerLoanApplicationSchema', () => {
+    const validRow = {
+      application_id: 'APP-123',
+      status: 'Credit Committee',
+      creation: '2026-01-01 10:00:00',
+      requested_amount: 5000,
+      loan_product: 'PROD-1',
+      loan_product_name: 'Crop Loan',
+      bank: 'Coop Bank',
+    };
+
+    it('accepts a farmer row and defaults the farmer-only fields', () => {
+      const result = farmerLoanApplicationSchema.parse({
+        application_id: 'APP-123',
+        status: 'Active',
+        creation: '2026-01-01 10:00:00',
+      });
+
+      // Every farmer-side consumer renders these unguarded — `ApplicationList`
+      // calls `.toLocaleString()` straight on `requested_amount` — so a missing
+      // one has to arrive as a value, not as undefined.
+      expect(result.requested_amount).toBe(0);
+      expect(result.loan_product).toBe('');
+      expect(result.loan_product_name).toBe('');
+      expect(result.bank).toBe('');
+    });
+
+    it('keeps null interest_rate and tenure_months as null', () => {
+      // Applications created before the terms snapshot existed carry no rate.
+      // The card shows a placeholder for them, so null must survive parsing
+      // rather than collapsing to 0 and inventing a rate that was never agreed.
+      const result = farmerLoanApplicationSchema.parse({
+        ...validRow,
+        interest_rate: null,
+        tenure_months: null,
+      });
+      expect(result.interest_rate).toBeNull();
+      expect(result.tenure_months).toBeNull();
+    });
+
+    it('rejects a row whose status is null', () => {
+      // This is the whole point of parsing the farmer endpoint: the backend has
+      // been observed sending a null status mid stage-migration, and the list
+      // reads `status.toLowerCase()` to build its tab counts. Failing here
+      // surfaces a contract violation instead of throwing a TypeError in render.
+      expect(() => farmerLoanApplicationSchema.parse({ ...validRow, status: null })).toThrow();
+    });
+
+    it('inherits the summary schema fields', () => {
+      const result = farmerLoanApplicationSchema.parse({
+        ...validRow,
+        stage_id: 'LSS-00021',
+        sequence: 2,
+        is_terminal: null,
+      });
+      expect(result.stage_id).toBe('LSS-00021');
+      expect(result.sequence).toBe(2);
+      expect(result.is_terminal).toBe(false);
     });
   });
 });

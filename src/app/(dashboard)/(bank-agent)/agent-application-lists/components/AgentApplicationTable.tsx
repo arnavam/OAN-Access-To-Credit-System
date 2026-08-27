@@ -37,8 +37,8 @@ import StatusFilter from './filters/StatusFilter';
  *
  * Colour comes from the bank's own stage definition (`getStageStyle`), not from the
  * archetype: two banks can call the same step different things and colour it their
- * own way. `label` is the row's `stage_label`, falling back to the archetype for an
- * application no stage has been applied to yet.
+ * own way. `label` is the row's `status` — the backend already resolved it to the
+ * owning bank's name for the step, so it is rendered as-is.
  */
 function StatusBadge({ status, label }: { status: string; label: string }) {
   const stages = useAppSelector(selectBankStages);
