@@ -4,9 +4,11 @@ import { SelectField } from '@/components/ui/SelectField';
 import { getCatalog } from '@/features/(farmer-application)/api/farmerApi';
 // eslint-disable-next-line boundaries/dependencies -- Lead creation modal consumes marketplace catalog to populate loan product dropdown
 import type { FarmerLoanProduct } from '@/features/(farmer-application)/types';
-import { X } from 'lucide-react';
+import { resolveCategory } from '@/types/loan-catalog';
+import { Building2, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { NumericInput } from '@/components/ui/NumericInput';
+import { formatAmount, formatRateRange, formatTenure } from '@/lib/format/loanTerms';
 import { creditInfoSchema, type CreditInfoFormData } from '../../schemas/credit.schema';
 
 interface CreditInformationModalProps {
@@ -104,6 +106,9 @@ export function CreditInformationModal({ isOpen, onClose, onSubmit }: CreditInfo
     });
     setError(null);
   };
+
+  const selectedProduct = products.find((p) => p.product_name === loanType);
+  const selectedCategory = selectedProduct ? resolveCategory(selectedProduct) : undefined;
 
   const productOptions = [...new Set(products.map((p) => p.product_name))];
 
@@ -203,6 +208,52 @@ export function CreditInformationModal({ isOpen, onClose, onSubmit }: CreditInfo
                   </span>
                 )}
               </div>
+
+              {/* Product Details Card (Shown on Selection) */}
+              {selectedProduct && (
+                <div className="w-full bg-[#F0FDF4] border border-[#BBF7D0] rounded-[8px] p-3.5 flex flex-col gap-2 animate-in fade-in duration-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-[#166534] font-semibold text-xs">
+                      <Building2 size={15} className="text-[#16A34A] shrink-0" />
+                      <span>{selectedProduct.bank_name || selectedProduct.bank || 'Lending Institution'}</span>
+                    </div>
+                    {selectedCategory && (
+                      <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-[#DCFCE7] text-[#15803D] capitalize">
+                        {selectedCategory.replace(/-/g, ' ')}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2 border-t border-[#BBF7D0]/60 text-xs">
+                    <div>
+                      <span className="text-[#4B5563] text-[11px] block font-medium">Allowable Amount</span>
+                      <span className="font-semibold text-[#111827]">
+                        {selectedProduct.min_amount != null && selectedProduct.max_amount != null
+                          ? `${formatAmount(selectedProduct.min_amount)} – ${formatAmount(selectedProduct.max_amount)}`
+                          : selectedProduct.max_amount != null
+                            ? `Up to ${formatAmount(selectedProduct.max_amount)}`
+                            : selectedProduct.min_amount != null
+                              ? `From ${formatAmount(selectedProduct.min_amount)}`
+                              : '—'}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="text-[#4B5563] text-[11px] block font-medium">Interest Rate</span>
+                      <span className="font-semibold text-[#111827]">
+                        {formatRateRange(selectedProduct.min_interest_rate, selectedProduct.max_interest_rate)}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="text-[#4B5563] text-[11px] block font-medium">Tenure</span>
+                      <span className="font-semibold text-[#111827]">
+                        {formatTenure(selectedProduct.tenure_months)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Purpose Message Row */}
               <div className="flex flex-col items-start p-0 gap-[6px] w-full">

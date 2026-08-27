@@ -22,6 +22,25 @@ const initialState: NotificationState = {
   error: null,
 };
 
+export function getNotificationId(item: NotificationItem, fallbackIndex?: number): string {
+  return (
+    item.name ||
+    (item as { id?: string }).id ||
+    (item as { notification_id?: string }).notification_id ||
+    (fallbackIndex != null ? `notif-${fallbackIndex}` : '')
+  );
+}
+
+export function isItemUnread(item: NotificationItem | { read?: unknown }): boolean {
+  const readVal = item?.read as unknown;
+  return (
+    readVal === 0 ||
+    readVal === false ||
+    readVal === '0' ||
+    readVal == null
+  );
+}
+
 export const fetchNotifications = createAsyncThunk<
   GetNotificationsResponse,
   GetNotificationsParams | undefined,
@@ -96,39 +115,51 @@ export const notificationSlice = createSlice({
             ? payload.unread_count
             : typeof dataObj?.unread_count === 'number'
             ? dataObj.unread_count
-            : list.filter((i) => i.read === 0).length;
+            : list.filter(isItemUnread).length;
       })
       .addCase(fetchNotifications.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload ?? 'Error fetching notifications';
       })
-      // Mark Read
+      // Mark Read (mutate on fulfilled)
       .addCase(markNotificationsRead.fulfilled, (state, action: PayloadAction<MarkReadParams>) => {
-        if (action.payload.mark_all) {
+        const arg = action.payload;
+        if (arg.mark_all) {
           state.items.forEach((item) => {
             item.read = 1;
           });
           state.unreadCount = 0;
-        } else if (action.payload.notification_ids?.length) {
-          const ids = new Set(action.payload.notification_ids);
+        } else if (arg.notification_ids?.length) {
+          const ids = new Set(arg.notification_ids);
           state.items.forEach((item) => {
-            if (ids.has(item.name) && item.read === 0) {
+            const id = getNotificationId(item);
+            if (id && ids.has(id)) {
               item.read = 1;
             }
           });
-          state.unreadCount = Math.max(0, state.unreadCount - ids.size);
+          state.unreadCount = state.items.filter(isItemUnread).length;
         }
       })
-      // Clear
+      .addCase(markNotificationsRead.rejected, (state, action) => {
+        state.error = action.payload ?? 'Failed to mark notifications as read';
+      })
+      // Clear Notifications (mutate on fulfilled)
       .addCase(clearNotifications.fulfilled, (state, action: PayloadAction<ClearNotificationsParams>) => {
-        if (action.payload.clear_all) {
+        const arg = action.payload;
+        if (arg.clear_all) {
           state.items = [];
           state.unreadCount = 0;
-        } else if (action.payload.notification_ids?.length) {
-          const ids = new Set(action.payload.notification_ids);
-          state.items = state.items.filter((item) => !ids.has(item.name));
-          state.unreadCount = state.items.filter((item) => item.read === 0).length;
+        } else if (arg.notification_ids?.length) {
+          const ids = new Set(arg.notification_ids);
+          state.items = state.items.filter((item) => {
+            const id = getNotificationId(item);
+            return !id || !ids.has(id);
+          });
+          state.unreadCount = state.items.filter(isItemUnread).length;
         }
+      })
+      .addCase(clearNotifications.rejected, (state, action) => {
+        state.error = action.payload ?? 'Failed to clear notifications';
       });
   },
 });
