@@ -23,10 +23,11 @@ interface DatePickerFieldProps {
   usePortal?: boolean;
   align?: 'left' | 'right';
   openUpwards?: boolean;
+  forcePosition?: 'bottom' | 'top' | undefined;
   onOpenChange?: (isOpen: boolean) => void;
 }
 
-export function DatePickerField({ id, label, value, onChange, required, error, disabled, placeholder = 'dd/mm/yyyy', minDate, maxDate, usePortal = true, align = 'left', openUpwards = false, onOpenChange }: DatePickerFieldProps) {
+export function DatePickerField({ id, label, value, onChange, required, error, disabled, placeholder = 'dd/mm/yyyy', minDate, maxDate, usePortal = true, align = 'left', openUpwards = false, forcePosition, onOpenChange }: DatePickerFieldProps) {
   const today = new Date();
 
   // Use today as fallback if value is empty, but don't set it to state
@@ -82,8 +83,11 @@ export function DatePickerField({ id, label, value, onChange, required, error, d
         // Approximate calendar height is 340px
         const spaceBelow = window.innerHeight - rect.bottom;
         const spaceAbove = rect.top;
-        if (spaceBelow < 340 && spaceAbove > spaceBelow) {
-          // Open upwards if not enough space below, and more space above
+        // forcePosition pins the calendar; otherwise flip up only when it would not fit below.
+        const openUp =
+          forcePosition === 'top' ||
+          (forcePosition !== 'bottom' && spaceBelow < 340 && spaceAbove > spaceBelow);
+        if (openUp) {
           top = rect.top + window.scrollY - 350;
         }
 
@@ -96,7 +100,7 @@ export function DatePickerField({ id, label, value, onChange, required, error, d
     return () => {
       document.removeEventListener('mousedown', h);
     };
-  }, [isOpen]);
+  }, [isOpen, forcePosition]);
 
   const displayValue = selectedDate
     ? `${String(selectedDate.getDate()).padStart(2, '0')} / ${MONTH_SHORT[selectedDate.getMonth()]} / ${selectedDate.getFullYear()}`
@@ -262,7 +266,7 @@ export function DatePickerField({ id, label, value, onChange, required, error, d
         </div>,
         document.body
       ) : (
-        <div ref={dropdownRef} role="dialog" aria-modal="false" aria-labelledby={dialogTitleId} className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} ${openUpwards ? 'bottom-[calc(100%+4px)] origin-bottom animate-in fade-in slide-in-from-bottom-2' : 'top-[calc(100%+4px)] origin-top animate-in fade-in slide-in-from-top-2'} z-50 w-[280px] rounded-lg border border-gray-200 bg-white shadow-xl overflow-hidden duration-200`}>
+        <div ref={dropdownRef} role="dialog" aria-modal="false" aria-labelledby={dialogTitleId} className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} ${(forcePosition ? forcePosition === 'top' : openUpwards) ? 'bottom-[calc(100%+4px)] origin-bottom animate-in fade-in slide-in-from-bottom-2' : 'top-[calc(100%+4px)] origin-top animate-in fade-in slide-in-from-top-2'} z-50 w-[280px] rounded-lg border border-gray-200 bg-white shadow-xl overflow-hidden duration-200`}>
           <span id={dialogTitleId} className="sr-only">Choose date</span>
           {calendarBody}
         </div>

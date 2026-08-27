@@ -1,5 +1,5 @@
 import { LucideIcon } from 'lucide-react';
-import Image from 'next/image';
+
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useMemo } from 'react';
@@ -79,12 +79,11 @@ function Sidebar({ isCollapsed, isMobileOpen = false, sections = [] }: SidebarPr
       >
         {/* Left Side: Logo Graphic */}
         <div className={`flex shrink-0 items-center justify-center ${isCollapsed ? 'w-full py-2' : ''}`}>
-          <Image
-            src="/logo.png"
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo.svg"
             alt="OARI Logo"
-            width={220}
-            height={80}
-            className={`object-contain transition-all duration-300 ${isCollapsed ? 'w-[80%] h-auto max-h-12' : 'h-20 w-auto max-w-[220px] -mt-1.5'}`}
+            className={`object-contain transition-all duration-300 ${isCollapsed ? 'w-[80%] h-auto max-h-12' : 'h-[34px] w-auto'}`}
             id="primary-logo-img"
             onError={(e) => {
               e.currentTarget.classList.add('hidden');

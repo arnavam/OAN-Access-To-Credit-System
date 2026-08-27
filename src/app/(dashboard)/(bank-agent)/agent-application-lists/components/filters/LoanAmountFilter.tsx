@@ -2,6 +2,7 @@
 
 import { Portal } from '@/components/Portal';
 import { LOAN_AMOUNT_BUCKET_LABELS, loanAmountCeilingLabel } from '@/features/loans/constants/loans.constants';
+import { Check, Filter } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useColumnFilterDropdown } from './useColumnFilterDropdown';
 

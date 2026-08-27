@@ -207,30 +207,6 @@ export function CreditInformationModal({ isOpen, onClose, onSubmit }: CreditInfo
                   )}
                 </div>
 
-                {/* Purpose Message Row */}
-                <div className="flex flex-col items-start p-0 gap-[6px] w-full sm:col-span-2">
-                  <label className="font-roboto font-medium text-[14px] leading-[20px] text-[#111827]">
-                    Purpose Message <span className="text-red-500">*</span>
-                  </label>
-                  <textarea
-                    placeholder="Enter purpose message"
-                    value={purposeMessage}
-                    onChange={(e) => {
-                      setPurposeMessage(e.target.value);
-                      clearFieldError('purpose_message', 'purposeMessage');
-                    }}
-                    className={`box-border flex flex-row justify-center items-start p-[12px_16px] w-full h-[140px] bg-white border rounded-[8px] font-roboto font-normal text-[14px] leading-[16px] text-[#111827] placeholder:text-[#C6C6C6] outline-none focus:ring-1 resize-none ${purposeError
-                      ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
-                      : 'border-[#D1D5DB] focus:border-[#3B82F6] focus:ring-[#3B82F6]'
-                  }`}
-                />
-                {amountError && (
-                  <span className="text-red-500 font-roboto text-xs mt-1">
-                    {amountError}
-                  </span>
-                )}
-              </div>
-
               {/* Product Details Card (Shown on Selection) */}
               {selectedProduct && (
                 <div className="w-full bg-[#F0FDF4] border border-[#BBF7D0] rounded-[8px] p-3.5 flex flex-col gap-2 animate-in fade-in duration-200">
@@ -277,29 +253,30 @@ export function CreditInformationModal({ isOpen, onClose, onSubmit }: CreditInfo
                 </div>
               )}
 
-              {/* Purpose Message Row */}
-              <div className="flex flex-col items-start p-0 gap-[6px] w-full">
-                <label className="font-roboto font-medium text-[14px] leading-[20px] text-[#111827]">
-                  Purpose Message <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  placeholder="Enter purpose message"
-                  value={purposeMessage}
-                  onChange={(e) => {
-                    setPurposeMessage(e.target.value);
-                    clearFieldError('purpose_message', 'purposeMessage');
-                  }}
-                  className={`box-border flex flex-row justify-center items-start p-[12px_16px] w-full h-[140px] bg-white border rounded-[8px] font-roboto font-normal text-[14px] leading-[16px] text-[#111827] placeholder:text-[#C6C6C6] outline-none focus:ring-1 resize-none ${
-                    purposeError
-                      ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
-                      : 'border-[#D1D5DB] focus:border-[#3B82F6] focus:ring-[#3B82F6]'
-                  }`}
-                />
-                {purposeError && (
-                  <span className="text-red-500 font-roboto text-xs mt-1">
-                    {purposeError}
-                  </span>
-                )}
+                {/* Purpose Message Row */}
+                <div className="flex flex-col items-start p-0 gap-[6px] w-full sm:col-span-2">
+                  <label className="font-roboto font-medium text-[14px] leading-[20px] text-[#111827]">
+                    Purpose Message <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    placeholder="Enter purpose message"
+                    value={purposeMessage}
+                    onChange={(e) => {
+                      setPurposeMessage(e.target.value);
+                      clearFieldError('purpose_message', 'purposeMessage');
+                    }}
+                    className={`box-border flex flex-row justify-center items-start p-[12px_16px] w-full h-[140px] bg-white border rounded-[8px] font-roboto font-normal text-[14px] leading-[16px] text-[#111827] placeholder:text-[#C6C6C6] outline-none focus:ring-1 resize-none ${
+                      purposeError
+                        ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+                        : 'border-[#D1D5DB] focus:border-[#3B82F6] focus:ring-[#3B82F6]'
+                    }`}
+                  />
+                  {purposeError && (
+                    <span className="text-red-500 font-roboto text-xs mt-1">
+                      {purposeError}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 
