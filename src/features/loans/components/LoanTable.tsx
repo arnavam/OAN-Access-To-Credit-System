@@ -428,7 +428,7 @@ const LoanTable = memo(({ onView, totalCount = 0, stageOptions }: LoanTableProps
                         <button
                           type="button"
                           onClick={handleApplyStatus}
-                          className="px-3.5 py-1.5 bg-[#16A34A] text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition-colors"
+                          className="px-3.5 py-2 bg-[#16A34A] text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 transition-colors"
                         >
                           <span className='font-semibold'>Apply</span>
                         </button>
@@ -512,7 +512,7 @@ const LoanTable = memo(({ onView, totalCount = 0, stageOptions }: LoanTableProps
                         <button
                           type="button"
                           onClick={handleApplyLoanType}
-                          className="px-3.5 py-1.5 bg-[#16A34A] text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition-colors"
+                          className="px-3.5 py-2 bg-[#16A34A] text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 transition-colors"
                         >
 
                           <span className='font-semibold'>Apply</span>
@@ -559,7 +559,7 @@ const LoanTable = memo(({ onView, totalCount = 0, stageOptions }: LoanTableProps
                         <div className="relative w-full">
                           <div className="h-2 w-full bg-gray-200 rounded-full relative">
                             <div
-                              className="absolute left-0 top-0 h-full bg-emerald-500 rounded-full"
+                              className="absolute left-0 top-0 h-full bg-[#16A34A] rounded-full"
                               style={{ width: `${(displayedAmountIndex / ALL_AMOUNTS_INDEX) * 100}%` }}
                             />
                             <input
@@ -617,7 +617,7 @@ const LoanTable = memo(({ onView, totalCount = 0, stageOptions }: LoanTableProps
                               <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${isSel ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-gray-300'}`}>
                                 {isSel && <Check size={12} strokeWidth={3} />}
                               </div>
-                              <span className="text-xs font-medium text-gray-700">{opt.label}</span>
+                              <span className="text-sm font-medium text-gray-700">{opt.label}</span>
                             </button>
                           );
                         })}
@@ -719,7 +719,7 @@ const LoanTable = memo(({ onView, totalCount = 0, stageOptions }: LoanTableProps
                         <button
                           type="button"
                           onClick={handleApplyDate}
-                          className="w-full mt-3 py-2 bg-[#16A34A] text-white text-xs font-bold rounded-lg hover:bg-emerald-700 transition-colors"
+                          className="w-full mt-3 py-3 bg-[#16A34A] text-white text-xs font-bold rounded-lg hover:bg-emerald-700 transition-colors"
                         >
 
                           <span className='font-semibold'> Apply Search</span>

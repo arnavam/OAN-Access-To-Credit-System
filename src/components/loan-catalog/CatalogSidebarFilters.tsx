@@ -276,12 +276,12 @@ export default function CatalogSidebarFilters({ facets, hasFailed = false, onRet
                     setDraft(next);
                   }}
                   aria-pressed={selected}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${selected
-                    ? 'bg-[#16A34A] text-white border-[#16A34A]'
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${selected
+                    ? 'bg-[#16A34A]/8 text-[#16A34A] border-[#16A34A]'
                     : 'bg-white text-gray-700 border-gray-200 hover:border-[#16A34A]'
                     }`}
                 >
-                  {months} Mon
+                  <span className='font-medium'>{months} Mon</span>
                 </button>
               );
             })}
@@ -319,7 +319,7 @@ export default function CatalogSidebarFilters({ facets, hasFailed = false, onRet
                     <div className="w-full h-full border-2 border-gray-300 rounded-full peer-checked:border-[#16A34A] group-hover:border-[#16A34A] transition-colors duration-200"></div>
                     <div className="absolute w-2 h-2 bg-[#16A34A] rounded-full scale-0 peer-checked:scale-100 transition-transform duration-200 ease-in-out"></div>
                   </div>
-                  <span className="flex-1 group-hover:text-gray-900 transition-colors duration-200">{cat.name}</span>
+                  <span className="flex-1 group-hover:text-gray-900 transition-colors duration-200 font-medium text-sm">{cat.name}</span>
                   <span className="text-xs font-bold text-gray-400">{cat.count}</span>
                 </label>
               );
@@ -331,8 +331,8 @@ export default function CatalogSidebarFilters({ facets, hasFailed = false, onRet
       {/* Unconditional, where it used to hang off hasAnyFacet: the bookmark
           checkbox is committable on its own, so there is no longer a state of
           this sidebar with nothing to apply. */}
-      <Button onClick={() => onApply(draft)} className="w-full">
-        Apply Filters
+      <Button onClick={() => onApply(draft)} className="w-full rounded-lg">
+        <span className='font-semibold'>Apply Filters</span>
       </Button>
     </div>
   );

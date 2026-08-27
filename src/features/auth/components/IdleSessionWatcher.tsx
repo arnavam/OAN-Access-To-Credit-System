@@ -80,17 +80,17 @@ export function IdleSessionWatcher() {
           <button
             type="button"
             onClick={() => void handleExpire()}
-            className="rounded-xl border border-[#D1D5DB] px-4 py-2.5 text-[14px] font-semibold text-[#4B5563] transition-colors hover:bg-gray-50"
+            className="rounded-lg border border-[#D1D5DB] px-4 py-2.5 text-[14px] font-semibold text-[#4B5563] transition-colors hover:bg-gray-50"
           >
-            Sign out now
+            <span className='font-semibold'>Sign out now</span>
           </button>
           <button
             type="button"
             ref={staySignedInRef}
             onClick={staySignedIn}
-            className="rounded-xl bg-[#16A34A] px-5 py-2.5 text-[14px] font-bold text-white transition-colors hover:bg-[#15803d]"
+            className="rounded-lg bg-[#16A34A] px-5 py-2.5 text-[14px] font-bold text-white transition-colors hover:bg-[#15803d]"
           >
-            Stay signed in
+            <span className='font-semibold'>Stay signed in</span>
           </button>
         </div>
       </div>

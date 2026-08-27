@@ -21,7 +21,7 @@ import {
   selectTotalCount,
   setSearchQuery,
   updateLoanStatus
-// eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
+  // eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
 } from '@/features/loans/store/loanDashboardSlice';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { AlertCircle, FileOutput, Inbox, Loader2, RefreshCw, Search, SlidersHorizontal } from 'lucide-react';
@@ -141,7 +141,7 @@ export function LoanApplicationsTable() {
   return (
     <div className="bg-white border border-[#F1F3F4] rounded-xl shadow-sm flex flex-col min-h-[500px] shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.05),0px_2px_4px_-1px_rgba(0,0,0,0.03)] hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
       {/* Table Header */}
-      <div className="p-6 border-b border-[#E5E7EB]">
+      <div className="p-4 md:p-6 border-b border-[#E5E7EB]">
         <div className="flex flex-col lg:flex-row justify-between lg:items-center gap-4">
           <div>
             <h3 className="text-[18px] font-bold text-[#1F2937] mb-1">Loan Applications</h3>
@@ -149,40 +149,42 @@ export function LoanApplicationsTable() {
               Farmers who applied against your published loan products – via OAN Farmer Profiling System
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full lg:w-auto mt-2 lg:mt-0 shrink-0">
-            {/* Search Toggle Button */}
-            <button
-              type="button"
-              onClick={() => setIsSearchOpen(!isSearchOpen)}
-              className={`flex-1 sm:flex-none sm:w-[42px] h-[42px] rounded-xl border flex items-center justify-center gap-2 transition-all shadow-2xs ${isSearchOpen || searchInput
+          <div className="flex flex-col sm:flex-row sm:justify-start lg:justify-end items-stretch sm:items-center gap-2 sm:gap-3 w-full lg:w-auto mt-3 lg:mt-0 shrink-0">
+            <div className="flex items-center gap-2 sm:gap-3">
+              {/* Search Toggle Button */}
+              <button
+                type="button"
+                onClick={() => setIsSearchOpen(!isSearchOpen)}
+                className={`flex-1 sm:flex-none sm:w-[42px] h-[42px] rounded-lg border flex items-center justify-center gap-2 transition-all shadow-2xs ${isSearchOpen || searchInput
                   ? 'bg-gray-100 border-gray-300 text-gray-800'
                   : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:bg-gray-50'
-                }`}
-              title="Toggle Search"
-            >
-              <Search className="w-5 h-5" />
-              <span className="sm:hidden text-sm font-semibold">Search</span>
-            </button>
+                  }`}
+                title="Toggle Search"
+              >
+                <Search className="w-5 h-5" />
+                <span className="sm:hidden text-sm font-semibold">Search</span>
+              </button>
 
-            {/* Export CSV */}
-            <button
-              type="button"
-              onClick={handleExportCsv}
-              className="flex-1 sm:flex-none justify-center px-4 py-2.5 text-sm font-semibold text-[#4B5563] bg-white border border-[#E5E7EB] rounded-xl hover:bg-gray-50 transition-colors flex items-center gap-2 shadow-2xs"
-            >
-              <FileOutput className="w-4 h-4 text-[#6B7280]" />
-              <span className="hidden sm:inline">Export CSV</span>
-              <span className="sm:hidden">Export</span>
-            </button>
+              {/* Export CSV */}
+              <button
+                type="button"
+                onClick={handleExportCsv}
+                className="flex-1 sm:flex-none justify-center px-4 py-2.5 text-sm font-semibold text-[#4B5563] bg-white border border-[#E5E7EB] rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 shadow-2xs"
+              >
+                <FileOutput className="w-4 h-4 text-[#6B7280]" />
+                <span className='font-semibold hidden sm:inline'>Export CSV</span>
+                <span className="sm:hidden font-semibold">Export</span>
+              </button>
+            </div>
 
             {/* Advanced Filters */}
             <button
               type="button"
               onClick={() => setIsFilterOpen(true)}
-              className="w-full sm:w-auto justify-center px-4 py-2.5 text-sm font-semibold text-[#4B5563] bg-white border border-[#E5E7EB] rounded-xl hover:bg-gray-50 transition-colors flex items-center gap-2 shadow-2xs"
+              className="w-full sm:w-auto justify-center px-4 py-2.5 text-sm font-semibold text-[#4B5563] bg-white border border-[#E5E7EB] rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 shadow-2xs"
             >
               <SlidersHorizontal className="w-4 h-4 text-[#6B7280]" />
-              <span>Advanced Filters</span>
+              <span className='font-semibold'>Advanced Filters</span>
             </button>
           </div>
         </div>

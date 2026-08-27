@@ -219,9 +219,9 @@ export default function CatalogBrowser({
     <div className="flex flex-col gap-6 w-full">
       {header}
 
-      <div className="flex flex-col lg:flex-row gap-6 w-full">
+      <div className="flex flex-col lg:flex-row gap-6 w-full lg:items-start">
         {/* Sidebar - Left */}
-        <div className="w-full lg:w-[320px] shrink-0">
+        <div className="w-full lg:w-[320px] shrink-0 lg:sticky lg:top-[88px] lg:max-h-[calc(100vh-112px)] lg:overflow-y-auto lg:rounded-2xl [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-200 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-300">
           <CatalogSidebarFilters
             facets={facets}
             hasFailed={facetsFailed}
@@ -246,7 +246,7 @@ export default function CatalogBrowser({
               <Loader label="Loading loans…" />
             </div>
           ) : products.length > 0 ? (
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {products.map((product) => renderCard(product, cardControls))}
             </div>
           ) : (

@@ -120,20 +120,20 @@ export function BaseLoanProductModal({
           ) : (
             <>
               {/* Header */}
-              <div className="flex items-center justify-between border-b border-gray-200 p-6">
-                <div className="flex items-center space-x-3">
+              <div className="flex items-start justify-between border-b border-gray-200 p-4 sm:p-6 gap-4">
+                <div className="flex items-start sm:items-center space-x-3">
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#E6F9F3]">
                     <Package className="h-6 w-6 text-[#00C48C]" />
                   </div>
-                  <div>
-                    <h2 id={titleId} className="text-[18px] font-bold text-[#1F2937]">{resolvedTitle}</h2>
-                    <p className="text-[14px] text-[#6B7280]">{resolvedSubtitle}</p>
+                  <div className="pt-0.5 sm:pt-0">
+                    <h2 id={titleId} className="text-[18px] font-bold text-[#1F2937] leading-tight">{resolvedTitle}</h2>
+                    <p className="text-[14px] text-[#6B7280] mt-1 pr-2">{resolvedSubtitle}</p>
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={onClose}
-                  className="rounded-full p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                  className="rounded-full p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 shrink-0 -mr-2 sm:mr-0"
                   aria-label="Close modal"
                 >
                   <X size={24} />
@@ -314,7 +314,7 @@ export function BaseLoanProductModal({
                       placeholder={readOnly ? "No description provided." : "Optional product description"}
                       rows={3}
                       disabled={readOnly}
-                      className={`w-full rounded-lg border focus:outline-none focus:ring-2 ${textareaClass} ${readOnly ? 'bg-gray-50 opacity-70 cursor-not-allowed' : ''}`}
+                      className={`w-full rounded-lg border focus:outline-none focus:ring-1 ${textareaClass} ${readOnly ? 'bg-gray-50 opacity-70 cursor-not-allowed' : ''}`}
                     />
                   </div>
 

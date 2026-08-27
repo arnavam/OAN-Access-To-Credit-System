@@ -133,18 +133,18 @@ export function LoanProductCard({ product, variant = 'default', canDelete = true
                 <button
                   type="button"
                   onClick={() => setIsReviewModalOpen(true)}
-                  className="w-full bg-[#16A34A] hover:bg-[#15803d] text-white font-bold py-2.5 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 text-sm"
+                  className="w-full bg-[#16A34A] hover:bg-[#15803d] text-white font-bold py-2.5 px-3.5 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 text-sm"
                 >
-                  Review
+                  <span className='font-semibold'>Review</span>
                 </button>
               ) : canEdit ? (
                 <button
                   type="button"
                   onClick={() => setIsEditModalOpen(true)}
                   aria-label={`Edit ${product.product_name}`}
-                  className="w-full bg-[#16A34A] hover:bg-[#15803d] text-white font-bold py-2.5 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 text-sm"
+                  className="w-full bg-[#16A34A] hover:bg-[#15803d] text-white font-bold py-2.5 px-3.5 rounded-lg shadow-sm transition-all flex items-center justify-center gap-2 text-sm"
                 >
-                  <Pencil className="w-4 h-4" /> Edit
+                  <span className='font-semibold'><Pencil className="w-4 h-4" /> Edit</span>
                 </button>
               ) : (
                 <button

@@ -390,14 +390,14 @@ export default function LoanAdvancedFilters({
             onClick={handleReset}
             className="flex-1 rounded-xl border border-gray-200 bg-white py-4 mb-3 text-base font-semibold text-[#232F34] transition hover:bg-slate-50"
           >
-            Reset Filters
+            <span className='font-semibold'>Reset Filters</span>
           </button>
           <button
             type="button"
             onClick={handleApply}
             className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-[#16A34A] mb-3 py-3 text-sm font-semibold text-white transition hover:bg-[#10883c]"
           >
-            Apply Filters
+
             {activeCount > 0 && (
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/25 text-xs">
                 {activeCount}
