@@ -126,7 +126,7 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
         aria-modal="true"
         aria-label="Advanced Filters"
         tabIndex={-1}
-        className="fixed right-0 top-0 z-[9999] flex h-full w-[540px] flex-col bg-white shadow-2xl font-sans">
+        className="fixed right-0 top-0 z-[9999] flex h-full w-full sm:w-[540px] flex-col bg-white shadow-2xl font-sans">
 
         {/* header */}
         <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
@@ -442,6 +442,8 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
             onDateFromChange={(v) => { setDateFrom(v); setQuickDate(''); }}
             onDateToChange={(v) => { setDateTo(v); setQuickDate(''); }}
             onQuickDateChange={(label, from, to) => { setQuickDate(label); setDateFrom(from); setDateTo(to); }}
+            usePortal={false}
+            openUpwards={true}
           />
         </div>
 
@@ -496,8 +498,8 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
             )}
           </button>
         </div>
-      </aside>
-    </Portal>
+      </aside >
+    </Portal >
   );
 }
 

@@ -77,13 +77,12 @@ function TimeListbox({ label, options, value, onChange, selectedExtraClassName }
           role="option"
           aria-selected={value === opt}
           tabIndex={index === activeIndex ? 0 : -1}
-          className={`w-full py-2 mb-1 text-center text-sm font-medium transition-colors ${
-            value === opt
-              ? `bg-[#1677FF] text-white focus:outline-none ${selectedExtraClassName ?? ''}`
-              : 'text-gray-900 hover:bg-gray-100'
-          }`}
+          className={`w-full py-2 mb-1 text-center text-sm font-medium transition-colors rounded-lg ${value === opt
+            ? `bg-[#16A34A] hover:bg-[#10883c] text-white focus:outline-none ${selectedExtraClassName ?? ''}`
+            : 'text-gray-900 hover:bg-gray-100'
+            }`}
         >
-          {opt}
+          <span className='font-semibold'>{opt}</span>
         </button>
       ))}
     </div>
@@ -192,8 +191,8 @@ export function TimePickerField({ id, label, value, onChange, required, error, d
         className={`flex w-full items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm shadow-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1677FF] focus-visible:ring-offset-1
           ${disabled ? 'border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed'
             : error ? 'border-red-400 bg-red-50/40'
-              : isOpen ? 'border-[#1677FF] bg-white ring-1 ring-[#1677FF]'
-                : 'border-[#D1D5DC] bg-white hover:border-[#1677FF]/50'}`}>
+              : isOpen ? 'border-[#16A34A] bg-white ring-1 ring-[#16A34A]'
+                : 'border-gray-200 bg-white hover:border-[#16A34A]/50'}`}>
         <span className={`flex items-center gap-2 ${disabled ? 'text-gray-500' : displayValue ? 'text-[#111827]' : 'text-gray-400'}`}>
           <Clock size={16} className="shrink-0 text-gray-400" />
           {displayValue || placeholder}

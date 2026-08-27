@@ -1,6 +1,6 @@
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { toast } from '@/lib/toast';
-import { AlertCircle, Calendar, CheckSquare, Eye, FileText, Folder, Loader2, Sparkles, Square, Upload, X } from 'lucide-react';
+import { AlertCircle, Calendar, Eye, FileText, Folder, Loader2, Sparkles, Upload, X } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { AllowedDataField, ConsentReason, consentService } from '../api/consent.service';
@@ -11,6 +11,7 @@ import { selectFarmerState, selectIsPollingLong } from '@/features/new-lead/stor
 // eslint-disable-next-line boundaries/dependencies -- reuses the shared magic-header PDF validator rather than duplicating a weaker check here
 import { PdfValidationError, validateAndEncodePdf } from '@/features/seller/utils/pdf-validation';
 import { ProfileSyncLoadingModal } from './modals/ProfileSyncLoadingModal';
+import { SelectField } from '@/components/ui/SelectField';
 
 interface ConsentFinalizationSectionProps {
   /**
@@ -279,7 +280,7 @@ export function ConsentFinalizationSection({ leadId: leadIdProp, audience = 'age
           </div>
 
           {/* Dynamic File Upload & Consent reason in side-by-side or clean row layout */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 w-full">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 w-full">
             {/* Left Column: Details & Reason */}
             <div className="flex flex-col gap-4">
               {/* Consent Reason / Purpose */}
@@ -288,29 +289,19 @@ export function ConsentFinalizationSection({ leadId: leadIdProp, audience = 'age
                   <Sparkles size={14} className="text-[#16A34A]" />
                   Consent Reason / Purpose <span className="text-red-500">*</span>
                 </label>
-                <div className="relative">
-                  <select
-                    id="consent-reason-select"
-                    value={selectedReasonId || ''}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setSelectedReasonId(val ? Number(val) : undefined);
+                <div className="relative z-50">
+                  <SelectField
+                    options={consentReasons.map(r => ({
+                      label: r.name + (r.description && r.description !== r.name ? ` — ${r.description}` : ''),
+                      value: String(r.id)
+                    }))}
+                    value={selectedReasonId ? String(selectedReasonId) : ''}
+                    onChange={(val) => {
+                      setSelectedReasonId(Number(val));
                       if (localError) setLocalError(null);
                     }}
-                    className="w-full px-3.5 py-2.5 bg-white border border-[#D1D5DB] rounded-lg text-sm text-[#374151] focus:ring-1 focus:ring-[#16A34A] focus:border-[#16A34A] outline-none transition-all appearance-none cursor-pointer pr-10"
-                  >
-                    <option value="" disabled>Select a reason...</option>
-                    {consentReasons.map((reason) => (
-                      <option key={reason.id} value={reason.id}>
-                        {reason.name} {reason.description && reason.description !== reason.name ? `— ${reason.description}` : ''}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-[#6B7280]">
-                    <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                      <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                    </svg>
-                  </div>
+                    placeholder="Select a reason..."
+                  />
                 </div>
               </div>
 
@@ -432,8 +423,8 @@ export function ConsentFinalizationSection({ leadId: leadIdProp, audience = 'age
               <Calendar size={14} className="text-[#6B7280]" />
               Consent Validity Duration <span className="text-red-500">*</span>
             </label>
-            <div className="flex flex-wrap gap-3 items-center justify-between">
-              <div className="flex flex-wrap gap-2">
+            <div className="flex flex-col xl:flex-row gap-4 items-start xl:items-center justify-between">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full xl:w-auto">
                 {[
                   { label: '1 Month', value: 1 },
                   { label: '3 Months', value: 3 },
@@ -449,7 +440,7 @@ export function ConsentFinalizationSection({ leadId: leadIdProp, audience = 'age
                         setSelectedDuration(preset.value);
                         if (localError && localError !== 'At least one registry field must be permitted.') setLocalError(null);
                       }}
-                      className={`px-4 py-2 text-sm font-medium rounded-md border transition-all ${isActive
+                      className={`px-4 py-2 text-sm font-medium rounded-md border transition-all flex items-center justify-center ${isActive
                         ? 'border-[#16A34A] bg-[#F0FDFA] text-[#15803D] ring-1 ring-[#16A34A]'
                         : 'border-[#D1D5DB] bg-white text-[#374151] hover:bg-gray-50'
                         }`}
@@ -464,9 +455,9 @@ export function ConsentFinalizationSection({ leadId: leadIdProp, audience = 'age
                 type="button"
                 onClick={handleSubmit}
                 disabled={isSubmittingConsent}
-                className="flex flex-row justify-center items-center px-6 py-[10px] bg-[#16A34A] hover:bg-[#15803D] shadow-[0px_1px_2px_rgba(0,0,0,0.05)] rounded-md font-inter font-medium text-[14px] leading-5 text-white transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                className="w-full xl:w-auto shrink-0 flex flex-row justify-center items-center px-6 py-[10px] bg-[#16A34A] hover:bg-[#15803D] shadow-[0px_1px_2px_rgba(0,0,0,0.05)] rounded-md font-inter font-medium text-[14px] leading-5 text-white transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                {isSubmittingConsent ? 'Submitting Consent...' : 'Confirm & Submit Consent'}
+                <span className='font-semibold'>{isSubmittingConsent ? 'Submitting Consent...' : 'Confirm & Submit Consent'}</span>
               </button>
             </div>
 
@@ -488,23 +479,22 @@ export function ConsentFinalizationSection({ leadId: leadIdProp, audience = 'age
                 {allowedFieldsList.map((field) => {
                   const isChecked = displayedFieldIds.includes(field.id);
                   return (
-                    <button
+                    <label
                       key={field.id}
-                      type="button"
-                      disabled={isFieldDisabled}
-                      onClick={() => handleToggleField(field.id)}
-                      className={`flex items-center gap-2 text-left hover:bg-gray-100 p-1.5 rounded transition-colors ${isFieldDisabled ? 'opacity-85 cursor-not-allowed' : ''
+                      className={`flex items-center gap-2.5 text-left hover:bg-gray-100 p-2 rounded-md transition-colors ${isFieldDisabled ? 'opacity-85 cursor-not-allowed pointer-events-none' : 'cursor-pointer'
                         }`}
                     >
-                      {isChecked ? (
-                        <CheckSquare size={18} className="text-[#16A34A]" />
-                      ) : (
-                        <Square size={18} className="text-[#9CA3AF]" />
-                      )}
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => handleToggleField(field.id)}
+                        disabled={isFieldDisabled}
+                        className="cursor-pointer shrink-0"
+                      />
                       <span className="text-[13px] font-medium text-[#374151]">
                         {field.name}
                       </span>
-                    </button>
+                    </label>
                   );
                 })}
               </div>

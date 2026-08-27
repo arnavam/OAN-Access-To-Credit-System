@@ -34,17 +34,28 @@ export function useLoanApplicationModal(isOpen: boolean, data: LoanTableRow | nu
   return { isLoading, fullProfile };
 }
 
-// Keys already rendered in pinned sections or that are metadata-only.
-// Used by both modal variants to compute extra dynamic fields.
+// Keys already rendered in pinned sections (loan product, amount, reason, applicant, phone).
+// Used by modal variants to compute dynamic fields.
 export const PINNED_OR_META_KEYS = new Set([
-  'first_name', 'last_name', 'father_name', 'farmer_id', 'date_of_birth', 'gender',
-  'marital_status', 'phone_number', 'education_level', 'national_id', 'location',
-  'woreda', 'kebele',
-  'loan_type', 'loan_reason', 'purpose', 'loan_amount', 'duration', 'primary_crops',
-  'crop_variety', 'farmland_size_hectares', 'expected_yield',
-  'bank_account_no', 'ifsc_code', 'bank_name', 'account_holder',
-  'application_id', 'lead_id', 'farmer_profile', 'consent_id', 'status', 'current_step',
-  'loan_officer', 'creation', 'submission_date', 'internal_notes', 'applicant', 'amount',
-  'updated', 'phone', 'productName', 'loan_product', 'loan_product_name', 'requested_amount',
+  // Pinned loan details
+  'loan_product',
+  'loan_product_name',
+  'productName',
+  'loan_amount',
+  'amount',
+  'requested_amount',
+  'loan_reason',
+  'purpose',
   'purpose_of_loan',
+
+  // Pinned farmer identity
+  'first_name',
+  'last_name',
+  'applicant',
+  'phone',
+  'phone_number',
+
+  // Metadata / Timestamps
+  'stage_id',
+  'creation',
 ]);

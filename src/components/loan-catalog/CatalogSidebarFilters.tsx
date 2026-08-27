@@ -38,7 +38,7 @@ function Section({
         aria-expanded={open}
         className={`flex items-center justify-between w-full group ${open ? 'mb-4' : ''}`}
       >
-        <h3 className="text-sm font-bold text-gray-900">{title}</h3>
+        <h3 className="text-md font-medium text-gray-900">{title}</h3>
         <div className="w-6 h-6 rounded-full border border-gray-200 flex items-center justify-center transition-colors group-hover:border-gray-300">
           {open ? (
             <ChevronUp className="w-4 h-4 text-gray-500 group-hover:text-gray-700" />
@@ -49,6 +49,51 @@ function Section({
       </button>
       {open && children}
     </div>
+  );
+}
+
+function CustomRangeSlider({ min, max, step, value, onChange, ariaLabel }: {
+  min: number;
+  max: number;
+  step: number;
+  value: number;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  ariaLabel: string;
+}) {
+  const percentage = max > min ? ((value - min) / (max - min)) * 100 : 0;
+
+  return (
+    <input
+      type="range"
+      min={min}
+      max={max}
+      step={step}
+      value={value}
+      onChange={onChange}
+      aria-label={ariaLabel}
+      className="w-full h-[6px] rounded-full appearance-none outline-none focus:outline-none transition-all cursor-pointer bg-gray-100
+        [&::-webkit-slider-thumb]:appearance-none 
+        [&::-webkit-slider-thumb]:w-5 
+        [&::-webkit-slider-thumb]:h-5 
+        [&::-webkit-slider-thumb]:bg-white 
+        [&::-webkit-slider-thumb]:border-[3px] 
+        [&::-webkit-slider-thumb]:border-[#16A34A] 
+        [&::-webkit-slider-thumb]:rounded-full 
+        [&::-webkit-slider-thumb]:cursor-pointer
+        [&::-webkit-slider-thumb]:shadow-sm
+        [&::-moz-range-thumb]:appearance-none
+        [&::-moz-range-thumb]:w-5 
+        [&::-moz-range-thumb]:h-5 
+        [&::-moz-range-thumb]:bg-white 
+        [&::-moz-range-thumb]:border-[3px] 
+        [&::-moz-range-thumb]:border-[#16A34A] 
+        [&::-moz-range-thumb]:rounded-full 
+        [&::-moz-range-thumb]:cursor-pointer
+        [&::-moz-range-thumb]:shadow-sm"
+      style={{
+        background: `linear-gradient(to right, #16A34A 0%, #16A34A ${percentage}%, #F3F4F6 ${percentage}%, #F3F4F6 100%)`
+      }}
+    />
   );
 }
 
@@ -93,7 +138,7 @@ export default function CatalogSidebarFilters({ facets, hasFailed = false, onRet
   return (
     <div className="h-fit bg-white rounded-2xl border border-gray-200 p-6 flex flex-col gap-5 border-[#F1F3F4] shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.05),0px_2px_4px_-1px_rgba(0,0,0,0.03)] hover:-translate-y-1 hover:shadow-lg transition-all">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold text-gray-900">Filters</h2>
+        <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
         <button
           onClick={() => {
             setDraft({});
@@ -101,7 +146,7 @@ export default function CatalogSidebarFilters({ facets, hasFailed = false, onRet
           }}
           className="text-sm font-bold text-[#16A34A] hover:text-[#10883c] transition-colors"
         >
-          Reset All
+          <span className='font-semibold'>Reset All</span>
         </button>
       </div>
 
@@ -185,17 +230,15 @@ export default function CatalogSidebarFilters({ facets, hasFailed = false, onRet
                 {formatETB(amountMax)}
               </span>
             </div>
-            <input
-              type="range"
+            <CustomRangeSlider
               min={amountMin}
               max={amountMax}
               step={Math.max(1, Math.round((amountMax - amountMin) / 100))}
               value={draft.max_amount ?? amountMax}
               onChange={(e) => setDraft({ ...draft, max_amount: Number(e.target.value) })}
-              className="w-full accent-[#16A34A]"
-              aria-label="Maximum loan amount"
+              ariaLabel="Maximum loan amount"
             />
-            <div className="text-xs font-bold text-gray-700 mt-1">
+            <div className="text-sm font-bold text-gray-700 mt-1">
               Up to ETB {formatETB(draft.max_amount ?? amountMax)}
             </div>
           </div>
@@ -205,17 +248,15 @@ export default function CatalogSidebarFilters({ facets, hasFailed = false, onRet
       {rateCeiling !== null && rateCeiling > 0 && (
         <Section title="Interest Rate">
           <div>
-            <input
-              type="range"
+            <CustomRangeSlider
               min={0}
               max={rateCeiling}
               step={0.5}
               value={draft.max_interest_rate ?? rateCeiling}
               onChange={(e) => setDraft({ ...draft, max_interest_rate: Number(e.target.value) })}
-              className="w-full accent-[#16A34A]"
-              aria-label="Maximum interest rate"
+              ariaLabel="Maximum interest rate"
             />
-            <div className="text-xs font-bold text-gray-700 mt-1">
+            <div className="text-sm font-bold text-gray-700 mt-1">
               Up to {draft.max_interest_rate ?? rateCeiling}%
             </div>
           </div>
@@ -246,11 +287,10 @@ export default function CatalogSidebarFilters({ facets, hasFailed = false, onRet
                     setDraft(next);
                   }}
                   aria-pressed={selected}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${
-                    selected
-                      ? 'bg-[#16A34A] text-white border-[#16A34A]'
-                      : 'bg-white text-gray-700 border-gray-200 hover:border-[#16A34A]'
-                  }`}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${selected
+                    ? 'bg-[#16A34A] text-white border-[#16A34A]'
+                    : 'bg-white text-gray-700 border-gray-200 hover:border-[#16A34A]'
+                    }`}
                 >
                   {months} Mon
                 </button>
@@ -268,25 +308,29 @@ export default function CatalogSidebarFilters({ facets, hasFailed = false, onRet
               return (
                 <label
                   key={cat.name}
-                  className="flex items-center gap-2 text-sm font-medium text-gray-700 cursor-pointer"
+                  className="flex items-center gap-3 text-sm font-medium text-gray-700 cursor-pointer group"
                 >
-                  <input
-                    type="radio"
-                    name="loan-category"
-                    checked={selected}
-                    // Clicking the selected category clears it. A radio group with
-                    // no "any" option is otherwise a one-way door: once a farmer
-                    // picks a type, only Reset All gets them back to everything.
-                    onClick={() => {
-                      if (!selected) return;
-                      const next = { ...draft };
-                      delete next.category;
-                      setDraft(next);
-                    }}
-                    onChange={() => setDraft({ ...draft, category: cat.name })}
-                    className="accent-[#16A34A]"
-                  />
-                  <span className="flex-1">{cat.name}</span>
+                  <div className="relative flex items-center justify-center w-4 h-4 shrink-0">
+                    <input
+                      type="radio"
+                      name="loan-category"
+                      checked={selected}
+                      // Clicking the selected category clears it. A radio group with
+                      // no "any" option is otherwise a one-way door: once a farmer
+                      // picks a type, only Reset All gets them back to everything.
+                      onClick={() => {
+                        if (!selected) return;
+                        const next = { ...draft };
+                        delete next.category;
+                        setDraft(next);
+                      }}
+                      onChange={() => setDraft({ ...draft, category: cat.name })}
+                      className="peer absolute w-full h-full opacity-0 cursor-pointer z-10"
+                    />
+                    <div className="w-full h-full border-2 border-gray-300 rounded-full peer-checked:border-[#16A34A] group-hover:border-[#16A34A] transition-colors duration-200"></div>
+                    <div className="absolute w-2 h-2 bg-[#16A34A] rounded-full scale-0 peer-checked:scale-100 transition-transform duration-200 ease-in-out"></div>
+                  </div>
+                  <span className="flex-1 group-hover:text-gray-900 transition-colors duration-200">{cat.name}</span>
                   <span className="text-xs font-bold text-gray-400">{cat.count}</span>
                 </label>
               );
