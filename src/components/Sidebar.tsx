@@ -83,6 +83,8 @@ function Sidebar({ isCollapsed, isMobileOpen = false, sections = [] }: SidebarPr
           <img
             src="/logo.svg"
             alt="OARI Logo"
+            width={1277}
+            height={851}
             className={`object-contain transition-all duration-300 ${isCollapsed ? 'w-[80%] h-auto max-h-12' : 'h-[34px] w-auto'}`}
             id="primary-logo-img"
             onError={(e) => {

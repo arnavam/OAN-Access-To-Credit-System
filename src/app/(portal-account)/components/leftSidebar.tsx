@@ -17,7 +17,7 @@ export function LeftSidebar({ badge = 'Access to Credit Portal' }: LeftSidebarPr
     <div className="w-full md:w-[45%] bg-[#0B6C43] p-6 sm:p-10 md:p-14 flex flex-col relative overflow-hidden">
       <div className="flex items-center space-x-3 mb-16 relative z-10">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo.svg" alt="OARI Logo" className="h-[28px] sm:h-[34px] w-auto shrink-0" />
+        <img src="/logo.svg" alt="OARI Logo" width={1277} height={851} className="h-[28px] sm:h-[34px] w-auto shrink-0" />
         <div className="flex flex-col border-l-2 border-white/30 pl-3">
           <span className="text-[13px] font-bold text-white leading-tight tracking-wide">Ethiopia OpenAgriNet</span>
           <span className="text-[11px] text-white/80 font-medium leading-tight tracking-wide">Access to Credit</span>

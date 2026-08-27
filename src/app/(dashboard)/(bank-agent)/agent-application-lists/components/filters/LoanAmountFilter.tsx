@@ -2,8 +2,8 @@
 
 import { Portal } from '@/components/Portal';
 import { LOAN_AMOUNT_BUCKET_LABELS, loanAmountCeilingLabel } from '@/features/loans/constants/loans.constants';
-import { Check, Filter } from 'lucide-react';
 import { useRef, useState } from 'react';
+import { FilterCheckboxRow, FilterTrigger } from './FilterControls';
 import { useColumnFilterDropdown } from './useColumnFilterDropdown';
 
 interface LoanAmountFilterProps {
@@ -19,7 +19,7 @@ const rangeOptions = LOAN_AMOUNT_BUCKET_LABELS;
 
 export default function LoanAmountFilter({ selectedValues, onChange }: LoanAmountFilterProps) {
   const [tempSelected, setTempSelected] = useState<string[]>(selectedValues);
-  const { isOpen, setIsOpen, dropdownRef, menuRef, dropdownPos, toggleDropdown: handleClick } = useColumnFilterDropdown({
+  const { isOpen, setIsOpen, dropdownRef, menuRef, triggerRef, dropdownPos, toggleDropdown: handleClick } = useColumnFilterDropdown({
     menuWidth: 340, // 340px for LoanAmountFilter based on w-[340px] in portal
     onOpen: () => setTempSelected(selectedValues),
   });
@@ -85,12 +85,13 @@ export default function LoanAmountFilter({ selectedValues, onChange }: LoanAmoun
 
   return (
     <div ref={dropdownRef} className="inline-block">
-      <div
-        className="flex items-center gap-1.5 cursor-pointer select-none text-gray-500 hover:text-gray-700 transition-colors"
+      <FilterTrigger
+        ref={triggerRef}
+        label="LOAN AMOUNT (ETB)"
+        isOpen={isOpen}
+        isActive={selectedValues.length > 0}
         onClick={handleClick}
-      >
-        LOAN AMOUNT (ETB) <Filter className={`w-3.5 h-3.5 transition-colors ${isOpen || selectedValues.length > 0 ? 'text-[#16A34A]' : ''}`} />
-      </div>
+      />
 
       {isOpen && (
         <Portal>
@@ -152,48 +153,25 @@ export default function LoanAmountFilter({ selectedValues, onChange }: LoanAmoun
             </div>
 
             {/* Range Options */}
-            <div className="flex flex-col py-2 max-h-[250px] overflow-y-auto">
-              {/* All Option */}
-              <div
-                onClick={() => toggleOption('All')}
-                className="flex items-center gap-4 px-6 py-3 hover:bg-gray-50 cursor-pointer text-[14px] font-medium text-gray-700 select-none group transition-colors"
+            <div role="group" aria-label="Loan amount" className="flex flex-col py-2 max-h-[250px] overflow-y-auto">
+              <FilterCheckboxRow
+                checked={tempSelected.length === rangeOptions.length}
+                onToggle={() => toggleOption('All')}
+                padding="px-6 py-3"
               >
-                <div
-                  className={`w-5 h-5 shrink-0 rounded-[4px] border flex items-center justify-center transition-all duration-200 ${tempSelected.length === rangeOptions.length ? 'bg-[#16A34A] border-[#16A34A]' : 'border-gray-300 group-hover:border-[#16A34A]/50'
-                    }`}
-                >
-                  <Check
-                    className={`w-3.5 h-3.5 text-white transition-all duration-200 ${tempSelected.length === rangeOptions.length ? 'scale-100 opacity-100' : 'scale-50 opacity-0'
-                      }`}
-                    strokeWidth={3}
-                  />
-                </div>
                 All
-              </div>
+              </FilterCheckboxRow>
 
-              {/* Individual Options */}
-              {rangeOptions.map(option => {
-                const isSelected = tempSelected.includes(option);
-                return (
-                  <div
-                    key={option}
-                    onClick={() => toggleOption(option)}
-                    className="flex items-center gap-4 px-6 py-3 hover:bg-gray-50 cursor-pointer text-[14px] font-medium text-gray-700 select-none group transition-colors"
-                  >
-                    <div
-                      className={`w-5 h-5 shrink-0 rounded-[4px] border flex items-center justify-center transition-all duration-200 ${isSelected ? 'bg-[#16A34A] border-[#16A34A]' : 'border-gray-300 group-hover:border-[#16A34A]/50'
-                        }`}
-                    >
-                      <Check
-                        className={`w-3.5 h-3.5 text-white transition-all duration-200 ${isSelected ? 'scale-100 opacity-100' : 'scale-50 opacity-0'
-                          }`}
-                        strokeWidth={3}
-                      />
-                    </div>
-                    {option}
-                  </div>
-                );
-              })}
+              {rangeOptions.map(option => (
+                <FilterCheckboxRow
+                  key={option}
+                  checked={tempSelected.includes(option)}
+                  onToggle={() => toggleOption(option)}
+                  padding="px-6 py-3"
+                >
+                  {option}
+                </FilterCheckboxRow>
+              ))}
             </div>
 
             {/* Footer */}

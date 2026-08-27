@@ -15,6 +15,7 @@ export function useColumnFilterDropdown({
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
   const dropdownRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   const updatePosition = useCallback(() => {
     if (dropdownRef.current) {
@@ -44,13 +45,24 @@ export function useColumnFilterDropdown({
       }
     }
 
+    // Clicking outside is how a mouse user dismisses this. Escape is the
+    // equivalent for everyone else, and without it a keyboard user who opened
+    // the menu had no way to close it and no way past it.
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key !== 'Escape') return;
+      setIsOpen(false);
+      triggerRef.current?.focus();
+    }
+
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleEscape);
       window.addEventListener('scroll', updatePosition, true);
       window.addEventListener('resize', updatePosition);
     }
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
       window.removeEventListener('scroll', updatePosition, true);
       window.removeEventListener('resize', updatePosition);
     };
@@ -71,6 +83,8 @@ export function useColumnFilterDropdown({
     setIsOpen,
     dropdownRef,
     menuRef,
+    /** Wire onto FilterTrigger, so Escape can hand focus back to it. */
+    triggerRef,
     dropdownPos,
     toggleDropdown,
   };
