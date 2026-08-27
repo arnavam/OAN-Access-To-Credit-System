@@ -2,8 +2,8 @@
 
 import { Portal } from '@/components/Portal';
 import { Check, Filter } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
-
+import { useState } from 'react';
+import { useColumnFilterDropdown } from './useColumnFilterDropdown';
 export interface StatusFilterOption {
   /** What `get_all_loans` is filtered by — a stage label or stage_id. */
   value: string;
@@ -32,45 +32,11 @@ interface StatusFilterProps {
  * every checkbox toggle would otherwise be its own round trip.
  */
 export default function StatusFilter({ options, selectedValues, onChange }: StatusFilterProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
   const [tempSelected, setTempSelected] = useState<string[]>(selectedValues);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
-        menuRef.current && !menuRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false);
-      }
-    }
-
-    // The menu is portalled to <body>, so it does not travel with the table's own
-    // scroll container — it has to be repositioned rather than left behind.
-    const updatePosition = () => {
-      if (dropdownRef.current) {
-        const rect = dropdownRef.current.getBoundingClientRect();
-        setDropdownPos({
-          top: rect.bottom + window.scrollY + 8,
-          left: rect.left + window.scrollX,
-        });
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      window.addEventListener('scroll', updatePosition, true);
-      window.addEventListener('resize', updatePosition);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      window.removeEventListener('scroll', updatePosition, true);
-      window.removeEventListener('resize', updatePosition);
-    };
-  }, [isOpen]);
+  const { isOpen, setIsOpen, dropdownRef, menuRef, dropdownPos, toggleDropdown: handleClick } = useColumnFilterDropdown({
+    menuWidth: 300,
+    onOpen: () => setTempSelected(selectedValues),
+  });
 
   const isAllSelected = options.length > 0 && tempSelected.length === options.length;
 
@@ -84,20 +50,7 @@ export default function StatusFilter({ options, selectedValues, onChange }: Stat
     );
   };
 
-  const handleClick = () => {
-    if (!isOpen && dropdownRef.current) {
-      // Start the draft from what is actually applied, so a selection abandoned
-      // last time (closed without Apply) is not still sitting there.
-      setTempSelected(selectedValues);
 
-      const rect = dropdownRef.current.getBoundingClientRect();
-      setDropdownPos({
-        top: rect.bottom + window.scrollY + 8,
-        left: rect.left + window.scrollX,
-      });
-    }
-    setIsOpen(!isOpen);
-  };
 
   return (
     <div ref={dropdownRef} className="inline-block">

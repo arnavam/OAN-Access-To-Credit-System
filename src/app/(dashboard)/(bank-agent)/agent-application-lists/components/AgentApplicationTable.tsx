@@ -379,17 +379,15 @@ export default function AgentApplicationTable({ onView }: AgentApplicationTableP
           different button shapes, a page-size dropdown that opened upward on its
           own markup — which is what made the bottom of this table look unlike
           every other table in the app. */}
-      {rows.length > 0 && (
-        <TablePagination
-          visibleCount={rows.length}
-          totalCount={totalEntries}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          pageSize={entriesPerPage}
-          onPageChange={(page) => dispatch(setBankPage(page))}
-          onPageSizeChange={(size) => dispatch(setBankPageSize(size))}
-        />
-      )}
+      <TablePagination
+        visibleCount={rows.length}
+        totalCount={totalEntries}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        pageSize={entriesPerPage}
+        onPageChange={(page) => dispatch(setBankPage(page))}
+        onPageSizeChange={(size) => dispatch(setBankPageSize(size))}
+      />
 
       <AdvancedFiltersDrawer
         isOpen={isAdvancedFiltersOpen}
