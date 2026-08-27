@@ -96,6 +96,59 @@ describe('stageStyles utility', () => {
     expect(pending.tone).toBe('neutral');
   });
 
+  it('styles the archetype states the backend actually sends', () => {
+    // ARCHETYPE_STATES in oan_a2c/a2c_marketplace/stages.py. 'Active' and
+    // 'In Transition' had no entry, so both fell through to the generic default —
+    // the same colour an unrecognised stage gets.
+    expect(getStageStyle('In Transition').tone).toBe('info');
+    expect(getStageStyle('Completed').tone).toBe('success');
+    expect(getStageStyle('Rejected').tone).toBe('danger');
+    expect(getStageStyle('Cancelled').tone).toBe('danger');
+
+    // 'Active' is what create_loan_application stamps: nobody has acted on it, so
+    // it must not read as work already in a bank's pipeline.
+    const active = getStageStyle('Active');
+    expect(active.tone).toBe('neutral');
+    expect(active.tone).not.toBe(getStageStyle('In Transition').tone);
+  });
+
+  it('keeps each In Transition stage its own colour', () => {
+    // Mapping 'In Transition' ahead of the label would collapse every pipeline
+    // step a bank defines into one indistinguishable badge.
+    const tones = ['Submitted', 'Verified', 'Disbursed', 'Rejected'].map(
+      (label) => getStageStyle(label, mockStages).badge
+    );
+    expect(new Set(tones).size).toBe(4);
+  });
+
+  it('lets a terminal archetype outrank a misleading stage label', () => {
+    // A bank names its own stages, so the label cannot be trusted over the
+    // archetype: a step called "Approved" that sits in Rejected is a refusal.
+    const approvedButRejected: LoanStage = {
+      ...mockStages[0]!,
+      stage_id: 'LSS-0099',
+      label: 'Approved',
+      archetype_state: 'Rejected',
+      external_code: 'APPROVED_REJ',
+    };
+
+    const style = getStageStyle('Approved', [approvedButRejected]);
+    expect(style.tone).toBe('danger');
+  });
+
+  it('falls back to the archetype when no label keyword matches', () => {
+    // 'Processed' matches none of the label nuances, so the archetype decides.
+    const processed: LoanStage = {
+      ...mockStages[0]!,
+      stage_id: 'LSS-0098',
+      label: 'Processed',
+      archetype_state: 'In Transition',
+      external_code: 'PROCESSED',
+    };
+
+    expect(getStageStyle('Processed', [processed]).tone).toBe('info');
+  });
+
   it('converts LoanStage array to FilterOptions', () => {
     const filterOptions = toStageFilterOptions(mockStages);
     expect(filterOptions).toHaveLength(4);

@@ -3,8 +3,9 @@
 import { Portal } from '@/components/Portal';
 import { toast } from '@/lib/toast';
 import { useModalA11y } from '@/hooks/useModalA11y';
-import { CheckCircle2, ChevronDown, Loader2, Package, X, XCircle } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import type { LoanStage } from '@/lib/api/api.schemas';
+import { ChevronDown, Loader2, Package, RefreshCw, X } from 'lucide-react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { LoanApplicationFull } from '../../api/loan.service';
 import { LoanTableRow } from '../LoanTable';
 import { PINNED_OR_META_KEYS, useLoanApplicationModal } from './useLoanApplicationModal';
@@ -13,20 +14,58 @@ interface LoanApplicationModalProps {
   isOpen: boolean;
   onClose: () => void;
   data: LoanTableRow | null;
-  onStatusChange?: (id: string, status: 'Approved' | 'Rejected', reason?: string, note?: string) => void;
+  /**
+   * The owning bank's pipeline, from `get_stages`. The picker offers exactly
+   * these — a bank names its own stages, so there is no fixed set of outcomes
+   * to fall back on, and an empty list means the picker is not offered at all.
+   */
+  stages?: readonly LoanStage[];
+  /** `status` is a stage ID the backend resolves against the bank's pipeline. */
+  onStatusChange?: (id: string, status: string, reason?: string) => void;
 }
 
-export default function LoanApplicationModal({ isOpen, onClose, data, onStatusChange }: LoanApplicationModalProps) {
+/** Stages an application can no longer be moved out of; the API 400s on these. */
+const TERMINAL_ARCHETYPES = new Set(['Completed', 'Rejected', 'Cancelled']);
+
+/** Matches the endpoint's own cap on the audit remark. */
+const REASON_MAX_LENGTH = 2000;
+
+/** Tone for a stage, taken from its archetype rather than its label — labels are
+ *  tenant free text and cannot be matched against a fixed vocabulary. */
+function toneForArchetype(archetype: string): { border: string; ring: string; button: string } {
+  if (archetype === 'Rejected' || archetype === 'Cancelled') {
+    return {
+      border: 'border-red-200 bg-red-50/30',
+      ring: 'focus:ring-red-500/20 focus:border-red-500',
+      button: 'bg-[#DC2626] hover:bg-[#B91C1C]',
+    };
+  }
+  if (archetype === 'Completed') {
+    return {
+      border: 'border-emerald-200 bg-emerald-50/30',
+      ring: 'focus:ring-emerald-500/20 focus:border-emerald-500',
+      button: 'bg-[#16A34A] hover:bg-[#15803d]',
+    };
+  }
+  return {
+    border: 'border-blue-200 bg-blue-50/30',
+    ring: 'focus:ring-blue-500/20 focus:border-blue-500',
+    button: 'bg-[#2563EB] hover:bg-[#1D4ED8]',
+  };
+}
+
+export default function LoanApplicationModal({ isOpen, onClose, data, stages = [], onStatusChange }: LoanApplicationModalProps) {
   const { isLoading, fullProfile: rawProfile } = useLoanApplicationModal(isOpen, data);
   const fullProfile = rawProfile as LoanApplicationFull | null;
 
-  const [isRejecting, setIsRejecting] = useState(false);
-  const [isApproving, setIsApproving] = useState(false);
-  const [decisionReason, setDecisionReason] = useState('');
-  const [decisionNote, setDecisionNote] = useState('');
+  const [isChangingStatus, setIsChangingStatus] = useState(false);
+  const [selectedStageId, setSelectedStageId] = useState('');
+  const [reason, setReason] = useState('');
 
   const endRef = useRef<HTMLDivElement>(null);
-  const reasonSelectRef = useRef<HTMLSelectElement>(null);
+  const stageSelectRef = useRef<HTMLSelectElement>(null);
+  const stageFieldId = useId();
+  const reasonFieldId = useId();
   const dialogRef = useModalA11y<HTMLDivElement>(isOpen, onClose);
 
   useEffect(() => {
@@ -35,48 +74,61 @@ export default function LoanApplicationModal({ isOpen, onClose, data, onStatusCh
     // reopen rather than relying on unmount/remount to clear stale values.
     if (isOpen) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setIsRejecting(false);
-      setIsApproving(false);
-      setDecisionReason('');
-      setDecisionNote('');
+      setIsChangingStatus(false);
+      setSelectedStageId('');
+      setReason('');
     }
   }, [isOpen]);
 
   if (!isOpen || !data) return null;
 
+  // The stage the application is on now, matched against the bank's pipeline so
+  // its archetype can be read. Falls back to no match when a label was renamed
+  // between the two requests, which leaves the picker open rather than locked.
+  const currentStage = stages.find(
+    (stage) =>
+      stage.label.toLowerCase() === (data.status || '').toLowerCase() ||
+      stage.stage_id.toLowerCase() === (data.status || '').toLowerCase()
+  );
+  const isTerminal = currentStage ? TERMINAL_ARCHETYPES.has(currentStage.archetype_state) : false;
+  // Moving a stage to itself is not a transition; offering it invites a call
+  // that changes nothing but still writes an audit entry.
+  const availableStages = stages.filter((stage) => stage.stage_id !== currentStage?.stage_id);
+  const canChangeStatus = Boolean(onStatusChange) && !isTerminal && availableStages.length > 0;
+
+  // Keyed on the archetype, not on the label: 'Approved' and 'Rejected' were the
+  // only two labels this recognised, so every stage of a bank that names its
+  // pipeline anything else rendered in the same amber "pending" badge.
   const statusBadgeColor =
-    data.status === 'Approved'
+    currentStage?.archetype_state === 'Completed'
       ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-      : data.status === 'Rejected'
+      : currentStage?.archetype_state === 'Rejected' || currentStage?.archetype_state === 'Cancelled'
         ? 'bg-red-50 text-red-700 border-red-200'
         : 'bg-amber-50 text-amber-700 border-amber-200';
 
-  const handleConfirmDecision = () => {
-    if (!decisionReason) {
-      toast.error('Please select a reason for your decision');
+  const selectedStage = stages.find((stage) => stage.stage_id === selectedStageId);
+  const tone = toneForArchetype(selectedStage?.archetype_state ?? 'In Transition');
+
+  const handleConfirmStatusChange = () => {
+    if (!selectedStage) {
+      toast.error('Select a status to move this application to');
       return;
     }
-    const statusToSet = isRejecting ? 'Rejected' : 'Approved';
     if (onStatusChange) {
-      onStatusChange(data.id, statusToSet, decisionReason, decisionNote);
+      // The stage ID, not the label: the endpoint accepts either, and an ID
+      // survives a bank renaming its own stage between load and submit.
+      onStatusChange(data.id, selectedStage.stage_id, reason.trim() || undefined);
     }
-    toast.success(`Application #${data.id} has been ${statusToSet.toLowerCase()}`);
-    setIsRejecting(false);
-    setIsApproving(false);
+    toast.success(`Application #${data.id} moved to ${selectedStage.label}`);
+    setIsChangingStatus(false);
     onClose();
   };
 
-  const handleActionClick = (action: 'approve' | 'reject') => {
-    if (action === 'reject') {
-      setIsApproving(false);
-      setIsRejecting(true);
-    } else {
-      setIsRejecting(false);
-      setIsApproving(true);
-    }
+  const handleOpenStatusChange = () => {
+    setIsChangingStatus(true);
     setTimeout(() => {
       endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-      reasonSelectRef.current?.focus();
+      stageSelectRef.current?.focus();
     }, 100);
   };
 
@@ -226,67 +278,62 @@ export default function LoanApplicationModal({ isOpen, onClose, data, onStatusCh
                 </div>
               )}
 
-              {/* Decision Confirmation Form */}
-              {(isRejecting || isApproving) && (
-                <div className={`border-2 rounded-2xl p-5 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200 ${isRejecting ? 'border-red-200 bg-red-50/30' : 'border-emerald-200 bg-emerald-50/30'}`}>
-                  <h4 className="text-sm font-bold text-gray-900">
-                    {isRejecting ? 'Confirm Rejection' : 'Confirm Approval'}
-                  </h4>
+              {/* Status Change Form */}
+              {isChangingStatus && (
+                <div className={`border-2 rounded-2xl p-5 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200 ${tone.border}`}>
+                  <h4 className="text-sm font-bold text-gray-900">Update Status</h4>
 
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1.5">
-                      Reason for Decision <span className={isRejecting ? 'text-red-500' : 'text-emerald-500'}>*</span>
+                    <label htmlFor={stageFieldId} className="block text-xs font-bold text-gray-700 mb-1.5">
+                      Move to stage
                     </label>
                     <div className="relative">
                       <select
-                        ref={reasonSelectRef}
-                        value={decisionReason}
-                        onChange={(e) => setDecisionReason(e.target.value)}
-                        className={`w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 appearance-none ${isRejecting ? 'focus:ring-red-500/20 focus:border-red-500' : 'focus:ring-emerald-500/20 focus:border-emerald-500'}`}
+                        id={stageFieldId}
+                        ref={stageSelectRef}
+                        value={selectedStageId}
+                        onChange={(e) => setSelectedStageId(e.target.value)}
+                        className={`w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 appearance-none ${tone.ring}`}
                       >
-                        <option value="">Select Reason for Decison</option>
-                        {isRejecting ? (
-                          <>
-                            <option value="Insufficient Income">Insufficient Income</option>
-                            <option value="Incomplete Documentation">Incomplete Documentation</option>
-                            <option value="Eligibility Criteria Not Met">Eligibility Criteria Not Met</option>
-                            <option value="High Risk Profile">High Risk Profile</option>
-                          </>
-                        ) : (
-                          <>
-                            <option value="Meets All Criteria">Meets All Criteria</option>
-                            <option value="Good Credit History">Good Credit History</option>
-                            <option value="Verified Income">Verified Income</option>
-                            <option value="Strong Collateral">Strong Collateral</option>
-                          </>
-                        )}
-                        <option value="Other">Other</option>
+                        <option value="">Select a stage...</option>
+                        {availableStages.map((stage) => (
+                          <option key={stage.stage_id} value={stage.stage_id}>
+                            {stage.label}
+                          </option>
+                        ))}
                       </select>
                       <ChevronDown className="w-4 h-4 text-gray-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                     </div>
+                    {selectedStage?.description && (
+                      <p className="mt-1.5 text-xs text-gray-500">{selectedStage.description}</p>
+                    )}
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1.5">
-                      Add Note (Optional)
+                    <label htmlFor={reasonFieldId} className="block text-xs font-bold text-gray-700 mb-1.5">
+                      Reason (Optional)
                     </label>
                     <textarea
+                      id={reasonFieldId}
                       rows={3}
-                      value={decisionNote}
-                      onChange={(e) => setDecisionNote(e.target.value)}
-                      placeholder="Placeholder for notes"
-                      className={`w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 ${isRejecting ? 'focus:ring-red-500/20 focus:border-red-500' : 'focus:ring-emerald-500/20 focus:border-emerald-500'}`}
+                      value={reason}
+                      maxLength={REASON_MAX_LENGTH}
+                      onChange={(e) => setReason(e.target.value)}
+                      placeholder="Recorded on the application's audit timeline."
+                      className={`w-full px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 ${tone.ring}`}
                     />
+                    <p className="mt-1 text-right text-xs text-gray-400">
+                      {reason.length} / {REASON_MAX_LENGTH}
+                    </p>
                   </div>
 
                   <div className="flex justify-end gap-3 pt-2">
                     <button
                       type="button"
                       onClick={() => {
-                        setIsRejecting(false);
-                        setIsApproving(false);
-                        setDecisionReason('');
-                        setDecisionNote('');
+                        setIsChangingStatus(false);
+                        setSelectedStageId('');
+                        setReason('');
                       }}
                       className="px-5 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold rounded-xl text-sm transition-colors"
                     >
@@ -294,10 +341,11 @@ export default function LoanApplicationModal({ isOpen, onClose, data, onStatusCh
                     </button>
                     <button
                       type="button"
-                      onClick={handleConfirmDecision}
-                      className={`px-5 py-2 text-white font-bold rounded-xl text-sm transition-colors shadow-sm ${isRejecting ? 'bg-[#DC2626] hover:bg-[#B91C1C]' : 'bg-[#16A34A] hover:bg-[#15803d]'}`}
+                      onClick={handleConfirmStatusChange}
+                      disabled={!selectedStage}
+                      className={`px-5 py-2 text-white font-bold rounded-xl text-sm transition-colors shadow-sm disabled:cursor-not-allowed disabled:opacity-50 ${tone.button}`}
                     >
-                      Confirm Decision
+                      Update Status
                     </button>
                   </div>
                 </div>
@@ -318,27 +366,24 @@ export default function LoanApplicationModal({ isOpen, onClose, data, onStatusCh
             <span className='font-semibold'>Close</span>
           </button>
 
-          {(!isRejecting && !isApproving) && (
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => handleActionClick('reject')}
-                className="px-6 py-2.5 bg-[#DC2626] hover:bg-[#B91C1C] text-white font-bold rounded-xl text-sm transition-colors flex items-center gap-2 shadow-sm"
-              >
-                <XCircle className="w-4 h-4" />
+          {!isChangingStatus && canChangeStatus && (
+            <button
+              type="button"
+              onClick={handleOpenStatusChange}
+              className="px-6 py-2.5 bg-[#16A34A] hover:bg-[#15803d] text-white font-bold rounded-xl text-sm transition-colors flex items-center gap-2 shadow-sm"
+            >
+              <RefreshCw className="w-4 h-4" />
+              <span className="font-semibold">Update Status</span>
+            </button>
+          )}
 
-                <span className='font-semibold'>Reject</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleActionClick('approve')}
-                className="px-6 py-2.5 bg-[#16A34A] hover:bg-[#15803d] text-white font-bold rounded-xl text-sm transition-colors flex items-center gap-2 shadow-sm"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-
-                <span className='font-semibold'>Approve</span>
-              </button>
-            </div>
+          {/* Terminal applications accept no further transitions — the endpoint
+              rejects them outright, so say why the control is absent rather than
+              offering a button that can only fail. */}
+          {!isChangingStatus && isTerminal && (
+            <p className="text-sm font-medium text-gray-500">
+              This application is {currentStage?.label ?? data.status} and can no longer be moved.
+            </p>
           )}
         </div>
 

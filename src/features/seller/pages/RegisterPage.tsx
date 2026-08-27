@@ -5,13 +5,13 @@ import { OrganisationSection, type OrganisationFields } from '@/features/seller/
 import { RegisteredAddressSection, type RegisteredAddressFields } from '@/features/seller/components/register/RegisteredAddressSection';
 import { RegisterFooterCard } from '@/features/seller/components/register/RegisterFooterCard';
 import { RegisterHeaderCard } from '@/features/seller/components/register/RegisterHeaderCard';
+import { performGlobalLogout } from '@/features/auth/logout';
 // eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
 import { selectAuthStatus, selectUser } from '@/features/auth/store/authSlice';
 import { registerBank, selectOnboardingRegistrationError, selectOnboardingRegistrationStatus } from '@/features/seller/store/onboardingSlice';
 import { toast } from '@/lib/toast';
 import type { AppDispatch } from '@/store';
 import { ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -127,13 +127,21 @@ export default function RegisterPage() {
   return (
     <div className="flex-1 w-full flex flex-col bg-[#F8F9FA]">
       <div className="max-w-5xl mx-auto w-full pb-12 pt-8 px-4 sm:px-6">
-        <Link
-          href="/login/bank-admin"
-          className="inline-flex items-center text-[14px] font-semibold text-[#4B5563] hover:text-[#1F2937] transition-colors mb-4"
+        {/* Not a <Link> to /login/bank-admin. Everyone who reaches this page is a
+            signed-in bank_admin — the only ways in are BankAdminLoginForm and the
+            dashboard's onboarding gate — and proxy.ts bounces an authenticated
+            visitor off every /login route to their home route, which the gate then
+            bounces straight back here. The link therefore looked inert. Leaving
+            the session is the only way out, so this signs out and lands on the
+            /login role chooser (see LOGIN_ROUTE in auth/rbac.ts). */}
+        <button
+          type="button"
+          onClick={() => void performGlobalLogout(dispatch)}
+          className="inline-flex items-center text-[14px] font-semibold text-[#4B5563] hover:text-[#1F2937] transition-colors mb-4 cursor-pointer"
         >
           <ArrowLeft size={16} className="mr-1.5" />
           Back to Sign In
-        </Link>
+        </button>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <RegisterHeaderCard />

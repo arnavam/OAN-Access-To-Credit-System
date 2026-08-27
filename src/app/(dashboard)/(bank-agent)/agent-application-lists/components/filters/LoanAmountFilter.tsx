@@ -1,6 +1,7 @@
 'use client';
 
 import { Portal } from '@/components/Portal';
+import { LOAN_AMOUNT_BUCKET_LABELS, loanAmountCeilingLabel } from '@/features/loans/constants/loans.constants';
 import { Check, Filter } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -8,6 +9,12 @@ interface LoanAmountFilterProps {
   selectedValues: string[];
   onChange: (selected: string[]) => void;
 }
+
+// The shared buckets, minus the trailing "All Amounts" entry — this control expresses
+// that as every bucket ticked. This was the fourth private copy of the same four
+// labels; the copies had drifted, so the same bucket was named differently depending
+// on which filter you opened.
+const rangeOptions = LOAN_AMOUNT_BUCKET_LABELS;
 
 export default function LoanAmountFilter({ selectedValues, onChange }: LoanAmountFilterProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -21,24 +28,13 @@ export default function LoanAmountFilter({ selectedValues, onChange }: LoanAmoun
     if (!sliderRef.current) return;
     const rect = sliderRef.current.getBoundingClientRect();
     const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    let newMaxIndex = Math.round(percent * 4);
+    let newMaxIndex = Math.round(percent * rangeOptions.length);
 
     // Clamp to 1 so the slider doesn't collapse to 0% (which would mean 0 ETB)
     if (newMaxIndex === 0) newMaxIndex = 1;
 
-    if (newMaxIndex === 4) {
-      setTempSelected(rangeOptions);
-    } else {
-      setTempSelected(rangeOptions.slice(0, newMaxIndex));
-    }
+    setTempSelected(rangeOptions.slice(0, newMaxIndex));
   };
-
-  const rangeOptions = [
-    '0 - 25,000',
-    '25,001 - 50,000',
-    '50,001 - 1,00,000',
-    '1,00,000 and above'
-  ];
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -117,8 +113,7 @@ export default function LoanAmountFilter({ selectedValues, onChange }: LoanAmoun
   };
 
   // Dynamic Slider Logic
-  const stepValues = [0, 25000, 50000, 100000, 1000000];
-  let displayMaxIndex = 4;
+  let displayMaxIndex = rangeOptions.length;
 
   if (tempSelected.length > 0) {
     const selectedIndices = tempSelected.map(opt => rangeOptions.indexOf(opt)).filter(i => i !== -1);
@@ -127,8 +122,11 @@ export default function LoanAmountFilter({ selectedValues, onChange }: LoanAmoun
     }
   }
 
-  const maxPercent = displayMaxIndex * 25;
-  const maxLabel = (stepValues[displayMaxIndex] ?? 0).toLocaleString();
+  const maxPercent = (displayMaxIndex / rangeOptions.length) * 100;
+  // The top bucket is open-ended, so the widest selection reads "100,000+". The scale
+  // used to close at a flat 1,000,000 — a ceiling the endpoint does not apply, which
+  // made this control claim a limit that did not exist.
+  const maxLabel = loanAmountCeilingLabel(displayMaxIndex);
 
   return (
     <div ref={dropdownRef} className="inline-block">
@@ -253,7 +251,7 @@ export default function LoanAmountFilter({ selectedValues, onChange }: LoanAmoun
               </button>
               <button
                 onClick={handleApply}
-                className="bg-[#16A34A] hover:bg-[#15803d] text-white px-6 py-2 rounded-lg text-[14px] font-semibold transition-colors shadow-sm"
+                className="bg-[#16A34A] hover:bg-[#10883c] text-white px-6 py-2 rounded-lg text-[14px] font-semibold transition-colors shadow-sm"
               >
                 <span className='font-semibold'>Apply</span>
               </button>

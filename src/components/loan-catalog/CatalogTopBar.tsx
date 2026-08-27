@@ -1,9 +1,9 @@
 'use client';
 import { Check, ChevronDown, Search } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import type { CatalogSortKey } from '../../types';
+import type { CatalogSortKey } from '@/types/loan-catalog';
 
-interface TopBarProps {
+interface CatalogTopBarProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   sortBy: CatalogSortKey;
@@ -23,7 +23,7 @@ const SORT_OPTIONS: ReadonlyArray<{ value: CatalogSortKey; label: string }> = [
   { value: 'newest', label: 'Newest First' },
 ];
 
-export default function TopBar({ searchQuery, onSearchChange, sortBy, onSortChange }: TopBarProps) {
+export default function CatalogTopBar({ searchQuery, onSearchChange, sortBy, onSortChange }: CatalogTopBarProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -43,7 +43,7 @@ export default function TopBar({ searchQuery, onSearchChange, sortBy, onSortChan
     SORT_OPTIONS.find((opt) => opt.value === sortBy)?.label ?? SORT_OPTIONS[0]!.label;
 
   return (
-    <div className="relative z-40 flex flex-col gap-4 mb-6 bg-white border border-[#F1F3F4] rounded-xl p-4 shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.05),0px_2px_4px_-1px_rgba(0,0,0,0.03)] hover:-translate-y-1 hover:shadow-lg transition-all">
+    <div className="relative z-30 flex flex-col gap-4 mb-6 bg-white border border-[#F1F3F4] rounded-xl p-4 shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.05),0px_2px_4px_-1px_rgba(0,0,0,0.03)] hover:-translate-y-1 hover:shadow-lg transition-all">
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">

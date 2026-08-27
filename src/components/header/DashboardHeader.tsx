@@ -111,7 +111,7 @@ export function DashboardHeader({ onMenuClick, title = 'Dashboard', subtitle }: 
 
   return (
     <>
-      <header className="bg-white border-b border-gray-100 shadow-md h-20 shrink-0 flex items-center justify-between px-6 md:px-10 sticky top-0 z-30">
+      <header className="bg-white border-b border-gray-100 shadow-md h-20 shrink-0 flex items-center justify-between px-6 md:px-10 sticky top-0 z-40">
 
         <div className="flex items-center gap-4">
           {/* Only render the sidebar toggle when a handler is wired up (i.e. a

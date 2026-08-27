@@ -23,7 +23,7 @@ const baseFilters = {
   status: [],
   loanType: [],
   loanAmount: [],
-  location: '',
+  region: '',
   dateFrom: '',
   dateTo: '',
 };
@@ -44,10 +44,8 @@ describe('selectBankQueryParams', () => {
   });
 
   it('never sends a date window the page has no control for', () => {
-    // The Development Agent's slice defaults to a 30-day window. Inheriting that
-    // here would silently hide older applications on a screen with no date
-    // control to explain the gap, so the bank list must send no from_date until
-    // one is actually picked.
+    // Any default window would silently hide older applications until someone
+    // opens the drawer, so the bank list sends no from_date until one is picked.
     const store = createTestStore();
     const params = selectBankQueryParams(asRootState(store.getState()));
 
@@ -55,11 +53,40 @@ describe('selectBankQueryParams', () => {
     expect(params.to_date).toBeUndefined();
   });
 
-  it('sends the API status values, not their display labels', () => {
+  it('sends archetype status values', () => {
     const store = createTestStore();
+    store.dispatch({
+      type: 'bankApplications/fetchStages/fulfilled',
+      payload: [
+        {
+          name: 'c2f9d14a80',
+          bank: 'HDFC Bank',
+          stage_id: 'approved-a8f3b2',
+          label: 'Approved',
+          archetype_state: 'Completed',
+          sequence: 1,
+          external_code: null,
+          description: 'Approved',
+          application_count: 14,
+        },
+        {
+          name: 'd3e8c25b91',
+          bank: 'HDFC Bank',
+          stage_id: 'rejected-b9e4c3',
+          label: 'Rejected',
+          archetype_state: 'Cancelled',
+          sequence: 2,
+          external_code: null,
+          description: 'Rejected',
+          application_count: 20,
+        },
+      ],
+    });
     store.dispatch(setBankFilters({ ...baseFilters, status: ['Approved', 'Rejected'] }));
 
-    expect(selectBankQueryParams(asRootState(store.getState())).status).toBe('Approved,Rejected');
+    expect(selectBankQueryParams(asRootState(store.getState())).status).toBe(
+      JSON.stringify(['Approved', 'Rejected'])
+    );
   });
 
   it('collapses selected amount buckets into a single min/max span', () => {
@@ -82,14 +109,14 @@ describe('selectBankQueryParams', () => {
     expect(params.max_loan_amount).toBeUndefined();
   });
 
-  it('carries search, loan type, location and dates through', () => {
+  it('carries search, loan type, region and dates through', () => {
     const store = createTestStore();
     store.dispatch(setBankSearchQuery('ET-FRM-2026'));
     store.dispatch(
       setBankFilters({
         ...baseFilters,
         loanType: ['Crop Loan', 'Seed Loan'],
-        location: 'Adama',
+        region: 'Oromia',
         dateFrom: '2026-01-01',
         dateTo: '2026-02-01',
       })
@@ -98,10 +125,19 @@ describe('selectBankQueryParams', () => {
     expect(selectBankQueryParams(asRootState(store.getState()))).toMatchObject({
       search_query: 'ET-FRM-2026',
       loan_type: 'Crop Loan,Seed Loan',
-      location: 'Adama',
+      // `region`, not `location`: there is no `location` column on
+      // A2C Loan Application, and naming one put it in the WHERE clause.
+      region: 'Oromia',
       from_date: '2026-01-01',
       to_date: '2026-02-01',
     });
+  });
+
+  it('never sends a location param', () => {
+    const store = createTestStore();
+    store.dispatch(setBankFilters({ ...baseFilters, region: 'Oromia' }));
+
+    expect(selectBankQueryParams(asRootState(store.getState()))).not.toHaveProperty('location');
   });
 });
 
@@ -110,7 +146,7 @@ describe('paging resets', () => {
     const store = createTestStore();
 
     store.dispatch(setBankPage(4));
-    store.dispatch(setBankFilters({ ...baseFilters, status: ['Rejected'] }));
+    store.dispatch(setBankFilters({ ...baseFilters, status: ['Completed'] }));
     expect(store.getState().bankApplications.page).toBe(1);
 
     store.dispatch(setBankPage(4));
@@ -127,7 +163,7 @@ describe('paging resets', () => {
     // person can no longer see keeps narrowing the request.
     const store = createTestStore();
     store.dispatch(setBankSearchQuery('abebe'));
-    store.dispatch(setBankFilters({ ...baseFilters, status: ['Rejected'], location: 'Adama' }));
+    store.dispatch(setBankFilters({ ...baseFilters, status: ['Completed'], region: 'Oromia' }));
 
     store.dispatch(clearBankFilters());
 
@@ -144,34 +180,32 @@ describe('paging resets', () => {
 });
 
 describe('selectBankApplicationRows', () => {
-  it('labels an Approved application as Granted while keeping the API status', () => {
-    const store = createTestStore();
-    // Stand in for a settled fetch; the mapper reads whatever `raw` holds.
-    store.dispatch({
-      type: 'bankApplications/fetch/pending',
-      meta: { requestId: 'r1' },
-    });
+  /** Stand in for a settled fetch; the mapper reads whatever `raw` holds. */
+  function seed(store: ReturnType<typeof createTestStore>, row: Record<string, unknown>) {
+    store.dispatch({ type: 'bankApplications/fetch/pending', meta: { requestId: 'r1' } });
     store.dispatch({
       type: 'bankApplications/fetch/fulfilled',
       meta: { requestId: 'r1' },
-      payload: {
-        data: [
-          {
-            application_id: 'APP-0001',
-            status: 'Approved',
-            step: 5,
-            loan_amount: 15000,
-            loan_type: 'Crop Loan',
-            loan_product_name: 'Harvest Plus',
-            location: 'Adama',
-            phone_number: '+251911000000',
-            creation: '2026-05-28T10:42:00',
-            first_name: 'Abebe',
-            last_name: 'Girma',
-          },
-        ],
-        pagination: { total: 1, total_pages: 1 },
-      },
+      payload: { data: [row], pagination: { total: 1, total_pages: 1 } },
+    });
+  }
+
+  it("shows the bank's own stage label while keeping the archetype status", () => {
+    const store = createTestStore();
+    seed(store, {
+      application_id: 'APP-0001',
+      status: 'In Transition',
+      stage_label: 'Credit Committee',
+      step: 5,
+      loan_amount: 15000,
+      loan_type: 'Crop Loan',
+      loan_product_name: 'Harvest Plus',
+      region: 'Oromia',
+      woreda: 'Adama',
+      phone_number: '+251911000000',
+      creation: '2026-05-28T10:42:00',
+      first_name: 'Abebe',
+      last_name: 'Girma',
     });
 
     const rows = selectBankApplicationRows(asRootState(store.getState()));
@@ -180,10 +214,13 @@ describe('selectBankApplicationRows', () => {
       id: 'APP-0001',
       applicant: 'Abebe Girma',
       initials: 'AG',
-      // Filters and the API speak `status`; only the badge shows `statusLabel`.
-      status: 'Approved',
-      statusLabel: 'Granted',
-      statusTone: 'success',
+      // Filters and the API speak the archetype; only the badge shows the stage.
+      status: 'In Transition',
+      statusLabel: 'Credit Committee',
+      statusTone: 'info',
+      // Built from the three hierarchy fields — there is no `location` field to read.
+      location: 'Oromia · Adama',
+      region: 'Oromia',
       // The LOAN TYPE column filters server-side on `loan_type`, so that — not
       // the product name — has to be what it displays.
       type: 'Crop Loan',
@@ -235,40 +272,57 @@ describe('selectBankApplicationRows', () => {
     const store = createTestStore();
     store.dispatch({
       type: 'bankApplications/fetchStages/fulfilled',
-      payload: {
-        data: {
+      payload: [
+        {
+          name: 'c2f9d14a80',
           bank: 'HDFC Bank',
-          stages: [
-            {
-              name: 'c2f9d14a80',
-              bank: 'HDFC Bank',
-              stage_id: 'submitted-a8f3b2',
-              label: 'Submitted',
-              archetype_state: 'In Transition',
-              sequence: 1,
-              external_code: null,
-              description: 'Initial application submission',
-              application_count: 14,
-            },
-            {
-              name: 'd3e8c25b91',
-              bank: 'HDFC Bank',
-              stage_id: 'disbursed-b9e4c3',
-              label: 'Disbursed',
-              archetype_state: 'Completed',
-              sequence: 2,
-              external_code: null,
-              description: 'Loan disbursed',
-              application_count: 20,
-            },
-          ],
+          stage_id: 'submitted-a8f3b2',
+          label: 'Submitted',
+          archetype_state: 'In Transition',
+          sequence: 1,
+          external_code: null,
+          description: 'Initial application submission',
+          application_count: 14,
         },
-      },
+        {
+          name: 'd3e8c25b91',
+          bank: 'HDFC Bank',
+          stage_id: 'disbursed-b9e4c3',
+          label: 'Disbursed',
+          archetype_state: 'Completed',
+          sequence: 2,
+          external_code: null,
+          description: 'Loan disbursed',
+          application_count: 20,
+        },
+      ],
     });
 
     const state = store.getState();
     expect(state.bankApplications.stages).toHaveLength(2);
     expect(state.bankApplications.stages[0]?.label).toBe('Submitted');
     expect(state.bankApplications.stages[1]?.label).toBe('Disbursed');
+  });
+  it('falls back to the archetype when no bank stage has been applied', () => {
+    const store = createTestStore();
+    seed(store, {
+      application_id: 'APP-0002',
+      status: 'Completed',
+      step: 6,
+      loan_amount: 9000,
+      loan_type: 'Seed Loan',
+      phone_number: '+251911000001',
+      creation: '2026-05-28T10:42:00',
+      first_name: 'Bekele',
+      last_name: 'Tola',
+    });
+
+    expect(selectBankApplicationRows(asRootState(store.getState()))[0]).toMatchObject({
+      status: 'Completed',
+      statusLabel: 'Completed',
+      statusTone: 'success',
+      // A dash, not an empty cell: the record genuinely carries no location.
+      location: '—',
+    });
   });
 });

@@ -36,16 +36,17 @@ export const loanApplicationFullSchema = z.object({
   status: z.string(),
   stage_id: z.string().nullable().optional(),
   stage_label: z.string().nullable().optional(),
-  current_step: z.number().nullable().optional(),
   creation: z.string().nullable().optional(),
   farmer_profile: z.string().nullish().transform(val => val ?? undefined),
-  phone_number: z.string(),
+  phone_number: z.string().nullish().transform(val => val ?? ''),
   location: z.string().nullable().optional(),
   region: z.string().nullable().optional(),
   farmer_id: z.string().nullable().optional(),
   consent_id: z.string().nullable().optional(),
   loan_type: z.string().nullish().transform(val => val ?? undefined),
-  loan_amount: z.number(),
+  loan_amount: z.number().nullish().transform(val => val ?? 0),
+  profile_data: z.record(z.string(), z.unknown()).nullish(),
+  loan_product: z.string().nullish().transform(val => val ?? undefined),
   loan_product_name: z.string().nullish().transform(val => val ?? undefined),
   loan_reason: z.string().nullish().transform(val => val ?? ''),
   loan_officer: z.string().nullish().transform(val => val ?? undefined),
@@ -101,24 +102,66 @@ export type LoanApplicationFull = z.infer<typeof loanApplicationFullSchema>;
 
 export const loanApplicationSummarySchema = z.object({
   application_id: z.string(),
+  /** Archetype state: Active | In Transition | Completed | Cancelled. */
   status: z.string(),
   stage_id: z.string().nullable().optional(),
+  /** The owning bank's label for the current step; absent until a stage is applied. */
   stage_label: z.string().nullable().optional(),
-  step: z.number(),
+  // `get_all_loans` sends `step`; the farmer's `list_applications` rows do not,
+  // so it cannot be required without failing every farmer-side parse.
+  step: z.number().nullish().transform((val) => val ?? undefined),
   lead_id: z.string().nullable().optional(),
   loan_amount: z.number().nullish().transform((val) => val ?? 0),
   loan_type: z.string().nullish().transform((val) => val ?? undefined),
   loan_product: z.string().nullish().transform((val) => val ?? undefined),
   loan_product_name: z.string().nullish().transform((val) => val ?? undefined),
-  location: z.string().nullish().transform((val) => val ?? ''),
+  // Location is the three hierarchy fields, not one `location` string. `location`
+  // was declared here and defaulted to '' — the endpoint selected a column that
+  // does not exist on the doctype, Frappe dropped it from the SELECT silently, and
+  // the default turned the missing field into a blank cell on every row.
+  region: z.string().nullish().transform((val) => val ?? undefined),
+  woreda: z.string().nullish().transform((val) => val ?? undefined),
+  kebele: z.string().nullish().transform((val) => val ?? undefined),
   phone_number: z.string().nullish().transform((val) => val ?? ''),
   creation: z.string(),
   first_name: z.string().nullish().transform((val) => val ?? undefined),
   last_name: z.string().nullish().transform((val) => val ?? undefined),
+  bank: z.string().nullish().transform((val) => val ?? undefined),
+  // Stage placement, resolved server-side against the owning bank's pipeline.
+  // `sequence` orders the stages; the two booleans are what tells a caller
+  // whether a row is finished, and whether it finished well — the only honest
+  // way to bucket a bank-defined label the client has never seen before.
+  sequence: z.number().nullable().optional(),
+  is_terminal: z.boolean().nullish().transform((val) => val ?? false),
+  is_successful: z.boolean().nullish().transform((val) => val ?? false),
   stage: z.string().nullable().optional(),
   archetype_state: z.string().nullable().optional(),
 });
 export type LoanApplicationSummary = z.infer<typeof loanApplicationSummarySchema>;
+
+/**
+ * `loan_applications.get_loan_metadata` — the caller-scoped list of statuses the
+ * signed-in user can actually see and filter on.
+ *
+ * This is the role-agnostic counterpart to `seller.loan_stages.get_stages`:
+ * that endpoint is restricted to bank roles holding a bank binding, so a
+ * Development Agent or a farmer calling it gets 403. `get_loan_metadata`
+ * resolves per role instead — a Bank Agent sees its own bank's stages, a farmer
+ * the stages of the banks they applied to, a Dev Agent / admin the union.
+ */
+export const loanStatusMetaSchema = z.object({
+  status: z.string(),
+  stage_id: z.string().nullable().optional(),
+  sequence: z.number().nullable().optional(),
+  is_terminal: z.boolean().nullish().transform((val) => val ?? false),
+  is_successful: z.boolean().nullish().transform((val) => val ?? false),
+});
+export type LoanStatusMeta = z.infer<typeof loanStatusMetaSchema>;
+
+export const loanMetadataSchema = z.object({
+  statuses: z.array(loanStatusMetaSchema),
+});
+export type LoanMetadata = z.infer<typeof loanMetadataSchema>;
 
 // 6. leads.add_lead_credit_info / get_lead_credit_infos
 export const creditInfoApiSchema = z.object({
@@ -196,6 +239,14 @@ export const loanProductSummarySchema = z.object({
   creation: z.string().nullable().optional(),
   categories: z.array(z.string()).nullish().transform((val) => val ?? []),
   applications_count: z.number().nullish().transform((val) => val ?? 0),
+  // `list_products` has always sent these three; they were absent here, so zod
+  // stripped them and the bank's cards had no banner image to show. Declared now
+  // that the bank renders the same ProductCard as the farmer catalogue. Optional
+  // rather than required: a product created before an image field existed carries
+  // none, and `bank_name` is resolved from a separate lookup that can miss.
+  image: z.string().nullable().optional(),
+  bank: z.string().nullable().optional(),
+  bank_name: z.string().nullable().optional(),
 });
 export type LoanProductSummary = z.infer<typeof loanProductSummarySchema>;
 
@@ -323,8 +374,13 @@ export const registerSellerSchema = z.object({
 export type RegisterSellerSchemaPayload = z.infer<typeof registerSellerSchema>;
 
 export const loanStageSchema = z.object({
-  name: z.string(),
-  bank: z.string(),
+  // Optional because `get_stages` does not send either: the owning bank is
+  // reported once on the enclosing payload, not repeated per stage, and there is
+  // no separate doc `name` in the response. Requiring them made every call throw
+  // "Data format error" out of validateResponse, taking the whole stage list
+  // with it — a stricter schema than the endpoint has ever satisfied.
+  name: z.string().optional(),
+  bank: z.string().optional(),
   stage_id: z.string(),
   label: z.string(),
   archetype_state: z.string(),

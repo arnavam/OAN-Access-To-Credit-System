@@ -1,10 +1,14 @@
 import { Portal } from '@/components/Portal';
 import { SelectField } from '@/components/ui/SelectField';
-// eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
-import { loanService, type BrowseProductItem } from '@/features/loans/api/loan.service';
-import { X } from 'lucide-react';
+// eslint-disable-next-line boundaries/dependencies -- Lead creation modal consumes marketplace catalog to populate loan product dropdown
+import { getCatalog } from '@/features/(farmer-application)/api/farmerApi';
+// eslint-disable-next-line boundaries/dependencies -- Lead creation modal consumes marketplace catalog to populate loan product dropdown
+import type { FarmerLoanProduct } from '@/features/(farmer-application)/types';
+import { resolveCategory } from '@/types/loan-catalog';
+import { Building2, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { NumericInput } from '@/components/ui/NumericInput';
+import { formatAmount, formatRateRange, formatTenure } from '@/lib/format/loanTerms';
 import { creditInfoSchema, type CreditInfoFormData } from '../../schemas/credit.schema';
 
 interface CreditInformationModalProps {
@@ -14,7 +18,7 @@ interface CreditInformationModalProps {
 }
 
 export function CreditInformationModal({ isOpen, onClose, onSubmit }: CreditInformationModalProps) {
-  const [products, setProducts] = useState<BrowseProductItem[]>([]);
+  const [products, setProducts] = useState<FarmerLoanProduct[]>([]);
 
   const [loanType, setLoanType] = useState('');
   const [loanAmount, setLoanAmount] = useState('');
@@ -25,9 +29,8 @@ export function CreditInformationModal({ isOpen, onClose, onSubmit }: CreditInfo
 
   useEffect(() => {
     if (isOpen) {
-      loanService
-        .browseProducts({ limit: 100 })
-        .then((res: any) => {
+      getCatalog({ limit: 100 })
+        .then((res) => {
           setProducts(res?.data?.products || []);
         })
         .catch(() => {
@@ -103,6 +106,9 @@ export function CreditInformationModal({ isOpen, onClose, onSubmit }: CreditInfo
     });
     setError(null);
   };
+
+  const selectedProduct = products.find((p) => p.product_name === loanType);
+  const selectedCategory = selectedProduct ? resolveCategory(selectedProduct) : undefined;
 
   const productOptions = [...new Set(products.map((p) => p.product_name))];
 
@@ -215,15 +221,85 @@ export function CreditInformationModal({ isOpen, onClose, onSubmit }: CreditInfo
                     }}
                     className={`box-border flex flex-row justify-center items-start p-[12px_16px] w-full h-[140px] bg-white border rounded-[8px] font-roboto font-normal text-[14px] leading-[16px] text-[#111827] placeholder:text-[#C6C6C6] outline-none focus:ring-1 resize-none ${purposeError
                       ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
-                      : 'border-[#16A34A] focus:border-[#16A34A] focus:ring-[#16A34A]'
-                      }`}
-                  />
-                  {purposeError && (
-                    <span className="text-red-500 font-roboto text-xs mt-1">
-                      {purposeError}
-                    </span>
-                  )}
+                      : 'border-[#D1D5DB] focus:border-[#3B82F6] focus:ring-[#3B82F6]'
+                  }`}
+                />
+                {amountError && (
+                  <span className="text-red-500 font-roboto text-xs mt-1">
+                    {amountError}
+                  </span>
+                )}
+              </div>
+
+              {/* Product Details Card (Shown on Selection) */}
+              {selectedProduct && (
+                <div className="w-full bg-[#F0FDF4] border border-[#BBF7D0] rounded-[8px] p-3.5 flex flex-col gap-2 animate-in fade-in duration-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-[#166534] font-semibold text-xs">
+                      <Building2 size={15} className="text-[#16A34A] shrink-0" />
+                      <span>{selectedProduct.bank_name || selectedProduct.bank || 'Lending Institution'}</span>
+                    </div>
+                    {selectedCategory && (
+                      <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-[#DCFCE7] text-[#15803D] capitalize">
+                        {selectedCategory.replace(/-/g, ' ')}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2 border-t border-[#BBF7D0]/60 text-xs">
+                    <div>
+                      <span className="text-[#4B5563] text-[11px] block font-medium">Allowable Amount</span>
+                      <span className="font-semibold text-[#111827]">
+                        {selectedProduct.min_amount != null && selectedProduct.max_amount != null
+                          ? `${formatAmount(selectedProduct.min_amount)} – ${formatAmount(selectedProduct.max_amount)}`
+                          : selectedProduct.max_amount != null
+                            ? `Up to ${formatAmount(selectedProduct.max_amount)}`
+                            : selectedProduct.min_amount != null
+                              ? `From ${formatAmount(selectedProduct.min_amount)}`
+                              : '—'}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="text-[#4B5563] text-[11px] block font-medium">Interest Rate</span>
+                      <span className="font-semibold text-[#111827]">
+                        {formatRateRange(selectedProduct.min_interest_rate, selectedProduct.max_interest_rate)}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="text-[#4B5563] text-[11px] block font-medium">Tenure</span>
+                      <span className="font-semibold text-[#111827]">
+                        {formatTenure(selectedProduct.tenure_months)}
+                      </span>
+                    </div>
+                  </div>
                 </div>
+              )}
+
+              {/* Purpose Message Row */}
+              <div className="flex flex-col items-start p-0 gap-[6px] w-full">
+                <label className="font-roboto font-medium text-[14px] leading-[20px] text-[#111827]">
+                  Purpose Message <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  placeholder="Enter purpose message"
+                  value={purposeMessage}
+                  onChange={(e) => {
+                    setPurposeMessage(e.target.value);
+                    clearFieldError('purpose_message', 'purposeMessage');
+                  }}
+                  className={`box-border flex flex-row justify-center items-start p-[12px_16px] w-full h-[140px] bg-white border rounded-[8px] font-roboto font-normal text-[14px] leading-[16px] text-[#111827] placeholder:text-[#C6C6C6] outline-none focus:ring-1 resize-none ${
+                    purposeError
+                      ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+                      : 'border-[#D1D5DB] focus:border-[#3B82F6] focus:ring-[#3B82F6]'
+                  }`}
+                />
+                {purposeError && (
+                  <span className="text-red-500 font-roboto text-xs mt-1">
+                    {purposeError}
+                  </span>
+                )}
               </div>
             </div>
 

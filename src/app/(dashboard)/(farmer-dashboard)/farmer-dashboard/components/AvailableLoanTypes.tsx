@@ -49,7 +49,7 @@ export default function AvailableLoanTypes({ types = [] }: { types?: string[] })
       <div className="px-6 py-5 flex items-center justify-between border-b border-gray-200 min-h-[72px]">
         <h3 className="text-lg font-bold text-gray-900">Available Loan Types</h3>
         <Button as={Link} href="/discover-loans" variant="primary" size="md" className="gap-1">
-          Discover loans
+          Discover Loans
           <ChevronRight className="w-4 h-4" />
         </Button>
       </div>

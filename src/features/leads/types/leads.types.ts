@@ -12,6 +12,11 @@ export interface GetLeadsParams {
   min_amount?: number | undefined;
   max_amount?: number | undefined;
   loan_type?: string | undefined;
+  // Prefix-matched against `region` on the lead's linked A2C Farmer Profile —
+  // A2C Lead itself carries no location. One field, not three: the drawer has a
+  // single text box, and `get_leads` ANDs whichever of region/woreda/kebele it is
+  // given, so sending one free-text value as all three would match nothing.
+  region?: string | undefined;
   // User email to scope the queue, or the literal 'unassigned' for leads with no
   // agent (backend get_leads `assigned_to` filter). Omit for all leads.
   assigned_to?: string | undefined;

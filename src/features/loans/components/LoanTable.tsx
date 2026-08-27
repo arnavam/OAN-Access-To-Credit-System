@@ -2,20 +2,30 @@
 
 import { useModalA11y } from '@/hooks/useModalA11y';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { Check, ChevronDown, Eye, Filter, Phone } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, Check, ChevronDown, Eye, Filter, Phone } from 'lucide-react';
 import { memo, useEffect, useRef, useState } from 'react';
 // createPortal removed
 import { AnimatePresence, motion } from 'motion/react';
 import { getStageStyle } from '../utils/stageStyles';
 import { TableEmptyState } from '@/components/ui/TableEmptyState';
 import {
-  selectActivityPage, selectAdvancedFilters, selectLoanStageOptions, selectLoanStages, selectPagedRows, selectPageSize,
+  advancedFilterValues,
+  resetAllFilters,
+  selectActivityPage, selectAdvancedFilters, selectLoanSortBy, selectLoanSortOrder,
+  selectLoanStageOptions, selectLoanStages, selectLoanTypeOptions,
+  selectPagedRows, selectPageSize,
   selectTableStatusFilters, selectTableTypeFilters,
   setActivityPage,
-  setAdvancedFilters, setPageSize,
+  setAdvancedFilters, setLoanSort, setPageSize,
   setTableStatusFilters,
   setTableTypeFilters
 } from '../store/loanDashboardSlice';
+import {
+  ALL_AMOUNTS_INDEX,
+  loanAmountRange,
+  loanAmountRangeIndex,
+  LOAN_AMOUNT_RANGES,
+} from '../constants/loans.constants';
 
 export interface LoanTableRow {
   id: string;
@@ -26,30 +36,27 @@ export interface LoanTableRow {
   loanAmount: string;
   amount?: string;
   type: string;
+  /** The archetype state. What the status filter and the API speak. */
   status: string;
+  /** What the badge shows: the owning bank's stage label, or the archetype. */
+  statusLabel?: string | undefined;
   statusTone: string;
+  location?: string | undefined;
   updated: string;
   action: string;
   timestamp: number;
   application_id?: string;
   creation?: string;
-  region?: string;
+  region?: string | undefined;
   loanTerm?: string;
 }
 
 interface LoanTableProps {
   onView?: (row: LoanTableRow) => void;
   totalCount?: number;
+  /** Stages the STATUS column filter offers; falls back to the bank's own list. */
   stageOptions?: readonly { label: string; value: string; color?: string; dot?: string }[];
 }
-
-const RANGE_STEPS = [
-  { label: '0 - 25,000', value: '0-25000', min: 0, max: 25000, display: 'ETB 25000' },
-  { label: '25,001 - 50,000', value: '25001-50000', min: 25001, max: 50000, display: 'ETB 50000' },
-  { label: '50,001 - 1,00,000', value: '50001-100000', min: 50001, max: 100000, display: 'ETB 100000' },
-  { label: '1,00,000 and above', value: '100000+', min: 100001, max: 10000000, display: 'ETB 350000' },
-  { label: 'All Amounts', value: '', min: null, max: null, display: 'All Amounts' },
-] as const;
 
 function PaginationDropdown({
   value,
@@ -129,18 +136,44 @@ function PaginationDropdown({
   );
 }
 
+type SortColumn = 'loan_amount' | 'creation';
+
+/**
+ * The sort affordance in a column header: neutral up/down arrows until the column is
+ * the active sort, then the direction it is sorted in.
+ *
+ * Declared here rather than inside `LoanTable` because a component created in a render
+ * body is a new component type on every render — React remounts it and throws away its
+ * state, which is what `react-hooks/static-components` reports.
+ */
+function SortIndicator({ column, sortBy, sortOrder }: {
+  column: SortColumn;
+  sortBy: SortColumn | undefined;
+  sortOrder: 'asc' | 'desc' | undefined;
+}) {
+  if (sortBy !== column) return <ArrowUpDown size={14} className="text-gray-400" />;
+  return sortOrder === 'asc'
+    ? <ArrowUp size={14} className="text-emerald-600" />
+    : <ArrowDown size={14} className="text-emerald-600" />;
+}
+
 const LoanTable = memo(({ onView, totalCount = 0, stageOptions }: LoanTableProps) => {
   const dispatch = useAppDispatch();
   const rows: LoanTableRow[] = useAppSelector(selectPagedRows);
   const stages = useAppSelector(selectLoanStages);
   const storeStageOptions = useAppSelector(selectLoanStageOptions);
 
-  const activeStageOptions = stageOptions ?? (storeStageOptions.length > 0 ? storeStageOptions : null);
-  const statusOptionsList = activeStageOptions ? ['All', ...activeStageOptions.map((s) => s.label)] : ['All', 'Submitted', 'Underwriting', 'Approved', 'Disbursed', 'Rejected'];
+  // The objects, not a flattened list of labels: the filter sends `value` and the
+  // row shows `label`, and collapsing them to one string made the dropdown send
+  // whatever it happened to display.
+  const statusFilterOptions = stageOptions ?? storeStageOptions;
 
   const selectedStatuses = useAppSelector(selectTableStatusFilters);
   const selectedLoanTypes = useAppSelector(selectTableTypeFilters);
   const currentAdvancedFilters = useAppSelector(selectAdvancedFilters);
+  const loanTypeOptions = useAppSelector(selectLoanTypeOptions);
+  const sortBy = useAppSelector(selectLoanSortBy);
+  const sortOrder = useAppSelector(selectLoanSortOrder);
 
   const currentPage = useAppSelector(selectActivityPage);
   const pageSize = useAppSelector(selectPageSize);
@@ -153,10 +186,17 @@ const LoanTable = memo(({ onView, totalCount = 0, stageOptions }: LoanTableProps
 
   const [localStatuses, setLocalStatuses] = useState<string[]>([]);
   const [localLoanTypes, setLocalLoanTypes] = useState<string[]>([]);
-  const [tempAmountIndex, setTempAmountIndex] = useState<number>(4);
   const [tempQuickDate, setTempQuickDate] = useState<string>('');
   const [tempDateFrom, setTempDateFrom] = useState<string>(currentAdvancedFilters.dateFrom || '');
   const [tempDateTo, setTempDateTo] = useState<string>(currentAdvancedFilters.dateTo || '');
+
+  // Derived, not held in local state: the amount filter lives in the store, and a
+  // second copy of it here went stale the moment the drawer (or Clear Filters)
+  // changed the range — the slider then showed a bucket that wasn't being applied.
+  const amountIndex = loanAmountRangeIndex(
+    currentAdvancedFilters.minLoan,
+    currentAdvancedFilters.maxLoan
+  );
 
   const statusRef = useRef<HTMLButtonElement>(null);
   const loanTypeRef = useRef<HTMLButtonElement>(null);
@@ -167,6 +207,38 @@ const LoanTable = memo(({ onView, totalCount = 0, stageOptions }: LoanTableProps
   const loanTypeDialogRef = useModalA11y<HTMLDivElement>(loanTypeFilterOpen, () => setLoanTypeFilterOpen(false));
   const amountDialogRef = useModalA11y<HTMLDivElement>(amountFilterOpen, () => setAmountFilterOpen(false));
   const dateDialogRef = useModalA11y<HTMLDivElement>(dateFilterOpen, () => setDateFilterOpen(false));
+
+  // Seed each popup's draft from the store on the closed → open edge.
+  //
+  // Adjusted during render rather than in an effect. The effects these replace listed
+  // the store value as a dependency, so any new array identity from the selector reset
+  // the draft *while the popup was open*, discarding a selection in progress — and
+  // they also tripped react-hooks/set-state-in-effect. Comparing against the previous
+  // `open` flag fires only on the edge, which is what "when it opens" actually means.
+  const [statusWasOpen, setStatusWasOpen] = useState(statusFilterOpen);
+  if (statusFilterOpen !== statusWasOpen) {
+    setStatusWasOpen(statusFilterOpen);
+    if (statusFilterOpen) setLocalStatuses(selectedStatuses);
+  }
+
+  const [loanTypeWasOpen, setLoanTypeWasOpen] = useState(loanTypeFilterOpen);
+  if (loanTypeFilterOpen !== loanTypeWasOpen) {
+    setLoanTypeWasOpen(loanTypeFilterOpen);
+    if (loanTypeFilterOpen) setLocalLoanTypes(selectedLoanTypes);
+  }
+
+  // Same for the date popup, so a window set in the advanced-filters drawer — or
+  // cleared by Clear Filters — is what it reopens on. The quick-date chip stays lit
+  // only while its window is still applied.
+  const [dateWasOpen, setDateWasOpen] = useState(dateFilterOpen);
+  if (dateFilterOpen !== dateWasOpen) {
+    setDateWasOpen(dateFilterOpen);
+    if (dateFilterOpen) {
+      setTempDateFrom(currentAdvancedFilters.dateFrom || '');
+      setTempDateTo(currentAdvancedFilters.dateTo || '');
+      if (!currentAdvancedFilters.dateFrom) setTempQuickDate('');
+    }
+  }
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -190,33 +262,81 @@ const LoanTable = memo(({ onView, totalCount = 0, stageOptions }: LoanTableProps
   const handleApplyStatus = () => { dispatch(setTableStatusFilters(localStatuses)); setStatusFilterOpen(false); };
   const handleApplyLoanType = () => { dispatch(setTableTypeFilters(localLoanTypes)); setLoanTypeFilterOpen(false); };
 
-  const handleApplyAmount = (idx: number) => {
-    setTempAmountIndex(idx);
-    const range = RANGE_STEPS[idx];
+  // `close` is false while the slider is being dragged: the single handler behind
+  // both controls used to shut the popup on every tick, so the slider could only
+  // ever be moved one step at a time.
+  const applyAmountIndex = (idx: number, close: boolean) => {
+    const range = loanAmountRange(idx);
     dispatch(setAdvancedFilters({
-      ...currentAdvancedFilters,
-      minLoan: range ? range.min : null,
-      maxLoan: range ? range.max : null,
+      ...advancedFilterValues(currentAdvancedFilters),
+      minLoan: range.min,
+      maxLoan: range.max,
     }));
-    setAmountFilterOpen(false);
+    if (close) setAmountFilterOpen(false);
+  };
+
+  // The slider's position while it is still being dragged, held locally so the
+  // committed filter does not change on every step crossed. Dispatching per tick
+  // put a new object into `selectQueryParams`, and the effect watching it fired a
+  // fetch for each one — a drag across the scale was four requests, three of them
+  // aborted the instant they left. Null means "not dragging", so the committed
+  // value shows through.
+  const [draggingAmountIndex, setDraggingAmountIndex] = useState<number | null>(null);
+  const displayedAmountIndex = draggingAmountIndex ?? amountIndex;
+
+  const commitAmountDrag = () => {
+    if (draggingAmountIndex === null) return;
+    applyAmountIndex(draggingAmountIndex, false);
+    setDraggingAmountIndex(null);
   };
 
   const handleApplyDate = () => {
     dispatch(setAdvancedFilters({
-      ...currentAdvancedFilters,
+      ...advancedFilterValues(currentAdvancedFilters),
       dateFrom: tempDateFrom,
       dateTo: tempDateTo,
     }));
     setDateFilterOpen(false);
   };
 
-  const hasFilters = selectedStatuses.length > 0 || selectedLoanTypes.length > 0 || currentAdvancedFilters.minLoan !== null || Boolean(currentAdvancedFilters.dateFrom);
+  /**
+   * Sorting is server-side, so a header click re-queries: same column toggles the
+   * direction, a new column starts descending. Clicking the active column while it
+   * is ascending clears the sort back to the endpoint's default.
+   */
+  const handleSort = (column: SortColumn) => {
+    if (sortBy !== column) {
+      dispatch(setLoanSort({ sortBy: column, sortOrder: 'desc' }));
+    } else if (sortOrder === 'desc') {
+      dispatch(setLoanSort({ sortBy: column, sortOrder: 'asc' }));
+    } else {
+      dispatch(setLoanSort({}));
+    }
+  };
+
+  /** Spread into each header's <SortIndicator/>, so only the column differs there. */
+  const sortProps = { sortBy, sortOrder };
+
+  // Every filter surface this table can reach, not just the ones it renders itself:
+  // the advanced-filters drawer writes to the same slice, so leaving its fields out
+  // made a filtered-empty table offer the "create your first loan" empty state.
+  const hasFilters = selectedStatuses.length > 0
+    || selectedLoanTypes.length > 0
+    || currentAdvancedFilters.status.length > 0
+    || currentAdvancedFilters.type.length > 0
+    || currentAdvancedFilters.minLoan !== null
+    || currentAdvancedFilters.maxLoan !== null
+    || Boolean(currentAdvancedFilters.region)
+    || Boolean(currentAdvancedFilters.dateFrom)
+    || Boolean(currentAdvancedFilters.dateTo);
+
+  // One reducer for the lot. Clearing only the column filters here left the
+  // drawer's status/type/amount/date/region still narrowing the request, so
+  // "Clear Filters" could leave the table just as empty as it found it.
   const handleClearFilters = () => {
-    dispatch(setTableStatusFilters([]));
-    dispatch(setTableTypeFilters([]));
+    dispatch(resetAllFilters());
     setLocalStatuses([]);
     setLocalLoanTypes([]);
-    setTempAmountIndex(4);
     setTempDateFrom('');
     setTempDateTo('');
     setTempQuickDate('');
@@ -260,26 +380,39 @@ const LoanTable = memo(({ onView, totalCount = 0, stageOptions }: LoanTableProps
                         Status Filter
                       </div>
                       <div className="max-h-62 overflow-y-auto py-1">
-                        {statusOptionsList.map((opt) => {
-                          const isAll = opt === 'All';
-                          const isChecked = isAll ? localStatuses.length === 0 : localStatuses.includes(opt);
+                        {/* "All" is not a stage — it is the no-filter position, so it
+                            selects nothing rather than sending a value. The rest come
+                            from the bank's own stages; the display labels that used to
+                            be hardcoded here ('In Underwriting', 'Review', 'Approved',
+                            'Pending', 'Rejected') belong to no bank's pipeline. */}
+                        <button
+                          type="button"
+                          onClick={() => setLocalStatuses([])}
+                          className="flex w-full items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-gray-700 text-left focus:outline-none focus-visible:bg-gray-50"
+                        >
+                          <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${localStatuses.length === 0 ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-gray-300'}`}>
+                            {localStatuses.length === 0 && <Check size={12} strokeWidth={3} />}
+                          </div>
+                          <span className="text-sm font-medium">All</span>
+                        </button>
+                        {statusFilterOptions.length === 0 ? (
+                          <p className="px-4 py-3 text-xs text-gray-400">
+                            No stages defined for this bank yet.
+                          </p>
+                        ) : statusFilterOptions.map((opt) => {
+                          const isChecked = localStatuses.includes(opt.value);
                           return (
                             <button
-                              key={opt}
+                              key={opt.value}
                               type="button"
-                              onClick={() => {
-                                if (isAll) {
-                                  setLocalStatuses([]);
-                                } else {
-                                  toggleLocalStatus(opt);
-                                }
-                              }}
+                              onClick={() => toggleLocalStatus(opt.value)}
                               className="flex w-full items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-gray-700 text-left focus:outline-none focus-visible:bg-gray-50"
                             >
                               <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${isChecked ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-gray-300'}`}>
                                 {isChecked && <Check size={12} strokeWidth={3} />}
                               </div>
-                              <span className="text-sm font-medium">{opt}</span>
+                              <span className={`h-2 w-2 shrink-0 rounded-full ${opt.dot ?? "bg-slate-400"}`} aria-hidden="true" />
+                              <span className="text-sm font-medium">{opt.label}</span>
                             </button>
                           );
                         })}
@@ -305,10 +438,10 @@ const LoanTable = memo(({ onView, totalCount = 0, stageOptions }: LoanTableProps
                 </div>
               </th>
 
-              {/* Loan Product / Type */}
+              {/* Loan Type — the field this column's filter actually sends */}
               <th className="px-6 py-4 font-semibold">
                 <div className="relative inline-flex items-center gap-2">
-                  <span>Loan Product</span>
+                  <span>Loan Type</span>
                   <button
                     ref={loanTypeRef}
                     type="button"
@@ -328,32 +461,44 @@ const LoanTable = memo(({ onView, totalCount = 0, stageOptions }: LoanTableProps
                       onClick={(e) => e.stopPropagation()}
                     >
                       <div className="px-4 py-2 font-semibold text-xs text-gray-400 uppercase tracking-wider border-b border-gray-100">
-                        Loan Product
+                        Loan Type
                       </div>
                       <div className="max-h-62 overflow-y-auto py-1">
-                        {['All', 'CBE Smallholder Seed Loan', 'CBE Agri Input Finance', 'CBE Pastoralist Livestock Loan'].map((opt) => {
-                          const isAll = opt === 'All';
-                          const isChecked = isAll ? localLoanTypes.length === 0 : localLoanTypes.includes(opt);
-                          return (
-                            <button
-                              key={opt}
-                              type="button"
-                              onClick={() => {
-                                if (isAll) {
-                                  setLocalLoanTypes([]);
-                                } else {
-                                  toggleLocalLoanType(opt);
-                                }
-                              }}
-                              className="flex w-full items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-gray-700 text-left focus:outline-none focus-visible:bg-gray-50"
-                            >
-                              <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${isChecked ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-gray-300'}`}>
-                                {isChecked && <Check size={12} strokeWidth={3} />}
-                              </div>
-                              <span className="text-sm font-medium">{opt}</span>
-                            </button>
-                          );
-                        })}
+                        {/* Built from the loan types actually seen, not a fixed list of
+                            product names: the filter sends `loan_type`, and the three
+                            CBE product names hardcoded here matched no record. */}
+                        <button
+                          type="button"
+                          onClick={() => setLocalLoanTypes([])}
+                          className="flex w-full items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-gray-700 text-left focus:outline-none focus-visible:bg-gray-50"
+                        >
+                          <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${localLoanTypes.length === 0 ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-gray-300'}`}>
+                            {localLoanTypes.length === 0 && <Check size={12} strokeWidth={3} />}
+                          </div>
+                          <span className="text-sm font-medium">All</span>
+                        </button>
+                        {loanTypeOptions.length === 0 ? (
+                          <p className="px-4 py-3 text-xs text-gray-400">
+                            No loan types seen yet — they appear as applications load.
+                          </p>
+                        ) : (
+                          loanTypeOptions.map((opt) => {
+                            const isChecked = localLoanTypes.includes(opt);
+                            return (
+                              <button
+                                key={opt}
+                                type="button"
+                                onClick={() => toggleLocalLoanType(opt)}
+                                className="flex w-full items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer text-gray-700 text-left focus:outline-none focus-visible:bg-gray-50"
+                              >
+                                <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${isChecked ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-gray-300'}`}>
+                                  {isChecked && <Check size={12} strokeWidth={3} />}
+                                </div>
+                                <span className="text-sm font-medium">{opt}</span>
+                              </button>
+                            );
+                          })
+                        )}
                       </div>
                       <div className="p-3 border-t border-gray-100 flex items-center justify-between">
                         <button
@@ -382,12 +527,20 @@ const LoanTable = memo(({ onView, totalCount = 0, stageOptions }: LoanTableProps
               {/* Amount */}
               <th className="px-6 py-4 font-semibold">
                 <div className="relative inline-flex items-center gap-2">
-                  <span>Amount (ETB)</span>
+                  <button
+                    type="button"
+                    onClick={() => handleSort('loan_amount')}
+                    aria-label="Sort by amount"
+                    className="inline-flex items-center gap-1.5 rounded transition hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-1"
+                  >
+                    <span>Amount (ETB)</span>
+                    <SortIndicator column="loan_amount" {...sortProps} />
+                  </button>
                   <button
                     ref={amountRef}
                     type="button"
                     onClick={(e) => { e.stopPropagation(); setAmountFilterOpen(!amountFilterOpen); }}
-                    className={`p-1 rounded transition hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-1 ${amountFilterOpen || currentAdvancedFilters.minLoan !== null ? 'text-emerald-600' : 'text-gray-400'}`}
+                    className={`p-1 rounded transition hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-1 ${amountFilterOpen || amountIndex !== ALL_AMOUNTS_INDEX ? 'text-emerald-600' : 'text-gray-400'}`}
                   >
                     <Filter size={15} strokeWidth={2} />
                   </button>
@@ -407,20 +560,26 @@ const LoanTable = memo(({ onView, totalCount = 0, stageOptions }: LoanTableProps
                           <div className="h-2 w-full bg-gray-200 rounded-full relative">
                             <div
                               className="absolute left-0 top-0 h-full bg-emerald-500 rounded-full"
-                              style={{ width: `${(tempAmountIndex / 4) * 100}%` }}
+                              style={{ width: `${(displayedAmountIndex / ALL_AMOUNTS_INDEX) * 100}%` }}
                             />
                             <input
                               type="range"
                               min="0"
-                              max="4"
+                              max={ALL_AMOUNTS_INDEX}
                               step="1"
-                              value={tempAmountIndex}
-                              onChange={(e) => handleApplyAmount(Number(e.target.value))}
+                              value={displayedAmountIndex}
+                              onChange={(e) => setDraggingAmountIndex(Number(e.target.value))}
+                              // Commit on release, not per step. `onKeyUp` covers the
+                              // keyboard, where arrow keys drive the same handle, and
+                              // `onBlur` catches a pointer released off the control.
+                              onPointerUp={commitAmountDrag}
+                              onKeyUp={commitAmountDrag}
+                              onBlur={commitAmountDrag}
                               className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"
                             />
                             <div
                               className="absolute w-5 h-5 bg-white border-2 border-emerald-600 rounded-full -top-1.5 -ml-2.5 pointer-events-none shadow-sm"
-                              style={{ left: `${(tempAmountIndex / 4) * 100}%` }}
+                              style={{ left: `${(displayedAmountIndex / ALL_AMOUNTS_INDEX) * 100}%` }}
                             />
                           </div>
                         </div>
@@ -431,23 +590,28 @@ const LoanTable = memo(({ onView, totalCount = 0, stageOptions }: LoanTableProps
                             <span>0</span>
                           </div>
                           <div className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-md border border-emerald-100 font-extrabold">
-                            {RANGE_STEPS[tempAmountIndex]?.display || 'ETB 350000'}
+                            {loanAmountRange(displayedAmountIndex).display}
                           </div>
                           <div className="text-right">
                             <span className="block text-[10px] text-gray-400">ETB</span>
-                            <span>1000000</span>
+                            {/* The top bucket has no ceiling; the flat "1000000" that
+                                stood here described a cap that no longer exists. */}
+                            <span>100,000+</span>
                           </div>
                         </div>
                       </div>
 
                       <div className="space-y-1.5 border-t border-gray-100 pt-3">
-                        {RANGE_STEPS.slice(0, 4).map((opt, idx) => {
-                          const isSel = tempAmountIndex === idx;
+                        {LOAN_AMOUNT_RANGES.slice(0, ALL_AMOUNTS_INDEX).map((opt, idx) => {
+                          const isSel = displayedAmountIndex === idx;
                           return (
                             <button
-                              key={opt.value}
+                              key={opt.label}
                               type="button"
-                              onClick={() => handleApplyAmount(idx)}
+                              // Selecting the chosen bucket again clears the filter
+                              // rather than re-applying it — otherwise the only way
+                              // back to "all amounts" was the slider's far end.
+                              onClick={() => applyAmountIndex(isSel ? ALL_AMOUNTS_INDEX : idx, true)}
                               className="flex w-full items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-gray-50 cursor-pointer text-left focus:outline-none focus-visible:bg-gray-50"
                             >
                               <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${isSel ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-gray-300'}`}>
@@ -466,7 +630,15 @@ const LoanTable = memo(({ onView, totalCount = 0, stageOptions }: LoanTableProps
               {/* Applied (Date Filter) */}
               <th className="px-6 py-4 font-semibold text-center">
                 <div className="relative inline-flex items-center gap-2">
-                  <span>Applied</span>
+                  <button
+                    type="button"
+                    onClick={() => handleSort('creation')}
+                    aria-label="Sort by application date"
+                    className="inline-flex items-center gap-1.5 rounded transition hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-1"
+                  >
+                    <span>Applied</span>
+                    <SortIndicator column="creation" {...sortProps} />
+                  </button>
                   <button
                     ref={dateRef}
                     type="button"
@@ -573,7 +745,11 @@ const LoanTable = memo(({ onView, totalCount = 0, stageOptions }: LoanTableProps
               />
             ) : (
               rows.map((row, i) => {
-                const stageStyle = getStageStyle(row.status, stages);
+                // Keyed on the badge text (the bank's stage label, or the archetype
+                // behind it), matching what the pill actually shows. The substring
+                // tests that stood here ('processing', 'approved', 'rejected') looked
+                // for words no state machine emits, so every row fell through to grey.
+                const stageStyle = getStageStyle(row.statusLabel || row.status, stages);
                 const badgeColor = stageStyle.badge;
                 const dotColor = stageStyle.dot;
 
@@ -599,12 +775,25 @@ const LoanTable = memo(({ onView, totalCount = 0, stageOptions }: LoanTableProps
                       </div>
                     </td>
                     <td className="px-6 py-5">
+                      {/* The bank's own label for the step, falling back to the
+                          archetype. This used to run the status through
+                          .replace(/Verified|Approved/, 'Granted').replace(/Active/,
+                          'Processing') — inventing words for states, and showing
+                          "Processing" for an application nobody had touched. */}
                       <span className={`inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-semibold ${badgeColor}`}>
-                        <span className={`h-2 w-2 shrink-0 rounded-full ${dotColor}`} />
-                        {row.status}
+                        <span className={`h-2 w-2 shrink-0 rounded-full ${dotColor}`} aria-hidden="true" />
+                        {row.statusLabel || row.status}
                       </span>
                     </td>
-                    <td className="px-6 py-5 font-medium text-gray-700">{row.productName || row.type}</td>
+                    <td className="px-6 py-5 font-medium text-gray-700">
+                      {/* `type` is the `loan_type` this column's filter sends. Showing
+                          productName first meant the cell and its filter described
+                          different fields, so a visible value could not be filtered on. */}
+                      <span className="block">{row.type}</span>
+                      {row.productName && (
+                        <span className="mt-0.5 block text-xs font-normal text-gray-400">{row.productName}</span>
+                      )}
+                    </td>
                     <td className="px-6 py-5 font-medium text-gray-700">{row.loanAmount}</td>
                     <td className="px-6 py-5 text-center">
                       <div className="flex flex-col text-sm text-gray-500">

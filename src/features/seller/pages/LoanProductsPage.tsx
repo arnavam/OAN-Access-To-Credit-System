@@ -1,6 +1,6 @@
 'use client';
-import { LoanProductsList } from '@/features/seller/components/loan-products/LoanProductsList';
+import { BankProductCatalog } from '@/features/seller/components/loan-products/BankProductCatalog';
 
 export default function LoanProductsPage() {
-  return <LoanProductsList portalLabel="Bank Admin Portal - Loan Product Management" />;
+  return <BankProductCatalog />;
 }

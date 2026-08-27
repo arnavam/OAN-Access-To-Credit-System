@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 
 const PAGE_SIZE_OPTIONS = [10, 20, 100] as const;
 
-interface PaginationProps {
+interface CatalogPaginationProps {
   currentPage: number;
   totalPages: number;
   totalEntries: number;
@@ -13,7 +13,7 @@ interface PaginationProps {
   onPageSizeChange: (size: number) => void;
 }
 
-export default function Pagination({
+export default function CatalogPagination({
   currentPage,
   totalPages,
   totalEntries,
@@ -21,7 +21,7 @@ export default function Pagination({
   entriesPerPage,
   onPageChange,
   onPageSizeChange,
-}: PaginationProps) {
+}: CatalogPaginationProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -55,7 +55,12 @@ export default function Pagination({
   }
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between p-4 bg-white border border-[#F1F3F4] rounded-xl mt-6 shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.05),0px_2px_4px_-1px_rgba(0,0,0,0.03)] hover:-translate-y-1 hover:shadow-lg transition-all animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out">
+    <div className="relative z-20 flex flex-col sm:flex-row items-center justify-between p-4 bg-white border border-[#F1F3F4] rounded-xl mt-6 shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.05),0px_2px_4px_-1px_rgba(0,0,0,0.03)] hover:-translate-y-1 hover:shadow-lg transition-all">
+      {/* Left: visible of total */}
+      <div className="text-sm text-gray-500 mb-4 sm:mb-0 shrink-0">
+        <span className="font-medium text-gray-900">{visibleCount}</span> of{' '}
+        <span className="font-medium text-gray-900">{totalEntries}</span> records
+      </div>
 
       {/* Left Group: Dropdown and Info */}
       <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 mb-4 sm:mb-0">

@@ -48,9 +48,11 @@ export default function BankAdminLayout({ children }: { children: React.ReactNod
   }, [authResolved, needsOnboarding, sellerStats, dispatch]);
 
   const navigationSections: NavSection[] = useMemo(() => {
-    const pendingApprovals = sellerStats
-      ? Math.max(0, (sellerStats.total_products ?? 0) - (sellerStats.active_products ?? 0))
-      : undefined;
+    // Straight from get_stats. Deriving it as total - active overcounted: nothing
+    // is excluded from `total_products`, so that subtraction also swept in
+    // Rejected and Archived products, while /product-approvals lists only the
+    // `Pending Approval` ones this badge counts.
+    const pendingApprovals = sellerStats?.pending_products;
 
     return [
       {

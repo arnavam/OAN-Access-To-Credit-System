@@ -174,7 +174,7 @@ export default function LoanTypeFilter({ options, selectedValues, onChange }: Lo
               </button>
               <button
                 onClick={handleApply}
-                className="bg-[#16A34A] hover:bg-[#15803d] text-white px-6 py-2 rounded-lg text-[14px] font-semibold transition-colors shadow-sm"
+                className="bg-[#16A34A] hover:bg-[#10883c] text-white px-6 py-2 rounded-lg text-[14px] font-semibold transition-colors shadow-sm"
               >
 
                 <span className='font-semibold'>Apply</span>
