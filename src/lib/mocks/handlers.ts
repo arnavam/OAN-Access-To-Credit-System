@@ -156,38 +156,48 @@ export const handlers = [
     const leadIdQuery = url.searchParams.get('lead_id');
     const pageSize = parseInt(url.searchParams.get('page_size') || '10', 10);
 
+    // Same envelope as every other endpoint: `data` + `pagination`. This branch
+    // used to answer with the long-retired `results`/`total` shape, so
+    // `findApplicationByLeadId` read `response.data` as undefined and the zod
+    // check reported an '[API Contract Violation]' for get_all_loans the moment
+    // mocking was switched on.
     if (leadIdQuery) {
-      if (leadIdQuery === 'TEST_LEAD_999') {
-        return HttpResponse.json({
-          message: {
-            status: "success",
-            results: [],
-            total: 0,
-            page: 1,
-            page_size: pageSize
-          }
-        });
-      }
+      const leadRows = leadIdQuery === 'TEST_LEAD_999' ? [] : [
+        {
+          application_id: "APP-2026-03538",
+          status: "Draft",
+          stage_id: "draft",
+          stage_label: "Draft",
+          step: 1,
+          lead_id: leadIdQuery,
+          first_name: "Abebe",
+          last_name: "Bekele",
+          loan_amount: 312043.42,
+          loan_type: "Land loan",
+          region: "Somali",
+          woreda: "Jigjiga",
+          kebele: "",
+          phone_number: "+251962959859",
+          creation: "2026-06-09 17:43:35.892144",
+          sequence: 1,
+          is_terminal: false,
+          is_successful: false
+        }
+      ];
 
       return HttpResponse.json({
         message: {
           status: "success",
-          results: [
-            {
-              application_id: `APP-2026-03538`,
-              status: "Draft",
-              step: 1,
-              lead_id: leadIdQuery,
-              loan_amount: 312043.42,
-              loan_type: "Land loan",
-              location: "Somali, Jigjiga",
-              phone_number: "+251962959859",
-              creation: "2026-06-09 17:43:35.892144"
-            }
-          ],
-          total: 1,
-          page: 1,
-          page_size: pageSize
+          message: "Loan applications retrieved successfully",
+          data: leadRows,
+          meta: {},
+          pagination: {
+            page: 1,
+            limit: pageSize,
+            total: leadRows.length,
+            total_pages: 1,
+            has_next: false
+          }
         }
       });
     }

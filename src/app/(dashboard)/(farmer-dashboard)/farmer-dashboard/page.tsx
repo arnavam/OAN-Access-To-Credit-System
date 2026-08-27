@@ -8,7 +8,8 @@ import { useEffect, useState } from 'react';
 import AvailableLoanTypes from './components/AvailableLoanTypes';
 import FarmerProfileCard from './components/FarmerProfileCard';
 import RecentApplicationsList from './components/RecentApplicationsList';
-import TopLoanOffersCard, { type TopOffer } from './components/TopLoanOffersCard';
+import TopLoanOffersCard from './components/TopLoanOffersCard';
+import { rankTopOffers, TOP_OFFER_CANDIDATE_LIMIT, type TopOffer } from './components/topOffers';
 import { getCatalog, getDashboardSummary } from '@/features/(farmer-application)/api/farmerApi';
 import type { FarmerDashboardSummary } from '@/features/(farmer-application)/types';
 
@@ -24,7 +25,13 @@ export default function FarmerDashboard() {
       try {
         const [summaryResult, catalogResult] = await Promise.allSettled([
           getDashboardSummary(),
-          getCatalog({ sort_by: 'newest', limit: 5 }),
+          // Ranked here rather than server-side: `get_dashboard_summary` has
+          // never sent `top_loan_offers`, so the fallback below was always the
+          // real code path, and it was ordering by `newest` — the most recently
+          // published loan is not the best one. `interest_low_high` shares its
+          // primary sort key with `rankTopOffers`, so this asks the catalogue
+          // for the cheapest candidates and settles the ties on the client.
+          getCatalog({ sort_by: 'interest_low_high', limit: TOP_OFFER_CANDIDATE_LIMIT }),
         ]);
 
         if (!isMounted) return;
@@ -38,25 +45,15 @@ export default function FarmerDashboard() {
           logger.error('Failed to load dashboard summary', summaryResult.reason);
         }
 
-        // If dashboard summary did not provide top offers, feed from latest catalog products
+        // Still deferential to the endpoint: if it ever does start sending its
+        // own ranked offers, those win and this ranking stands down.
         if (catalogResult.status === 'fulfilled' && catalogResult.value.data?.products) {
           const products = catalogResult.value.data.products;
           if (products.length > 0) {
-            setOffers((existing) => {
-              if (existing.length > 0) return existing;
-              return products.map((p) => ({
-                id: p.name,
-                bank: p.bank_name || p.bank,
-                bank_logo: p.bank_logo,
-                loan_product_name: p.product_name,
-                max_loan_amount: p.max_amount ?? 0,
-                interest_rate: p.min_interest_rate ?? 0,
-                max_tenure_months: p.tenure_months ?? 0,
-              }));
-            });
+            setOffers((existing) => (existing.length > 0 ? existing : rankTopOffers(products)));
           }
         } else if (catalogResult.status === 'rejected') {
-          logger.error('Failed to load latest loan products from catalog', catalogResult.reason);
+          logger.error('Failed to load loan products from catalog', catalogResult.reason);
         }
       } catch (error) {
         logger.error('Unexpected error loading farmer dashboard data', error);

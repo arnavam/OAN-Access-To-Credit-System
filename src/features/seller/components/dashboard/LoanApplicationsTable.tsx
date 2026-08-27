@@ -3,6 +3,8 @@
 // eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
 import LoanTable, { LoanTableRow } from '@/features/loans/components/LoanTable';
 // eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
+import LoanPagination from '@/features/loans/components/LoanPagination';
+// eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
 import LoanApplicationModal from '@/features/loans/components/modals/LoanApplicationModal';
 import {
   fetchBankPipelineStages,
@@ -18,7 +20,6 @@ import {
   selectSearchQuery,
   selectTableStatusFilters,
   selectTableTypeFilters,
-  selectTotalCount,
   setSearchQuery,
   updateLoanStatus
 // eslint-disable-next-line boundaries/dependencies -- TODO (2026-08-23): needs to be fixed later; hiding for now as this existed before our changes
@@ -31,7 +32,6 @@ import LoanAdvancedFilters from '@/features/loans/components/LoanAdvancedFilters
 export function LoanApplicationsTable() {
   const dispatch = useAppDispatch();
   const rows = useAppSelector(selectPagedRows);
-  const totalCount = useAppSelector(selectTotalCount);
   const isLoading = useAppSelector(selectIsLoansLoading);
   const error = useAppSelector(selectLoansError);
   const queryParams = useAppSelector(selectQueryParams);
@@ -254,9 +254,16 @@ export function LoanApplicationsTable() {
           </div>
         ) : (
           /* Table of applications */
-          <div className="p-4 overflow-x-auto custom-scrollbar">
-            <LoanTable onView={(row) => setSelectedRow(row)} totalCount={totalCount} stageOptions={stageOptions} />
-          </div>
+          <>
+            <div className="p-4 overflow-x-auto custom-scrollbar">
+              <LoanTable onView={(row) => setSelectedRow(row)} stageOptions={stageOptions} />
+            </div>
+            {/* The same footer the Leads and Loan Application dashboards render.
+                This screen had none at all — the page-size and page controls were
+                the ones LoanTable used to carry privately, which is why the three
+                lists all ended differently. */}
+            <LoanPagination />
+          </>
         )}
       </div>
 

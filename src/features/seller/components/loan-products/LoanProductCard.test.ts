@@ -10,12 +10,19 @@ describe('LoanProductCard - canEditLoanProduct access rules', () => {
     expect(canEditLoanProduct('pending approval')).toBe(false);
   });
 
-  it('allows edit access for rejected, archived, and unrecognised statuses', () => {
+  it('allows edit access for rejected and unrecognised statuses', () => {
     expect(canEditLoanProduct('Rejected')).toBe(true);
     expect(canEditLoanProduct('rejected')).toBe(true);
-    expect(canEditLoanProduct('Archived')).toBe(true);
-    // Defensive: any status that isn't active/pending stays editable.
+    // Defensive: any status that isn't active/pending/archived stays editable.
     expect(canEditLoanProduct('Unknown')).toBe(true);
+  });
+
+  it('denies edit access for archived products', () => {
+    // Archived is retired, not a draft. Rewriting the terms of a product already
+    // taken off the marketplace rewrites the record of what was offered — and
+    // now that the bank catalog lists archived products, the button is reachable.
+    expect(canEditLoanProduct('Archived')).toBe(false);
+    expect(canEditLoanProduct('archived')).toBe(false);
   });
 
   it('denies edit access when status is null or undefined', () => {

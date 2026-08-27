@@ -1,5 +1,6 @@
 'use client';
 
+import { PartnerBanks } from '@/app/(portal-account)/components/PartnerBanks';
 import { SessionEndedNotice } from '@/components/SessionEndedNotice';
 import { ForgotPasswordModal } from '@/features/auth/components/ForgotPasswordModal';
 import { SetInitialPasswordForm } from '@/features/auth/components/SetInitialPasswordForm';
@@ -33,13 +34,14 @@ interface PortalLoginFormProps {
   allowedKinds: UserKind[];
   /** Where to redirect after successful login */
   redirectTo: (user: AuthUser) => string;
-  /** Show "Register account" link pointing to /create-account */
+  /** Show the "Register account" link below the submit button */
   showRegisterLink?: boolean;
+  /** Where that link goes. Farmers self-register on a different form from the
+   *  bank-side seller onboarding, so this is not always /create-account. */
+  registerHref?: string;
   /** Show partner banks section at the bottom */
   showPartnerBanks?: boolean;
 }
-
-const PARTNER_BANKS = ['CBE', 'Dashen', 'Awash', 'CBO', 'Abyssinia', 'OIB'];
 
 export function PortalLoginForm({
   heading = 'Welcome to the Portal',
@@ -50,6 +52,7 @@ export function PortalLoginForm({
   allowedKinds,
   redirectTo,
   showRegisterLink = false,
+  registerHref = '/create-account',
   showPartnerBanks = true,
 }: PortalLoginFormProps) {
   const router = useRouter();
@@ -85,6 +88,14 @@ export function PortalLoginForm({
   useEffect(() => {
     if (notice) passwordInputRef.current?.focus();
   }, [notice]);
+
+  // Drop any sign-in failure left in the store by the portal the user just came
+  // from. This form shows its own `errorMessage`, which resets on mount anyway —
+  // but the store's copy outlives the navigation, and the Development Agent
+  // portal reads it, so leaving one behind puts a stale error on a fresh form.
+  useEffect(() => {
+    dispatch(clearAuthError());
+  }, [dispatch]);
 
   const returnToSignIn = () => {
     setPendingPasswordChange(null);
@@ -270,29 +281,13 @@ export function PortalLoginForm({
 
         <div className={`text-center text-[14px] font-medium text-[#6B7280] ${showRegisterLink ? 'opacity-100' : 'opacity-0 pointer-events-none select-none'}`}>
           New to OAN?{' '}
-          <Link href="/create-account" className="text-[#16A34A] font-bold hover:underline" tabIndex={showRegisterLink ? 0 : -1}>
+          <Link href={registerHref} className="text-[#16A34A] font-bold hover:underline" tabIndex={showRegisterLink ? 0 : -1}>
             <span className='text-[#16A34A]'>Register account</span>
           </Link>
         </div>
       </form>
 
-      {showPartnerBanks && (
-        <div className="mt-8 w-full flex flex-col items-center">
-          <span className="text-[12px] font-bold text-[#9CA3AF] uppercase tracking-widest mb-3">
-            Partner Banks
-          </span>
-          <div className="flex flex-wrap justify-center gap-1.5">
-            {PARTNER_BANKS.map((bank) => (
-              <div
-                key={bank}
-                className="px-4 py-1.5 rounded-full border border-[#16A34A]/30 text-[11px] font-bold text-[#16A34A] cursor-default bg-[#F7FFFB]"
-              >
-                {bank}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {showPartnerBanks && <PartnerBanks />}
 
       <ForgotPasswordModal isOpen={isForgotOpen} onClose={() => setIsForgotOpen(false)} />
     </div>

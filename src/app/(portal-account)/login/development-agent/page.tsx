@@ -1,5 +1,6 @@
-import { LoginClient } from '@/features/auth/components/LoginClient';
+import { PortalShell } from '@/app/(portal-account)/components/PortalShell';
 import { Metadata } from 'next';
+import { DevelopmentAgentLoginForm } from './components/DevelopmentAgentLoginForm';
 
 export const metadata: Metadata = {
   title: 'Field Agent Login | Ethiopia OpenAgriNet Access to Credit',
@@ -10,6 +11,10 @@ export const metadata: Metadata = {
   },
 };
 
-export default function LoginPage() {
-  return <LoginClient />;
+export default function DevelopmentAgentLoginPage() {
+  return (
+    <PortalShell badge="Field Agent Portal" backHref="/login">
+      <DevelopmentAgentLoginForm />
+    </PortalShell>
+  );
 }

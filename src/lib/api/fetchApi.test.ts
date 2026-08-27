@@ -132,6 +132,38 @@ describe('fetchApi', () => {
     }
   });
 
+  // An abort that lands after the headers but before the body is read rejects in
+  // `response.json()`, with `response.ok` still true. Returning null there made
+  // callers read `null?.data` as a missing field and log an API contract
+  // violation for what was really a cancelled request.
+  it('should propagate an abort that interrupts reading the response body', async () => {
+    const controller = new AbortController();
+    vi.spyOn(global, 'fetch').mockImplementation(async () => ({
+      ok: true,
+      status: 200,
+      json: async (): Promise<unknown> => {
+        controller.abort();
+        throw new DOMException('The operation was aborted.', 'AbortError');
+      },
+    } as Response));
+
+    await expect(fetchApi('test-path', { signal: controller.signal })).rejects.toThrow(
+      expect.objectContaining({ name: 'AbortError' })
+    );
+  });
+
+  it('should still return null when an ok response simply has no JSON body', async () => {
+    vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async (): Promise<unknown> => {
+        throw new SyntaxError('Unexpected end of JSON input');
+      },
+    } as Response);
+
+    await expect(fetchApi('test-path')).resolves.toBeNull();
+  });
+
   describe('with window defined (browser environment)', () => {
     beforeEach(() => {
       vi.stubGlobal('window', { location: { origin: 'http://localhost:3000' } });

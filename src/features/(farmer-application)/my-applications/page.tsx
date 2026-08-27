@@ -7,6 +7,7 @@ import { getAllMyApplications, getLoanStatusMetadata } from '../api/farmerApi';
 import type { FarmerLoanApplication } from '../types';
 import ApplicationList from './components/ApplicationList';
 import ApplicationSummary from './components/ApplicationSummary';
+import { DiscoverLoansCta } from '@/components/DiscoverLoansCta';
 import { ALL_TAB, buildStageTabs } from './counts';
 
 /**
@@ -77,10 +78,16 @@ export default function MyApplicationsPage() {
         : ALL_TAB;
 
     return (
-        <div className="w-full mx-auto pb-8">
-            <div className="bg-white p-6 mb-8 border border-[#F1F3F4] shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.05),0px_2px_4px_-1px_rgba(0,0,0,0.03)] hover:-translate-y-1 hover:shadow-lg transition-all duration-300 rounded-xl">
+        <div className="w-full mx-auto pb-8 space-y-4">
+            <div className="bg-white p-6 border border-[#F1F3F4] shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.05),0px_2px_4px_-1px_rgba(0,0,0,0.03)] hover:-translate-y-1 hover:shadow-lg transition-all duration-300 rounded-xl">
                 <h1 className="text-xl font-bold text-gray-900">My Applications</h1>
             </div>
+
+            <DiscoverLoansCta
+                href="/discover-loans"
+                title="Discover Loans"
+                description="Explore available loan products from participating banks to find the right fit for your farming needs."
+            />
 
             {isLoading ? (
                 <PanelLoader label="Loading your applications…" />

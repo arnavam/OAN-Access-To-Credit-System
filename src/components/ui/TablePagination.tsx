@@ -16,12 +16,30 @@ export interface TablePaginationProps {
 }
 
 /**
- * Footer bar for the dashboard tables — record count, page-size dropdown and
+ * Page numbers to render, with an ellipsis wherever the run is broken.
+ *
+ * Always shows the first and last page plus a window around the current one.
+ * This bar used to render pages 1-3 and the last page unconditionally, so on a
+ * 40-page list sitting on page 7 there was no button for the page you were on,
+ * and no way to step to page 8 other than Next.
+ */
+function pageItems(currentPage: number, totalPages: number): (number | 'gap')[] {
+  if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
+  if (currentPage <= 4) return [1, 2, 3, 4, 5, 'gap', totalPages];
+  if (currentPage >= totalPages - 3) {
+    return [1, 'gap', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+  }
+  return [1, 'gap', currentPage - 1, currentPage, currentPage + 1, 'gap', totalPages];
+}
+
+/**
+ * Footer bar for every dashboard table — record count, page-size dropdown and
  * page navigation.
  *
- * Leads and loans each had their own copy: identical markup, one props-driven
- * and one wired straight into the loan slice, which is why they had already
- * drifted on the record-count wording and on whether the bar hides itself.
+ * Each table used to carry its own copy. They had drifted on the record-count
+ * wording ("records" / "Applications" / "entries"), on button shape, on how many
+ * page numbers they offered, and on whether the bar hid itself when empty — so
+ * four screens showing the same kind of list each ended the list differently.
  * This is the props-driven one; store-connected callers wrap it (see
  * features/loans/components/LoanPagination.tsx).
  */
@@ -53,7 +71,10 @@ export function TablePagination({
 
   // Guard removed: the footer must always render so the page-size dropdown remains accessible.
 
-  const pages = Array.from({ length: Math.min(3, totalPages) }, (_, i) => i + 1);
+  // A list that has loaded nothing still has a page 1; without the floor, Next
+  // stays enabled against totalPages === 0.
+  const lastPage = Math.max(1, totalPages);
+  const pages = pageItems(currentPage, lastPage);
 
   return (
     <div className="flex flex-col xl:flex-row items-center justify-center xl:justify-between gap-4 md:gap-6 border-t border-[#F1F3F4] bg-white px-4 sm:px-8 py-5">
@@ -99,7 +120,7 @@ export function TablePagination({
       <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 w-full xl:w-auto">
         <button
           type="button"
-          disabled={currentPage === 1}
+          disabled={currentPage <= 1}
           onClick={() => onPageChange(Math.max(1, currentPage - 1))}
           className="inline-flex h-10 items-center justify-center rounded-md bg-white px-3 text-base font-semibold text-gray-400 transition-colors hover:bg-gray-50 disabled:opacity-40"
         >
@@ -107,40 +128,29 @@ export function TablePagination({
           Prev
         </button>
 
-        {pages.map((pg) => (
-          <button
-            key={pg}
-            type="button"
-            onClick={() => onPageChange(pg)}
-            className={`inline-flex h-10 w-10 items-center justify-center rounded-md text-base font-semibold transition-colors ${currentPage === pg
-              ? 'bg-[#16A34A] text-white shadow-sm'
-              : 'bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-900 border border-transparent'
-              }`}
-          >
-            {pg}
-          </button>
-        ))}
-
-        {totalPages > 3 && (
-          <>
-            <span className="text-gray-400 mx-1">...</span>
+        {pages.map((pg, index) => (
+          pg === 'gap' ? (
+            <span key={`gap-${index}`} className="mx-1 text-gray-400" aria-hidden="true">…</span>
+          ) : (
             <button
+              key={pg}
               type="button"
-              onClick={() => onPageChange(totalPages)}
-              className={`inline-flex h-10 w-10 items-center justify-center rounded-md text-base font-semibold transition-colors ${totalPages === currentPage
+              onClick={() => onPageChange(pg)}
+              aria-current={currentPage === pg ? 'page' : undefined}
+              className={`inline-flex h-10 w-10 items-center justify-center rounded-md text-base font-semibold transition-colors ${currentPage === pg
                 ? 'bg-[#16A34A] text-white shadow-sm'
                 : 'bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-900 border border-transparent'
                 }`}
             >
-              {totalPages}
+              {pg}
             </button>
-          </>
-        )}
+          )
+        ))}
 
         <button
           type="button"
-          disabled={currentPage === totalPages}
-          onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+          disabled={currentPage >= lastPage}
+          onClick={() => onPageChange(Math.min(lastPage, currentPage + 1))}
           className="inline-flex h-10 items-center justify-center rounded-md bg-white px-3 text-base font-semibold text-gray-400 transition-colors hover:bg-gray-50 disabled:opacity-40"
         >
           Next

@@ -1,5 +1,3 @@
-import Image from 'next/image';
-
 // Bundled local assets — the CSP intentionally restricts img-src to 'self', so
 // these decorative avatars stay same-origin (no external host, works offline).
 const activeAgents = [
@@ -8,20 +6,27 @@ const activeAgents = [
   { src: '/15546d74033e37b4f05979285cbde9b0d8a08256.jpg', alt: 'Agent 3' },
 ];
 
-export function LeftSidebar() {
+interface LeftSidebarProps {
+  /** Names the portal this panel fronts. It was hard-coded to "Field Agent
+   *  Portal", so the bank and farmer sign-ins announced the wrong one. */
+  badge?: string;
+}
+
+export function LeftSidebar({ badge = 'Access to Credit Portal' }: LeftSidebarProps) {
   return (
     <div className="w-full md:w-[45%] bg-[#0B6C43] p-6 sm:p-10 md:p-14 flex flex-col relative overflow-hidden">
-      <div className="flex items-center space-x-2 mb-16 relative z-10">
-        <Image src="/logo.png" alt="OARI Logo" width={1536} height={1024} className="h-[40px] sm:h-[48px] w-auto shrink-0" />
-        <div className="flex flex-col border-l border-white/30 pl-2">
-          <span className="text-xs font-bold text-white leading-tight tracking-wide">Ethiopia OpenAgriNet</span>
-          <span className="text-[10px] text-white/80 font-medium leading-tight tracking-wide">Access to Credit</span>
+      <div className="flex items-center space-x-3 mb-16 relative z-10">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo.svg" alt="OARI Logo" className="h-[28px] sm:h-[34px] w-auto shrink-0" />
+        <div className="flex flex-col border-l-2 border-white/30 pl-3">
+          <span className="text-[13px] font-bold text-white leading-tight tracking-wide">Ethiopia OpenAgriNet</span>
+          <span className="text-[11px] text-white/80 font-medium leading-tight tracking-wide">Access to Credit</span>
         </div>
       </div>
 
       <div className="relative z-10 mb-8 md:mb-0">
         <span className="inline-block px-4 py-1.5 bg-white/10 text-white/90 text-[10px] font-bold tracking-wider rounded-full uppercase mb-8 border border-white/10">
-          FIELD AGENT PORTAL
+          {badge}
         </span>
         <h1 className="text-4xl md:text-5xl font-bold text-white mb-6 leading-[1.2] tracking-tight">
           Empowering<br />Ethiopian<br />Agriculture
@@ -35,7 +40,8 @@ export function LeftSidebar() {
         <div className="flex -space-x-3">
           {activeAgents.map((agent, index) => (
             <div key={index} className="w-10 h-10 rounded-full border-2 border-[#0B6C43] overflow-hidden flex items-center justify-center bg-white z-[3]">
-              <Image src={agent.src} alt={agent.alt} width={80} height={80} className="w-full h-full object-cover" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={agent.src} alt={agent.alt} width={80} height={80} className="w-full h-full object-cover" />
             </div>
           ))}
           <div className="w-10 h-10 rounded-full bg-[#1F2937] border-2 border-[#0B6C43] flex items-center justify-center text-[10px] font-bold text-white z-[0]">

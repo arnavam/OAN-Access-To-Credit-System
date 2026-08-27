@@ -2,7 +2,8 @@
 
 import { Portal } from '@/components/Portal';
 import { Check, Filter } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
+import { useColumnFilterDropdown } from './useColumnFilterDropdown';
 
 interface LoanTypeFilterProps {
   options: string[];
@@ -11,43 +12,11 @@ interface LoanTypeFilterProps {
 }
 
 export default function LoanTypeFilter({ options, selectedValues, onChange }: LoanTypeFilterProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
   const [tempSelected, setTempSelected] = useState<string[]>(selectedValues);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
-        menuRef.current && !menuRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false);
-      }
-    }
-
-    const updatePosition = () => {
-      if (dropdownRef.current) {
-        const rect = dropdownRef.current.getBoundingClientRect();
-        setDropdownPos({
-          top: rect.bottom + window.scrollY + 8,
-          left: rect.left + window.scrollX
-        });
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      window.addEventListener('scroll', updatePosition, true);
-      window.addEventListener('resize', updatePosition);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      window.removeEventListener('scroll', updatePosition, true);
-      window.removeEventListener('resize', updatePosition);
-    };
-  }, [isOpen]);
+  const { isOpen, setIsOpen, dropdownRef, menuRef, dropdownPos, toggleDropdown: handleClick } = useColumnFilterDropdown({
+    menuWidth: 300,
+    onOpen: () => setTempSelected(selectedValues),
+  });
 
   const toggleOption = (option: string) => {
     if (option === 'All') {
@@ -75,25 +44,7 @@ export default function LoanTypeFilter({ options, selectedValues, onChange }: Lo
     setIsOpen(false);
   };
 
-  const handleClick = () => {
-    if (!isOpen && dropdownRef.current) {
-      // Opening: start the draft from the committed selection, so an edit that was
-      // abandoned last time (closed without Apply) isn't still sitting there.
-      //
-      // This was an effect on [isOpen, selectedValues]. Resetting draft state in
-      // the handler that opens the menu is both the documented React pattern and
-      // narrower: the effect also re-ran whenever `selectedValues` changed
-      // identity, which could wipe an in-progress selection mid-edit.
-      setTempSelected(selectedValues);
 
-      const rect = dropdownRef.current.getBoundingClientRect();
-      setDropdownPos({
-        top: rect.bottom + window.scrollY + 8,
-        left: rect.left + window.scrollX
-      });
-    }
-    setIsOpen(!isOpen);
-  };
 
   const isAllSelected = tempSelected.length === options.length;
 

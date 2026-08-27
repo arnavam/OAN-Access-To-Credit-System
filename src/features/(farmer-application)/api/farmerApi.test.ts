@@ -34,13 +34,27 @@ describe('getCatalog — bookmarked-only filter', () => {
   });
 
   it('composes with the other catalog filters', () => {
-    void getCatalog({ is_saved: true, category: 'Input Loan', tenure_months: 12, search: 'seed' });
+    void getCatalog({ is_saved: true, categories: ['input-loan'], tenure_months: 12, search: 'seed' });
 
     const q = lastQuery();
     expect(q.get('is_saved')).toBe('1');
-    expect(q.get('category')).toBe('Input Loan');
+    expect(q.get('category')).toBe('input-loan');
     expect(q.get('min_tenure_months')).toBe('12');
     expect(q.get('max_tenure_months')).toBe('12');
     expect(q.get('search')).toBe('seed');
+  });
+
+  it('comma-joins several loan types into one category param', () => {
+    // A repeated query param would lose all but the last value in Frappe's form
+    // parsing; the endpoint reads this one through parse_multi_value.
+    void getCatalog({ categories: ['input-loan', 'equipment-loan'] });
+
+    expect(lastQuery().get('category')).toBe('input-loan,equipment-loan');
+  });
+
+  it('sends no category param when no loan type is ticked', () => {
+    void getCatalog({ categories: [] });
+
+    expect(lastQuery().has('category')).toBe(false);
   });
 });

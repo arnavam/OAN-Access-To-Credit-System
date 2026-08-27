@@ -3,7 +3,8 @@
 import { Portal } from '@/components/Portal';
 import { LOAN_AMOUNT_BUCKET_LABELS, loanAmountCeilingLabel } from '@/features/loans/constants/loans.constants';
 import { Check, Filter } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
+import { useColumnFilterDropdown } from './useColumnFilterDropdown';
 
 interface LoanAmountFilterProps {
   selectedValues: string[];
@@ -17,11 +18,11 @@ interface LoanAmountFilterProps {
 const rangeOptions = LOAN_AMOUNT_BUCKET_LABELS;
 
 export default function LoanAmountFilter({ selectedValues, onChange }: LoanAmountFilterProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
   const [tempSelected, setTempSelected] = useState<string[]>(selectedValues);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const { isOpen, setIsOpen, dropdownRef, menuRef, dropdownPos, toggleDropdown: handleClick } = useColumnFilterDropdown({
+    menuWidth: 340, // 340px for LoanAmountFilter based on w-[340px] in portal
+    onOpen: () => setTempSelected(selectedValues),
+  });
   const sliderRef = useRef<HTMLDivElement>(null);
 
   const handleSliderInteraction = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -36,37 +37,7 @@ export default function LoanAmountFilter({ selectedValues, onChange }: LoanAmoun
     setTempSelected(rangeOptions.slice(0, newMaxIndex));
   };
 
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
-        menuRef.current && !menuRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false);
-      }
-    }
 
-    const updatePosition = () => {
-      if (dropdownRef.current) {
-        const rect = dropdownRef.current.getBoundingClientRect();
-        setDropdownPos({
-          top: rect.bottom + window.scrollY + 8,
-          left: rect.left + window.scrollX
-        });
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      window.addEventListener('scroll', updatePosition, true);
-      window.addEventListener('resize', updatePosition);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      window.removeEventListener('scroll', updatePosition, true);
-      window.removeEventListener('resize', updatePosition);
-    };
-  }, [isOpen]);
 
   const toggleOption = (option: string) => {
     if (option === 'All') {
@@ -94,23 +65,7 @@ export default function LoanAmountFilter({ selectedValues, onChange }: LoanAmoun
     setIsOpen(false);
   };
 
-  const handleClick = () => {
-    if (!isOpen && dropdownRef.current) {
-      // Opening: start the draft (and so the slider position) from the committed
-      // selection. Previously an effect on [isOpen, selectedValues] — which also
-      // re-ran on any `selectedValues` identity change, wiping an in-progress
-      // slider drag. Resetting draft state where the menu is opened is narrower
-      // and is the documented React pattern.
-      setTempSelected(selectedValues);
 
-      const rect = dropdownRef.current.getBoundingClientRect();
-      setDropdownPos({
-        top: rect.bottom + window.scrollY + 8,
-        left: rect.left + window.scrollX
-      });
-    }
-    setIsOpen(!isOpen);
-  };
 
   // Dynamic Slider Logic
   let displayMaxIndex = rangeOptions.length;

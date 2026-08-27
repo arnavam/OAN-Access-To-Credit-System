@@ -127,7 +127,16 @@ export async function fetchApi(path: string, options: RequestInit = {}) {
   let responseData;
   try {
     responseData = await response.json();
-  } catch {
+  } catch (error) {
+    // A caller abort that lands after the response headers but before the body
+    // has been read rejects *here*, not in `fetchWithTimeout` — that fetch already
+    // resolved and cleared its timeout, so the only signal still able to error the
+    // body stream is the caller's. Swallowing it returned `null`, and callers read
+    // `null?.data` as a missing field — so a cancelled request surfaced as an
+    // '[API Contract Violation]' rather than as an abort. React StrictMode's
+    // double-mount makes this fire on the first render of any list that aborts its
+    // in-flight request on effect cleanup.
+    if (options.signal?.aborted) throw error;
     if (!response.ok) throw new ApiError(genericMessageForStatus(response.status), null, response.status);
     return null;
   }
