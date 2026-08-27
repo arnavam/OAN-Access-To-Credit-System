@@ -1,10 +1,12 @@
 'use client';
 
 import { PortalShell } from '@/app/(portal-account)/components/PortalShell';
+import { ErrorAlert } from '@/components/ui/ErrorAlert';
+import { useClickOutside } from '@/hooks/useClickOutside';
 import { fetchApi, ApiError } from '@/lib/api/fetchApi';
 import { Lock, Mail, User } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Spinner } from '@/components/ui/Loader';
 import { PasswordRequirements } from '@/components/ui/PasswordRequirements';
 import { strongPasswordSchema } from '@/lib/api/api.schemas';
@@ -16,45 +18,70 @@ const COUNTRY_CODES = [
   { code: '+250', flagUrl: '/images/flags/rw.svg', country: 'Rwanda' },
 ];
 
+/**
+ * Dialling-code picker for the phone field.
+ *
+ * This is a hand-rolled dropdown standing in for a native <select>, which is
+ * where the ARIA below comes from: a <select> announces itself as a collapsed
+ * list, says which option is current, and closes on Escape without anyone
+ * writing that. None of it is free once the control is a button and a div, so
+ * it is spelled out — expanded state on the trigger, a menu role with a checked
+ * item, and Escape returning focus to the trigger it came from.
+ */
 function CountryCodeSelect({ value, onChange }: { value: string; onChange: (val: string) => void }) {
   const [isOpen, setIsOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const active = COUNTRY_CODES.find((c) => c.code === value) || COUNTRY_CODES[0];
 
-  useEffect(() => {
-    const handleDocumentClick = (event: MouseEvent) => {
-      if (ref.current && !ref.current.contains(event.target as Node)) setIsOpen(false);
-    };
-    document.addEventListener('mousedown', handleDocumentClick);
-    return () => document.removeEventListener('mousedown', handleDocumentClick);
-  }, []);
+  const close = useCallback(() => setIsOpen(false), []);
+  useClickOutside(ref, close, isOpen);
 
   return (
-    <div className="relative flex shrink-0" ref={ref}>
+    <div
+      className="relative flex shrink-0"
+      ref={ref}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape' && isOpen) {
+          event.stopPropagation();
+          setIsOpen(false);
+          triggerRef.current?.focus();
+        }
+      }}
+    >
       <button
+        ref={triggerRef}
         type="button"
+        aria-haspopup="menu"
+        aria-expanded={isOpen}
+        aria-label={`Country code, ${active!.country} ${active!.code}`}
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 px-3 py-3 bg-gray-50 border border-r-0 border-[#D1D5DB] rounded-l-xl text-[14px] text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] font-medium cursor-pointer hover:bg-gray-100 min-w-[90px]"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={active!.flagUrl} alt={active!.country} className="w-5 h-4 rounded-sm object-cover" />
+        <img src={active!.flagUrl} alt="" width={20} height={16} className="w-5 h-4 rounded-sm object-cover" />
         <span>{active!.code}</span>
       </button>
       {isOpen && (
-        <div className="absolute top-full left-0 mt-1 w-full min-w-[120px] bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1 overflow-hidden">
+        <div role="menu" aria-label="Country code" className="absolute top-full left-0 mt-1 w-full min-w-[120px] bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1 overflow-hidden">
           {COUNTRY_CODES.map((c) => (
             <button
               key={c.code}
               type="button"
+              role="menuitemradio"
+              aria-checked={value === c.code}
               onClick={() => {
                 onChange(c.code);
                 setIsOpen(false);
+                triggerRef.current?.focus();
               }}
               className={`w-full flex items-center gap-2 px-3 py-2 text-[14px] hover:bg-gray-50 ${value === c.code ? 'bg-gray-50 font-bold' : 'font-medium text-gray-700'}`}
             >
+              {/* The flag repeats the country the label already names, so it is
+                  decorative — an alt here reads the country out twice. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={c.flagUrl} alt={c.country} className="w-5 h-4 rounded-sm object-cover shrink-0" />
-              <span>{c.code}</span>
+              <img src={c.flagUrl} alt="" width={20} height={16} className="w-5 h-4 rounded-sm object-cover shrink-0" />
+              <span>{c.country} {c.code}</span>
             </button>
           ))}
         </div>
@@ -131,11 +158,7 @@ export default function FarmerSignupPage() {
           <p className="text-gray-500 text-lg font-medium leading-relaxed px-4">Register as a farmer to apply for loans.</p>
         </div>
 
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
-            <p className="text-sm font-medium text-red-600">{error}</p>
-          </div>
-        )}
+        {error && <ErrorAlert className="mb-6">{error}</ErrorAlert>}
 
         {isSuccess ? (
           <div className="flex flex-col items-center justify-center py-8 px-4 text-center space-y-6 animate-in fade-in zoom-in-95 duration-500">

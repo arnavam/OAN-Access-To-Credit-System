@@ -1,8 +1,8 @@
 'use client';
 
 import { Portal } from '@/components/Portal';
-import { Check, Filter } from 'lucide-react';
 import { useState } from 'react';
+import { FilterCheckboxRow, FilterTrigger } from './FilterControls';
 import { useColumnFilterDropdown } from './useColumnFilterDropdown';
 export interface StatusFilterOption {
   /** What `get_all_loans` is filtered by — a stage label or stage_id. */
@@ -33,7 +33,7 @@ interface StatusFilterProps {
  */
 export default function StatusFilter({ options, selectedValues, onChange }: StatusFilterProps) {
   const [tempSelected, setTempSelected] = useState<string[]>(selectedValues);
-  const { isOpen, setIsOpen, dropdownRef, menuRef, dropdownPos, toggleDropdown: handleClick } = useColumnFilterDropdown({
+  const { isOpen, setIsOpen, dropdownRef, menuRef, triggerRef, dropdownPos, toggleDropdown: handleClick } = useColumnFilterDropdown({
     menuWidth: 300,
     onOpen: () => setTempSelected(selectedValues),
   });
@@ -54,13 +54,14 @@ export default function StatusFilter({ options, selectedValues, onChange }: Stat
 
   return (
     <div ref={dropdownRef} className="inline-block">
-      <div
-        className="flex items-center justify-center gap-1.5 cursor-pointer select-none text-gray-500 hover:text-gray-700 transition-colors"
+      <FilterTrigger
+        ref={triggerRef}
+        label="STATUS"
+        isOpen={isOpen}
+        isActive={selectedValues.length > 0}
         onClick={handleClick}
-      >
-        STATUS
-        <Filter className={`w-3.5 h-3.5 transition-colors ${isOpen || selectedValues.length > 0 ? 'text-[#16A34A]' : ''}`} />
-      </div>
+        center
+      />
 
       {isOpen && (
         <Portal>
@@ -73,7 +74,7 @@ export default function StatusFilter({ options, selectedValues, onChange }: Stat
               <span className="text-[12px] font-bold text-gray-400 uppercase tracking-wider">Status</span>
             </div>
 
-            <div className="flex flex-col py-2 max-h-[300px] overflow-y-auto">
+            <div role="group" aria-label="Status" className="flex flex-col py-2 max-h-[300px] overflow-y-auto">
               {options.length === 0 ? (
                 // Not an empty menu over a live Apply button: a bank that has not
                 // defined its pipeline yet has nothing to filter by, and saying so
@@ -83,44 +84,21 @@ export default function StatusFilter({ options, selectedValues, onChange }: Stat
                 </p>
               ) : (
                 <>
-                  <div
-                    onClick={toggleAll}
-                    className="flex items-center gap-4 px-5 py-2.5 hover:bg-gray-50 cursor-pointer text-[14px] font-medium text-gray-800 select-none group transition-colors normal-case"
-                  >
-                    <div
-                      className={`w-5 h-5 shrink-0 rounded-[4px] border flex items-center justify-center transition-all duration-200 ${isAllSelected ? 'bg-[#16A34A] border-[#16A34A]' : 'border-gray-300 group-hover:border-[#16A34A]/50'
-                        }`}
-                    >
-                      <Check
-                        className={`w-3.5 h-3.5 text-white transition-all duration-200 ${isAllSelected ? 'scale-100 opacity-100' : 'scale-50 opacity-0'
-                          }`}
-                        strokeWidth={3}
-                      />
-                    </div>
+                  <FilterCheckboxRow checked={isAllSelected} onToggle={toggleAll}>
                     All
-                  </div>
+                  </FilterCheckboxRow>
 
                   {options.map((option) => {
                     const isSelected = tempSelected.includes(option.value);
                     return (
-                      <div
+                      <FilterCheckboxRow
                         key={option.value}
-                        onClick={() => toggleOption(option.value)}
-                        className="flex items-center gap-4 px-5 py-2.5 hover:bg-gray-50 cursor-pointer text-[14px] font-medium text-gray-800 select-none group transition-colors normal-case"
+                        checked={isSelected}
+                        onToggle={() => toggleOption(option.value)}
                       >
-                        <div
-                          className={`w-5 h-5 shrink-0 rounded-[4px] border flex items-center justify-center transition-all duration-200 ${isSelected ? 'bg-[#16A34A] border-[#16A34A]' : 'border-gray-300 group-hover:border-[#16A34A]/50'
-                            }`}
-                        >
-                          <Check
-                            className={`w-3.5 h-3.5 text-white transition-all duration-200 ${isSelected ? 'scale-100 opacity-100' : 'scale-50 opacity-0'
-                              }`}
-                            strokeWidth={3}
-                          />
-                        </div>
                         <span className={`h-2 w-2 shrink-0 rounded-full ${option.color ?? 'bg-slate-400'}`} aria-hidden="true" />
                         <span className="truncate">{option.label}</span>
-                      </div>
+                      </FilterCheckboxRow>
                     );
                   })}
                 </>

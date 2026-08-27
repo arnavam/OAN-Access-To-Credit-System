@@ -9,7 +9,7 @@ import AvailableLoanTypes from './components/AvailableLoanTypes';
 import FarmerProfileCard from './components/FarmerProfileCard';
 import RecentApplicationsList from './components/RecentApplicationsList';
 import TopLoanOffersCard from './components/TopLoanOffersCard';
-import { rankTopOffers, TOP_OFFER_CANDIDATE_LIMIT, type TopOffer } from './components/topOffers';
+import { rankTopOffers, TOP_OFFER_CANDIDATE_LIMIT, TOP_OFFER_COUNT, type TopOffer } from './components/topOffers';
 import { getCatalog, getDashboardSummary } from '@/features/(farmer-application)/api/farmerApi';
 import type { FarmerDashboardSummary } from '@/features/(farmer-application)/types';
 
@@ -39,7 +39,11 @@ export default function FarmerDashboard() {
         if (summaryResult.status === 'fulfilled' && summaryResult.value.data) {
           setData(summaryResult.value.data);
           if (summaryResult.value.data.top_loan_offers?.length) {
-            setOffers(summaryResult.value.data.top_loan_offers);
+            // Sliced here as well as in `rankTopOffers`: the carousel's length
+            // cap is the component's own constraint, not the ranking's, so it
+            // has to hold on whatever the endpoint sends the day it starts
+            // sending its own list.
+            setOffers(summaryResult.value.data.top_loan_offers.slice(0, TOP_OFFER_COUNT));
           }
         } else if (summaryResult.status === 'rejected') {
           logger.error('Failed to load dashboard summary', summaryResult.reason);

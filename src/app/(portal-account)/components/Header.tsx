@@ -12,7 +12,7 @@ export function Header({ activeTab }: HeaderProps) {
 
       <div className="flex items-center space-x-3">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo.svg" alt="OARI Logo" className="h-[28px] sm:h-[34px] w-auto shrink-0" />
+        <img src="/logo.svg" alt="OARI Logo" width={1277} height={851} className="h-[28px] sm:h-[34px] w-auto shrink-0" />
         <div className="flex flex-col border-l-2 border-gray-300 pl-3">
           <span className="text-[13px] font-bold text-[#16335A] leading-tight tracking-wide">Ethiopia OpenAgriNet</span>
           <span className="text-[11px] text-gray-500 font-medium leading-tight tracking-wide uppercase">Access to Credit</span>

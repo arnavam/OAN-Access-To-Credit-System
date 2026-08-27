@@ -2,7 +2,11 @@ import React, { ButtonHTMLAttributes, forwardRef } from 'react';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'success';
-  size?: 'sm' | 'md' | 'lg' | 'icon' | 'wide' | 'default';
+  /** `none` sets no padding, height or text size — for a caller that supplies
+   *  its own via `className` and only wants the variant, the focus ring and the
+   *  `isLoading` spinner. Without it such a caller has to fight the size scale
+   *  with conflicting utilities, which is why they hand-rolled `<button>`. */
+  size?: 'sm' | 'md' | 'lg' | 'icon' | 'wide' | 'default' | 'none';
   isLoading?: boolean;
   as?: React.ElementType | string;
   href?: string;
@@ -28,6 +32,7 @@ const Button = forwardRef<HTMLElement, ButtonProps>(
       icon: 'h-10 w-10',
       wide: 'w-full md:w-auto min-w-[170px] px-4 py-2.5 text-sm',
       default: 'flex-1 md:flex-none px-4 py-2.5 text-sm',
+      none: '',
     };
 
     const variantStyles = variants[variant];

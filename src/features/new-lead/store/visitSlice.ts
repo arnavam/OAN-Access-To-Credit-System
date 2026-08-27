@@ -21,6 +21,15 @@ import { clearForm, initializeLead } from './actions';
  */
 interface VisitSchedule {
   id?: string;
+  /**
+   * The lead this visit belongs to.
+   *
+   * There is one `visitSchedule` for the whole app, so between navigating away
+   * from one lead and `get_visit_schedules` answering for the next it still
+   * holds the previous lead's visit. Without this, the reschedule form had no
+   * way to tell that apart from its own data and seeded itself from it.
+   */
+  leadId?: string;
   date: string;
   /** 'hh:mm AM' — the format TimePickerField reads and writes. */
   time?: string;
@@ -192,6 +201,7 @@ const visitSlice = createSlice({
             if (latest) {
               state.visitSchedule = {
                 id: latest.name,
+                leadId: latest.lead ?? '',
                 date: latest.visit_date,
                 time: toDisplayTime(latest.visit_time),
                 location: latest.meeting_location || (latest.region ? `${latest.region}, ${latest.zone}` : ''),
@@ -227,6 +237,7 @@ const visitSlice = createSlice({
         const response = action.payload.response;
         state.visitSchedule = {
           id: response.schedule_id,
+          leadId: p.leadId,
           date: p.date,
           time: p.time,
           location: p.location || (p.region ? `${p.region}, ${p.zone}` : ''),

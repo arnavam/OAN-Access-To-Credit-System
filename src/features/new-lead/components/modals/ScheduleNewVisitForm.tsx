@@ -91,22 +91,44 @@ export const ScheduleNewVisitForm = ({
   onSave
 }: ScheduleNewVisitFormProps) => {
   const { visitSchedule } = useAppSelector(selectVisitState);
+  const dispatch = useAppDispatch();
+  const params = useParams();
+  const router = useRouter();
+
+  const routeLeadId = normalizeLeadId(params?.id as string | undefined);
+
+  // Only the visit belonging to the lead on screen may seed this form.
+  //
+  // The store keeps a single `visitSchedule`, so between leaving one lead and
+  // `get_visit_schedules` answering for the next it still holds the previous
+  // lead's visit — and seeding from that put another farmer's date, time and
+  // meeting point on the form until the fetch landed. A schedule that does not
+  // name its lead (the inline date picker on the lead card writes one) is still
+  // accepted, so nothing regresses where the lead was never recorded.
+  const seed =
+    visitSchedule &&
+      (!visitSchedule.leadId || !routeLeadId || normalizeLeadId(visitSchedule.leadId) === routeLeadId)
+      ? visitSchedule
+      : null;
 
   // Seeded from the visit already on the lead, so Reschedule reopens the place
   // and time that were chosen the first time round instead of an empty form.
-  const [date, setDate] = useState(visitSchedule?.date || '');
-  const [time, setTime] = useState(visitSchedule?.time || '');
+  const [date, setDate] = useState(seed?.date || '');
+  const [time, setTime] = useState(seed?.time || '');
   // The raw meeting point, not visitSchedule.location — that one falls back to
   // 'Region, Zone' for the card, and saving it here would write that synthesised
   // display string into meeting_location on every reschedule.
-  const [location, setLocation] = useState(visitSchedule?.meetingLocation || '');
+  const [location, setLocation] = useState(seed?.meetingLocation || '');
   const [agenda, setAgenda] = useState('');
-  const [region, setRegion] = useState(visitSchedule?.region || '');
-  const [zone, setZone] = useState(visitSchedule?.zone || '');
-  const [woreda, setWoreda] = useState(visitSchedule?.woreda || '');
-  const [kebele, setKebele] = useState(visitSchedule?.kebele || '');
+  const [region, setRegion] = useState(seed?.region || '');
+  const [zone, setZone] = useState(seed?.zone || '');
+  const [woreda, setWoreda] = useState(seed?.woreda || '');
+  const [kebele, setKebele] = useState(seed?.kebele || '');
   const [isSaving, setIsSaving] = useState(false);
   const [errorFeedback, setErrorFeedback] = useState<string | null>(null);
+  // Set by the agent's first edit. Anything typed after that outranks a schedule
+  // that is still in flight — see the reseed below.
+  const [isDirty, setIsDirty] = useState(false);
 
   // Reseed when a different visit becomes the active one.
   //
@@ -119,21 +141,31 @@ export const ScheduleNewVisitForm = ({
   // Adjusted during render rather than in an effect: an effect would cost a
   // second render pass on every load, and keying off the schedule's identity
   // means an unrelated re-render can never overwrite an edit in progress.
-  const [seededScheduleId, setSeededScheduleId] = useState(visitSchedule?.id ?? null);
-  if ((visitSchedule?.id ?? null) !== seededScheduleId) {
-    setSeededScheduleId(visitSchedule?.id ?? null);
-    setDate(visitSchedule?.date || '');
-    setTime(visitSchedule?.time || '');
-    setLocation(visitSchedule?.meetingLocation || '');
-    setRegion(visitSchedule?.region || '');
-    setZone(visitSchedule?.zone || '');
-    setWoreda(visitSchedule?.woreda || '');
-    setKebele(visitSchedule?.kebele || '');
+  const [seededScheduleId, setSeededScheduleId] = useState(seed?.id ?? null);
+  if ((seed?.id ?? null) !== seededScheduleId) {
+    setSeededScheduleId(seed?.id ?? null);
+    // That fetch can resolve when the agent is already several fields into the
+    // form, and prefilling is only worth having on a form nobody has touched.
+    // Once dirty, an arriving schedule updates the identity being tracked and
+    // nothing else, so the agent's own typing is never overwritten.
+    if (!isDirty) {
+      setDate(seed?.date || '');
+      setTime(seed?.time || '');
+      setLocation(seed?.meetingLocation || '');
+      setRegion(seed?.region || '');
+      setZone(seed?.zone || '');
+      setWoreda(seed?.woreda || '');
+      setKebele(seed?.kebele || '');
+    }
   }
 
-  const dispatch = useAppDispatch();
-  const params = useParams();
-  const router = useRouter();
+  // Every field writes through this, so the reseed above can tell an untouched
+  // form from one the agent is part-way through filling in.
+  const edited = <T,>(set: (value: T) => void) => (value: T) => {
+    setIsDirty(true);
+    set(value);
+  };
+
   const dialogRef = useModalA11y<HTMLDivElement>(asModal && isOpen, () => onClose?.());
   const dialogTitleId = useId();
 
@@ -207,7 +239,7 @@ export const ScheduleNewVisitForm = ({
               <DatePickerField
                 label="Visit Date"
                 value={date}
-                onChange={setDate}
+                onChange={edited(setDate)}
                 minDate={new Date(new Date().setHours(0, 0, 0, 0))}
                 required
               />
@@ -216,7 +248,7 @@ export const ScheduleNewVisitForm = ({
               <TimePickerField
                 label="Visit Time"
                 value={time}
-                onChange={setTime}
+                onChange={edited(setTime)}
                 {...(isPastTimeError ? { error: 'Visit time cannot be in the past' } : {})}
                 required
               />
@@ -230,7 +262,7 @@ export const ScheduleNewVisitForm = ({
               placeholder="What is the purpose of this visit?"
               rows={4}
               value={agenda}
-              onChange={(e) => setAgenda(e.target.value)}
+              onChange={(e) => edited(setAgenda)(e.target.value)}
               className="w-full px-3 py-2 bg-white border border-[#16A34A] rounded-md text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-1 focus:ring-[#16A34A] focus:border-[#16A34A] resize-none"
             />
           </div>
@@ -243,7 +275,7 @@ export const ScheduleNewVisitForm = ({
                 placeholder="Select Region"
                 options={withCurrent(['Oromia', 'Amhara'], region)}
                 value={region}
-                onChange={setRegion}
+                onChange={edited(setRegion)}
                 required
               />
             </div>
@@ -253,7 +285,7 @@ export const ScheduleNewVisitForm = ({
                 placeholder="Select Zone"
                 options={withCurrent(['Jimma'], zone)}
                 value={zone}
-                onChange={setZone}
+                onChange={edited(setZone)}
                 required
               />
             </div>
@@ -267,7 +299,7 @@ export const ScheduleNewVisitForm = ({
                 placeholder="Select Woreda"
                 options={withCurrent(['Limmu Kosa'], woreda)}
                 value={woreda}
-                onChange={setWoreda}
+                onChange={edited(setWoreda)}
                 required
               />
             </div>
@@ -277,7 +309,7 @@ export const ScheduleNewVisitForm = ({
                 placeholder="Select Kebele"
                 options={withCurrent(['Kebele 1'], kebele)}
                 value={kebele}
-                onChange={setKebele}
+                onChange={edited(setKebele)}
                 required
               />
             </div>

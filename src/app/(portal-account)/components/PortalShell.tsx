@@ -1,14 +1,13 @@
-import { ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
-
+import { BackLink } from '@/app/(portal-account)/components/BackLink';
 import { LanguageSelector } from '@/app/(portal-account)/components/LanguageSelector';
 import { LeftSidebar } from '@/app/(portal-account)/components/leftSidebar';
 
 interface PortalShellProps {
   /** Eyebrow on the green panel, naming the portal being signed in to. */
   badge?: string;
-  /** Renders the "Back" link above the card. Omitted on the role chooser,
-   *  which is itself where Back would lead. */
+  /** Renders the "Back" link above the card, and is where it leads when there
+   *  is no history to step back through. Omitted on the role chooser, which is
+   *  itself where Back would lead. */
   backHref?: string;
   backLabel?: string;
   children: React.ReactNode;
@@ -33,15 +32,7 @@ export function PortalShell({
       {/* Kept in the flow even with no link, so the card sits at the same
           height on the chooser and on the portal it navigates to. */}
       <div className="w-full max-w-5xl mb-4 shrink-0 min-h-[20px]">
-        {backHref && (
-          <Link
-            href={backHref}
-            className="inline-flex items-center space-x-2 text-[#4B5563] hover:text-[#111827] font-medium text-sm transition-colors"
-          >
-            <ArrowLeft size={16} strokeWidth={2.5} />
-            <span>{backLabel}</span>
-          </Link>
-        )}
+        {backHref && <BackLink href={backHref} label={backLabel} />}
       </div>
 
       <div className="w-full max-w-5xl bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] overflow-hidden flex flex-col md:flex-row md:min-h-[750px] shrink-0 mb-8">

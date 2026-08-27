@@ -1,6 +1,8 @@
 import { PortalShell } from '@/app/(portal-account)/components/PortalShell';
+import { PortalSignIn } from '@/app/(portal-account)/login/components/PortalSignIn';
+import { PORTALS } from '@/app/(portal-account)/login/portals';
+
 import { Metadata } from 'next';
-import { FarmerLoginForm } from './components/FarmerLoginForm';
 
 export const metadata: Metadata = {
   title: 'Farmer Login | Ethiopia OpenAgriNet Access to Credit',
@@ -13,8 +15,8 @@ export const metadata: Metadata = {
 
 export default function FarmerLoginPage() {
   return (
-    <PortalShell badge="Farmer Portal" backHref="/login">
-      <FarmerLoginForm />
+    <PortalShell badge={PORTALS['farmer'].badge} backHref="/login">
+      <PortalSignIn portal="farmer" />
     </PortalShell>
   );
 }

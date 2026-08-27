@@ -2,6 +2,8 @@
 
 import { PartnerBanks } from '@/app/(portal-account)/components/PartnerBanks';
 import { SessionEndedNotice } from '@/components/SessionEndedNotice';
+import { Button } from '@/components/ui/Button';
+import { ErrorAlert } from '@/components/ui/ErrorAlert';
 import { ForgotPasswordModal } from '@/features/auth/components/ForgotPasswordModal';
 import { SetInitialPasswordForm } from '@/features/auth/components/SetInitialPasswordForm';
 import { clearSession } from '@/features/auth/logout';
@@ -16,7 +18,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
-interface PortalLoginFormProps {
+export interface PortalLoginFormProps {
   /** Heading above the subtitle */
   heading?: string;
   /** Title shown below the heading */
@@ -181,11 +183,7 @@ export function PortalLoginForm({
           something more immediate to say. */}
       <SessionEndedNotice suppressed={!!errorMessage || !!notice} />
 
-      {errorMessage && (
-        <div className="w-full mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">
-          {errorMessage}
-        </div>
-      )}
+      {errorMessage && <ErrorAlert className="mb-6">{errorMessage}</ErrorAlert>}
 
       <form onSubmit={handleSubmit} className="w-full flex flex-col gap-6" autoComplete="off">
         <div className="flex flex-col gap-5">
@@ -270,14 +268,18 @@ export function PortalLoginForm({
           </button>
         </div>
 
-        <button
+        {/* size="none" because the padding and text size here are this button's
+            own; everything else — the green, the focus ring, the spinner and the
+            disabled state while the request is in flight — comes from Button. */}
+        <Button
           type="submit"
-          disabled={isLoading}
-          className="w-full bg-[#16A34A] hover:bg-[#15803d] text-white py-4 rounded-xl font-bold text-[14px] flex items-center justify-center space-x-2 transition-all active:scale-[0.98] shadow-sm disabled:opacity-70"
+          size="none"
+          isLoading={isLoading}
+          className="w-full py-4 text-[14px] space-x-2 active:scale-[0.98]"
         >
-          <span className='font-semibold'>{isLoading ? 'Signing in…' : 'Continue to Sign In'}</span>
+          <span className="font-semibold">{isLoading ? 'Signing in…' : 'Continue to Sign In'}</span>
           {!isLoading && <ArrowRight size={18} strokeWidth={2.5} />}
-        </button>
+        </Button>
 
         <div className={`text-center text-[14px] font-medium text-[#6B7280] ${showRegisterLink ? 'opacity-100' : 'opacity-0 pointer-events-none select-none'}`}>
           New to OAN?{' '}
