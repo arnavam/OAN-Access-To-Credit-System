@@ -33,7 +33,8 @@ function LeadAdvancedFilters({ onClose }: LeadAdvancedFiltersProps) {
   const dispatch = useAppDispatch();
   const activeFilters = useAppSelector(selectAdvFilters);
   const leadSourcesOptions = useAppSelector(selectLeadSourcesOptions);
-  const loanTypesOptions = useAppSelector(selectCategories).map((c) => c.term_name);
+  const categories = useAppSelector(selectCategories);
+  const loanTypesOptions = useMemo(() => categories.map((c) => c.term_name), [categories]);
 
   const [selStatuses, setSelStatuses] = useState<string[]>(() =>
     activeFilters.statuses.map(s => {

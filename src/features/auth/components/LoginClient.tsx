@@ -3,8 +3,6 @@
 import {
   ArrowLeft,
   ArrowRight,
-  Check,
-  ChevronDown,
   Eye,
   EyeOff, Lock, User
 } from 'lucide-react';
@@ -219,6 +217,7 @@ export function LoginClient() {
                       />
                       <button
                         type="button"
+                        aria-label={isPasswordVisible ? 'Hide password' : 'Show password'}
                         onClick={(e) => {
                           e.preventDefault();
                           setIsPasswordVisible(!isPasswordVisible);

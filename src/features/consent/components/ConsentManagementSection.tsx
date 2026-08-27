@@ -182,7 +182,7 @@ export function ConsentManagementSection({ leadId: leadIdProp, audience = 'agent
                 type="text"
                 value={farmerId}
                 onChange={(e) => dispatch(setFarmerId(e.target.value))}
-                placeholder={isFarmer ? "Enter your Fayda ID or National ID" : "Search by Farmer ID or National ID ewwwe"}
+                placeholder={isFarmer ? "Enter your Fayda ID or National ID" : "Search by Farmer ID or National ID"}
                 className="w-full sm:flex-1 h-[42px] min-h-[42px] rounded-md border border-[#D1D5DB] px-4 text-[15px] shadow-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 bg-white min-w-0"
               />
               <button

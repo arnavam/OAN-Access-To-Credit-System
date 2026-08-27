@@ -41,6 +41,7 @@ export function DatePickerField({ id, label, value, onChange, required, error, d
   const dialogTitleId = useId();
 
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
+  const [isFlipped, setIsFlipped] = useState(openUpwards);
 
   const selectedDate = value ? new Date(value + 'T00:00:00') : null;
 
@@ -79,23 +80,28 @@ export function DatePickerField({ id, label, value, onChange, required, error, d
           left = Math.max(0, rect.right + window.scrollX - 280);
         }
 
+        const CALENDAR_HEIGHT = 350;
+        const viewportHeight = typeof window.visualViewport !== 'undefined' && window.visualViewport 
+          ? window.visualViewport.height 
+          : window.innerHeight;
+
         let top = rect.bottom + window.scrollY;
-        // Approximate calendar height is 340px
-        const spaceBelow = window.innerHeight - rect.bottom;
+        const spaceBelow = viewportHeight - rect.bottom;
         const spaceAbove = rect.top;
-        if (forcePosition === 'top' || (forcePosition !== 'bottom' && spaceBelow < 340 && spaceAbove > spaceBelow)) {
+
+        if (forcePosition === 'top' || (forcePosition !== 'bottom' && spaceBelow < CALENDAR_HEIGHT && spaceAbove > spaceBelow)) {
           // Open upwards if not enough space below, and more space above
-          top = rect.top + window.scrollY - 350;
+          // mt-1.5 (6px) is applied via tailwind on the dropdown, offset by 12px for a 6px visual gap
+          top = rect.top + window.scrollY - CALENDAR_HEIGHT - 12;
+          setIsFlipped(true);
+        } else {
+          setIsFlipped(false);
         }
 
-        // Prevent calendar from going off the top of the screen
-        if (top < window.scrollY + 8) {
-          top = window.scrollY + 8;
-        }
-
-        // Prevent calendar from going off the bottom of the screen if opened downwards
-        if (forcePosition === 'bottom' && top + 350 > window.scrollY + window.innerHeight) {
-          top = window.scrollY + window.innerHeight - 350 - 8;
+        // Prevent calendar from rendering completely off the top of the document.
+        // We do NOT clamp to window.scrollY because that causes the dropdown to detach and overlap the input.
+        if (top < 0) {
+          top = 0;
         }
 
         setDropdownPos({
@@ -107,7 +113,7 @@ export function DatePickerField({ id, label, value, onChange, required, error, d
     return () => {
       document.removeEventListener('mousedown', h);
     };
-  }, [isOpen]);
+  }, [isOpen, forcePosition]);
 
   const displayValue = selectedDate
     ? `${String(selectedDate.getDate()).padStart(2, '0')} / ${MONTH_SHORT[selectedDate.getMonth()]} / ${selectedDate.getFullYear()}`
@@ -277,7 +283,7 @@ export function DatePickerField({ id, label, value, onChange, required, error, d
         </div>,
         document.body
       ) : (
-        <div ref={dropdownRef} role="dialog" aria-modal="false" aria-labelledby={dialogTitleId} className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} ${openUpwards ? 'bottom-[calc(100%+4px)] origin-bottom animate-in fade-in slide-in-from-bottom-2' : 'top-[calc(100%+4px)] origin-top animate-in fade-in slide-in-from-top-2'} z-50 w-[280px] rounded-lg border border-green-500 bg-white overflow-hidden duration-200`} style={{ boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.05)' }}>
+        <div ref={dropdownRef} role="dialog" aria-modal="false" aria-labelledby={dialogTitleId} className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} ${isFlipped ? 'bottom-[calc(100%+4px)] origin-bottom animate-in fade-in slide-in-from-bottom-2' : 'top-[calc(100%+4px)] origin-top animate-in fade-in slide-in-from-top-2'} z-50 w-[280px] rounded-lg border border-green-500 bg-white overflow-hidden duration-200`} style={{ boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.05)' }}>
           <span id={dialogTitleId} className="sr-only">Choose date</span>
           {calendarBody}
         </div>

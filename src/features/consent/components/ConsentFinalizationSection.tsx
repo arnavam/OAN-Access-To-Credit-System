@@ -291,19 +291,14 @@ export function ConsentFinalizationSection({ leadId: leadIdProp, audience = 'age
                 </label>
                 <div className="relative z-50">
                   <SelectField
-                    options={consentReasons.map(r => r.name + (r.description && r.description !== r.name ? ` — ${r.description}` : ''))}
-                    value={
-                      (() => {
-                        const r = consentReasons.find(x => x.id === selectedReasonId);
-                        return r ? r.name + (r.description && r.description !== r.name ? ` — ${r.description}` : '') : '';
-                      })()
-                    }
+                    options={consentReasons.map(r => ({
+                      label: r.name + (r.description && r.description !== r.name ? ` — ${r.description}` : ''),
+                      value: String(r.id)
+                    }))}
+                    value={selectedReasonId ? String(selectedReasonId) : ''}
                     onChange={(val) => {
-                      const found = consentReasons.find(r => (r.name + (r.description && r.description !== r.name ? ` — ${r.description}` : '')) === val);
-                      if (found) {
-                        setSelectedReasonId(found.id);
-                        if (localError) setLocalError(null);
-                      }
+                      setSelectedReasonId(Number(val));
+                      if (localError) setLocalError(null);
                     }}
                     placeholder="Select a reason..."
                   />

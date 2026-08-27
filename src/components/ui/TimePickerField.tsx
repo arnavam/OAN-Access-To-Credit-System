@@ -130,7 +130,7 @@ export function TimePickerField({ id, label, value, onChange, required, error, d
           ${disabled ? 'border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed'
             : error ? 'border-red-400 bg-red-50/40'
               : isOpen ? 'border-[#16A34A] bg-white ring-1 ring-[#16A34A]'
-                : 'border-[#16A34A] bg-white hover:border-[#16A34A]/50'}`}>
+                : 'border-gray-200 bg-white hover:border-[#16A34A]/50'}`}>
         <span className={`flex items-center gap-2 ${disabled ? 'text-gray-500' : displayValue ? 'text-[#111827]' : 'text-gray-400'}`}>
           <Clock size={16} className="shrink-0 text-gray-400" />
           {displayValue || placeholder}
