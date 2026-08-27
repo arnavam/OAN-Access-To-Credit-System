@@ -1,6 +1,6 @@
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { toast } from '@/lib/toast';
-import { AlertCircle, Calendar, CheckSquare, Eye, FileText, Folder, Loader2, Sparkles, Square, Upload, X } from 'lucide-react';
+import { AlertCircle, Calendar, Eye, FileText, Folder, Loader2, Sparkles, Upload, X } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { AllowedDataField, ConsentReason, consentService } from '../api/consent.service';
