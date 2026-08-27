@@ -256,10 +256,11 @@ export function DatePickerField({ id, label, value, onChange, required, error, d
       </button>
 
       {isOpen && typeof document !== 'undefined' && (usePortal ? createPortal(
-        <div ref={dropdownRef} role="dialog" aria-modal="false" aria-labelledby={dialogTitleId} className="absolute z-[99999] mt-1.5 w-[280px] rounded-lg border border-gray-200 bg-white shadow-xl overflow-hidden origin-top"
+        <div ref={dropdownRef} role="dialog" aria-modal="false" aria-labelledby={dialogTitleId} className="absolute z-[99999] mt-1.5 w-[280px] max-w-[100vw] rounded-lg border border-gray-200 bg-white shadow-xl overflow-hidden origin-top"
           style={{
             top: dropdownPos.top,
-            left: dropdownPos.left
+            left: dropdownPos.left,
+            maxWidth: '100vw'
           }}>
           <span id={dialogTitleId} className="sr-only">Choose date</span>
           {calendarBody}

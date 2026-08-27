@@ -168,7 +168,7 @@ export function ReviewProductModal({ isOpen, onClose, product, initialMode = nul
               disabled={isMutating}
               className="rounded-lg border border-[#D1D5DB] bg-white px-6 py-2.5 text-[14px] font-bold text-[#374151] transition-colors hover:bg-gray-50 disabled:opacity-50"
             >
-              Cancel
+              <span className='font-semibold'>Cancel</span>
             </button>
             {actionMode === 'reject' ? (
               <button
@@ -178,7 +178,7 @@ export function ReviewProductModal({ isOpen, onClose, product, initialMode = nul
                 className="flex min-w-[160px] items-center justify-center gap-2 rounded-lg bg-red-600 px-6 py-2.5 text-[14px] font-bold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-80"
               >
                 {isMutating ? <Loader2 size={18} className="animate-spin" /> : <XCircle size={18} />}
-                <span>Confirm Reject</span>
+                <span className='font-semibold'>Confirm Reject</span>
               </button>
             ) : (
               <button
@@ -188,7 +188,7 @@ export function ReviewProductModal({ isOpen, onClose, product, initialMode = nul
                 className="flex min-w-[160px] items-center justify-center gap-2 rounded-lg bg-[#16A34A] px-6 py-2.5 text-[14px] font-bold text-white transition-colors hover:bg-[#15803d] disabled:cursor-not-allowed disabled:opacity-80"
               >
                 {isMutating ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle2 size={18} />}
-                <span>Confirm Approve</span>
+                <span className='font-semibold'>Confirm Approve</span>
               </button>
             )}
           </>
@@ -208,7 +208,7 @@ export function ReviewProductModal({ isOpen, onClose, product, initialMode = nul
               disabled={isMutating}
               className="rounded-lg border border-[#D1D5DB] bg-white px-6 py-2.5 text-[14px] font-bold text-[#374151] transition-colors hover:bg-gray-50 disabled:opacity-50"
             >
-              Reject...
+              <span className='font-semibold'>Reject...</span>
             </button>
             <button
               type="button"
@@ -216,7 +216,7 @@ export function ReviewProductModal({ isOpen, onClose, product, initialMode = nul
               disabled={isMutating || isLoadingDetail}
               className="flex min-w-[160px] items-center justify-center gap-2 rounded-lg bg-[#16A34A] px-6 py-2.5 text-[14px] font-bold text-white transition-colors hover:bg-[#15803d] disabled:cursor-not-allowed disabled:opacity-80"
             >
-              Approve...
+              <span className='font-semibold'>Approve...</span>
             </button>
           </>
         )}

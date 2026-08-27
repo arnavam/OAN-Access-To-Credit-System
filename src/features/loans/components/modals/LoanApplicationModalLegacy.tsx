@@ -53,8 +53,8 @@ export default function LoanApplicationModalLegacy({ isOpen, onClose, data }: Lo
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-[#16A34A] px-8 py-5 flex justify-between items-start">
-          <div>
+        <div className="bg-[#16A34A] px-5 sm:px-8 py-5 flex justify-between items-start gap-4 shrink-0">
+          <div className="min-w-0 flex-1">
             <h2 id="loan-application-legacy-modal-title" className="text-xl font-bold text-white mb-1">Application Summary</h2>
             <p className="text-emerald-100 text-[13px] font-medium tracking-wide">
               ID: {data.id} &bull; Submitted {data.updated}
@@ -143,8 +143,8 @@ export default function LoanApplicationModalLegacy({ isOpen, onClose, data }: Lo
         </div>
 
         {/* Footer */}
-        <div className="bg-white px-8 py-5 flex justify-between items-center border-t border-gray-100">
-          <span className="text-xs font-medium text-gray-400">
+        <div className="bg-white px-5 sm:px-8 py-5 flex flex-col sm:flex-row justify-between items-center text-center sm:text-left gap-4 sm:gap-0 border-t border-gray-100">
+          <span className="text-sm font-medium text-gray-400">
             {`Generated on ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} • ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`}
           </span>
           <button

@@ -174,12 +174,12 @@ export function AddLoanProductModal({ isOpen, onClose }: AddLoanProductModalProp
   const realAttributes = filterEligibilityAttributes(fetchedAttributes);
 
   const footerActions = (
-    <div className="flex items-center justify-end gap-3 border-t border-gray-200 p-6 bg-white">
+    <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 border-t border-gray-200 p-4 sm:p-6 bg-white">
       <button
         type="button"
         onClick={onClose}
         disabled={isSubmitting}
-        className="rounded-xl border border-gray-300 px-6 py-2.5 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50"
+        className="w-full sm:w-auto rounded-lg border border-gray-300 px-6 py-2.5 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50"
       >
         Cancel
       </button>
@@ -187,10 +187,10 @@ export function AddLoanProductModal({ isOpen, onClose }: AddLoanProductModalProp
         type="button"
         onClick={handleCreatePublish}
         disabled={isSubmitting}
-        className="flex items-center justify-center gap-2 rounded-xl bg-[#16A34A] px-6 py-2.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-[#15803d] disabled:cursor-not-allowed disabled:opacity-80"
+        className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-lg bg-[#16A34A] px-6 py-2.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-[#15803d] disabled:cursor-not-allowed disabled:opacity-80"
       >
-        {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} strokeWidth={2.5} />}
-        <span className='font-semibold'>{isSubmitting ? 'Publishing...' : 'Create & Publish'}</span>
+        {isSubmitting ? <Loader2 size={16} className="animate-spin shrink-0" /> : <Plus size={16} strokeWidth={2.5} className="shrink-0" />}
+        <span className='font-semibold whitespace-nowrap'>{isSubmitting ? 'Publishing...' : 'Create & Publish'}</span>
       </button>
     </div>
   );

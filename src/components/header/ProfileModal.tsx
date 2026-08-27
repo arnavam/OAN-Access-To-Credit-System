@@ -9,6 +9,7 @@ import { getUserProfile, updateProfile, changePassword, type UserProfileResponse
 import { onboardingService } from '@/features/seller/api/onboarding.service';
 import { toast } from '@/lib/toast';
 import { toProxiedFileUrl } from '@/lib/utils';
+import { SelectField } from '@/components/ui/SelectField';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -333,17 +334,16 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
                           className={lockedFieldClass}
                         />
                       ) : (
-                        <select
-                          id="profile-gender"
+                        <SelectField
                           value={formData.gender}
-                          onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                          className={`${editableFieldClass} text-gray-900 appearance-none`}
-                        >
-                          <option value="">Select Gender</option>
-                          <option value="Male">Male</option>
-                          <option value="Female">Female</option>
-                          <option value="Other">Other</option>
-                        </select>
+                          onChange={(val) => setFormData({ ...formData, gender: val })}
+                          options={[
+                            { label: 'Male', value: 'Male' },
+                            { label: 'Female', value: 'Female' },
+                            { label: 'Other', value: 'Other' }
+                          ]}
+                          placeholder="Select Gender"
+                        />
                       )}
                     </div>
                     <div>
@@ -373,16 +373,16 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
                           className={lockedFieldClass}
                         />
                       ) : (
-                        <select
-                          id="profile-language"
+                        <SelectField
                           value={formData.language}
-                          onChange={(e) => setFormData({ ...formData, language: e.target.value })}
-                          className={`${editableFieldClass} text-gray-900 appearance-none`}
-                        >
-                          <option value="English">English</option>
-                          <option value="Swahili">Swahili</option>
-                          <option value="Amharic">Amharic</option>
-                        </select>
+                          onChange={(val) => setFormData({ ...formData, language: val })}
+                          options={[
+                            { label: 'English', value: 'English' },
+                            { label: 'Swahili', value: 'Swahili' },
+                            { label: 'Amharic', value: 'Amharic' }
+                          ]}
+                          placeholder="Select Language"
+                        />
                       )}
                     </div>
                   </div>
@@ -434,7 +434,7 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
 
               {/* Security Section */}
               <section className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 mb-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 mb-0">
                   <div>
                     <h3 className="text-lg font-bold text-gray-800">Security</h3>
                     {!isEditingPassword && <p className="text-sm text-gray-500 mt-1">Manage your password and security settings.</p>}

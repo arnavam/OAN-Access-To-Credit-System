@@ -152,20 +152,21 @@ export default function LoanApplicationModal({ isOpen, onClose, data, stages = [
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-white">
-          <div className="flex items-center gap-3">
+        <div className="px-4 sm:px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-white gap-2">
+          <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0">
               <Package className="w-5 h-5 text-emerald-600" />
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h2 id="loan-application-modal-title" className="text-lg font-bold text-gray-900">Application Details</h2>
+                <h2 id="loan-application-modal-title" className="text-lg font-bold text-gray-900 truncate">Application Details</h2>
               </div>
-              <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
-                <span className="font-semibold text-gray-700">#{data.id}</span>
-                <span>&bull;</span>
-                <span className={`px-2 py-0.5 rounded-full font-semibold border ${statusBadgeColor}`}>
-                  &bull; {data.status || 'Pending'}
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500 mt-1">
+                <span className="font-semibold text-gray-700 whitespace-nowrap">#{data.id}</span>
+                <span className="hidden sm:inline text-gray-400">&bull;</span>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full font-semibold border whitespace-nowrap ${statusBadgeColor}`}>
+                  <span className="mr-1 sm:hidden">&bull;</span>
+                  {data.status || 'Pending'}
                 </span>
               </div>
             </div>
@@ -327,7 +328,7 @@ export default function LoanApplicationModal({ isOpen, onClose, data, stages = [
                     </p>
                   </div>
 
-                  <div className="flex justify-end gap-3 pt-2">
+                  <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-2">
                     <button
                       type="button"
                       onClick={() => {
@@ -335,7 +336,7 @@ export default function LoanApplicationModal({ isOpen, onClose, data, stages = [
                         setSelectedStageId('');
                         setReason('');
                       }}
-                      className="px-5 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold rounded-xl text-sm transition-colors"
+                      className="w-full sm:w-auto px-5 py-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold rounded-xl text-sm transition-colors flex justify-center"
                     >
                       Cancel
                     </button>
@@ -343,7 +344,7 @@ export default function LoanApplicationModal({ isOpen, onClose, data, stages = [
                       type="button"
                       onClick={handleConfirmStatusChange}
                       disabled={!selectedStage}
-                      className={`px-5 py-2 text-white font-bold rounded-xl text-sm transition-colors shadow-sm disabled:cursor-not-allowed disabled:opacity-50 ${tone.button}`}
+                      className={`w-full sm:w-auto px-5 py-2 text-white font-bold rounded-xl text-sm transition-colors shadow-sm disabled:cursor-not-allowed disabled:opacity-50 flex justify-center ${tone.button}`}
                     >
                       Update Status
                     </button>
@@ -356,35 +357,38 @@ export default function LoanApplicationModal({ isOpen, onClose, data, stages = [
         </div>
 
         {/* Footer Actions */}
-        <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between bg-white">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-6 py-2.5 border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold rounded-xl text-sm transition-colors"
-          >
+        <div className="px-4 sm:px-6 py-4 border-t border-gray-100 flex flex-col sm:flex-row items-center sm:justify-between gap-4 bg-white">
+          <div className="w-full sm:w-auto text-center sm:text-left">
+            {/* Terminal applications accept no further transitions — the endpoint
+                rejects them outright, so say why the control is absent rather than
+                offering a button that can only fail. */}
+            {!isChangingStatus && isTerminal && (
+              <p className="text-sm font-medium text-gray-500">
+                This application is {currentStage?.label ?? data.status} and can no longer be moved.
+              </p>
+            )}
+          </div>
 
-            <span className='font-semibold'>Close</span>
-          </button>
-
-          {!isChangingStatus && canChangeStatus && (
+          <div className="flex flex-col-reverse sm:flex-row items-center gap-3 w-full sm:w-auto">
             <button
               type="button"
-              onClick={handleOpenStatusChange}
-              className="px-6 py-2.5 bg-[#16A34A] hover:bg-[#15803d] text-white font-bold rounded-xl text-sm transition-colors flex items-center gap-2 shadow-sm"
+              onClick={onClose}
+              className="w-full sm:w-auto px-6 py-2.5 border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold rounded-lg text-sm transition-colors flex justify-center"
             >
-              <RefreshCw className="w-4 h-4" />
-              <span className="font-semibold">Update Status</span>
+              <span className='font-semibold'>Close</span>
             </button>
-          )}
 
-          {/* Terminal applications accept no further transitions — the endpoint
-              rejects them outright, so say why the control is absent rather than
-              offering a button that can only fail. */}
-          {!isChangingStatus && isTerminal && (
-            <p className="text-sm font-medium text-gray-500">
-              This application is {currentStage?.label ?? data.status} and can no longer be moved.
-            </p>
-          )}
+            {!isChangingStatus && canChangeStatus && (
+              <button
+                type="button"
+                onClick={handleOpenStatusChange}
+                className="w-full sm:w-auto px-6 py-2.5 bg-[#16A34A] hover:bg-[#15803d] text-white font-bold rounded-lg text-sm transition-colors flex items-center justify-center gap-2 shadow-sm"
+              >
+                <RefreshCw className="w-4 h-4" />
+                <span className="font-semibold">Update Status</span>
+              </button>
+            )}
+          </div>
         </div>
 
       </div>

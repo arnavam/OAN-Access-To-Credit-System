@@ -144,52 +144,60 @@ export default function CatalogCard({
               disabled={isSaving}
               aria-pressed={isBookmarked}
               aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark this loan'}
-              className={`w-9 h-9 rounded-full bg-white/95 backdrop-blur-md border border-white/40 shadow-sm flex items-center justify-center transition-all hover:scale-110 disabled:opacity-60 ${
-                isBookmarked ? 'text-[#16A34A]' : 'text-gray-400 hover:text-gray-600'
-              }`}
+              className={`w-9 h-9 rounded-full bg-white/95 backdrop-blur-md border border-white/40 shadow-sm flex items-center justify-center transition-all hover:scale-110 disabled:opacity-60 ${isBookmarked ? 'text-[#16A34A]' : 'text-gray-400 hover:text-gray-600'
+                }`}
             >
               <Bookmark className="w-4 h-4" fill={isBookmarked ? 'currentColor' : 'none'} />
             </button>
           </div>
         )}
 
-        {/* Floating Bottom Left: Category Pill */}
+        {/* Floating Bottom Right: Category Pill */}
         {category && (
-          <div className="absolute bottom-3 left-3.5 z-20">
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-black/60 backdrop-blur-md text-white text-[11px] font-semibold rounded-md">
-              <Tag className="w-3 h-3" />
-              {category}
+          <div className="absolute bottom-3 right-3.5 z-20 max-w-[calc(100%-28px)]">
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-black/60 backdrop-blur-md text-white text-[11px] font-semibold rounded-md max-w-full">
+              <Tag className="w-3 h-3 shrink-0" />
+              <span className="truncate">{category}</span>
             </span>
           </div>
         )}
 
-        {/* Floating Bottom Right: caller-supplied badge (bank status). Opposite
+        {/* Floating Bottom Left: caller-supplied badge (bank status). Opposite
             the category so the two never overlap on a narrow card. */}
-        {badge && <div className="absolute bottom-3 right-3.5 z-20">{badge}</div>}
+        {badge && <div className="absolute bottom-3 left-3.5 z-20">{badge}</div>}
       </div>
 
       {/* Bottom Half: Content & Financial Terms */}
-      <div className="p-5 flex flex-col flex-1 justify-between gap-4">
-        {/* Title */}
-        <div>
-          <h3 className="text-base font-bold text-gray-900 group-hover:text-[#16A34A] transition-colors line-clamp-1">
-            {product.product_name}
-          </h3>
-          {displayBank ? (
-            <p className="text-xs text-gray-500 font-medium mt-0.5">{displayBank}</p>
-          ) : null}
-          {meta && <div className="text-xs text-gray-600 font-semibold mt-1.5">{meta}</div>}
+      <div className="p-4 sm:p-5 flex flex-col flex-1 justify-between gap-4 sm:gap-5">
+        {/* Title and Actions Row */}
+        <div className="flex items-start justify-between gap-3 sm:gap-4">
+          <div className="min-w-0 flex-1">
+            <h3 className="text-base font-bold text-gray-900 group-hover:text-[#16A34A] transition-colors line-clamp-1">
+              {product.product_name}
+            </h3>
+            {displayBank ? (
+              <p className="text-xs text-gray-500 font-medium mt-0.5">{displayBank}</p>
+            ) : null}
+            {meta && <div className="text-xs text-gray-600 font-semibold mt-1.5">{meta}</div>}
+          </div>
+
+          {/* Action */}
+          {actions && (
+            <div className="shrink-0 flex items-center gap-2 pt-0.5">
+              {actions}
+            </div>
+          )}
         </div>
 
         {/* Terms Grid */}
-        <div className="grid grid-cols-3 gap-2 bg-[#F9FAFB] border border-gray-100 rounded-xl p-3 text-center">
-          <div>
+        <div className="grid grid-cols-3 gap-1 sm:gap-2 bg-[#F9FAFB] border border-gray-100 rounded-xl p-2.5 sm:p-3 text-center">
+          <div className="min-w-0">
             <div className="text-sm sm:text-base font-bold text-gray-900 truncate">
               {formatAmount(product.max_amount)}
             </div>
             <div className="text-[10px] text-gray-400 font-medium uppercase tracking-wider mt-0.5">Max Amount</div>
           </div>
-          <div className="border-l border-r border-gray-200/60 px-1">
+          <div className="border-l border-r border-gray-200/60 px-1 min-w-0">
             <div className="text-sm sm:text-base font-bold text-gray-900 truncate">
               {showRateRange
                 ? formatRateRange(product.min_interest_rate, product.max_interest_rate)
@@ -197,14 +205,13 @@ export default function CatalogCard({
             </div>
             <div className="text-[10px] text-gray-400 font-medium uppercase tracking-wider mt-0.5">Interest p.a</div>
           </div>
-          <div>
-            <div className="text-sm sm:text-base font-bold text-gray-900">{formatTenure(product.tenure_months)}</div>
+          <div className="min-w-0">
+            <div className="text-sm sm:text-base font-bold text-gray-900 truncate">{formatTenure(product.tenure_months)}</div>
             <div className="text-[10px] text-gray-400 font-medium uppercase tracking-wider mt-0.5">Tenure</div>
           </div>
         </div>
 
-        {/* Action */}
-        <div className="pt-1 mt-auto">{actions}</div>
+
       </div>
     </div>
   );

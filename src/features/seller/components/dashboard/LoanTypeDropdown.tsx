@@ -74,7 +74,7 @@ export function LoanTypeDropdown({ selectedTypes, options, placeholder, singleSe
         tabIndex={disabled ? -1 : 0}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
-        className={`flex w-full ${disabled ? 'cursor-not-allowed opacity-70 bg-gray-50' : 'cursor-pointer'} items-center justify-between rounded-lg border border-[#D1D5DB] bg-white px-4 py-2.5 transition-all focus-within:border-[#00C48C] focus-within:ring-2 focus-within:ring-[#00C48C] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00C48C]`}
+        className={`flex w-full ${disabled ? 'cursor-not-allowed opacity-70 bg-gray-50' : 'cursor-pointer'} items-center justify-between rounded-lg border border-[#D1D5DB] bg-white px-4 py-2.5 transition-all focus-within:border-[#16A34A] focus-within:ring-1 focus-within:ring-[#16A34A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00C48C]`}
         onClick={() => {
           if (!disabled) setIsOpen(!isOpen);
         }}
@@ -109,9 +109,8 @@ export function LoanTypeDropdown({ selectedTypes, options, placeholder, singleSe
                     handleToggle(opt.term_id);
                   }
                 }}
-                className={`group flex cursor-pointer items-center px-4 py-3 hover:bg-gray-50 ${
-                  index !== formattedOptions.length - 1 ? 'border-b border-gray-100' : ''
-                } ${isChecked && hideCheckbox ? 'bg-[#00C48C]/5' : ''}`}
+                className={`group flex cursor-pointer items-center px-4 py-3 hover:bg-gray-50 ${index !== formattedOptions.length - 1 ? 'border-b border-gray-100' : ''
+                  } ${isChecked && hideCheckbox ? 'bg-[#00C48C]/5' : ''}`}
               >
                 {!hideCheckbox && (
                   <div className="relative mr-3 flex items-center justify-center">
@@ -135,9 +134,8 @@ export function LoanTypeDropdown({ selectedTypes, options, placeholder, singleSe
                     </svg>
                   </div>
                 )}
-                <span className={`text-[14px] transition-colors group-hover:text-[#1F2937] ${
-                  isChecked && hideCheckbox ? 'text-[#00C48C] font-semibold' : 'text-[#4B5563]'
-                }`}>
+                <span className={`text-[14px] transition-colors group-hover:text-[#1F2937] ${isChecked && hideCheckbox ? 'text-[#00C48C] font-semibold' : 'text-[#4B5563]'
+                  }`}>
                   {opt.term_name}
                 </span>
               </label>

@@ -1,5 +1,6 @@
 'use client';
 
+import { useCarouselScroll } from '@/hooks/useCarouselScroll';
 import { CountingNumber } from '@/components/motion/CountingNumber';
 import { MotionEffect } from '@/components/motion/MotionEffect';
 import { CheckCircle2, FileCheck, FileText, LucideIcon, Package, Users } from 'lucide-react';
@@ -51,38 +52,73 @@ export function MetricCards({
     { label: pendingLabel, value: pendingValue ?? '0', icon: FileCheck, iconBg: 'bg-orange-100', iconColor: 'text-orange-500' },
   ];
 
-  // Five cards: 3-then-2 at lg, one row from xl up. Going straight to five
-  // columns at lg would squeeze each card past the point where a 32px figure and
-  // its 64px icon still fit side by side.
+  const { scrollRef, activeIndex, scrollTo } = useCarouselScroll({ enableWheelScroll: true });
+
+  // Five cards: on xl and up they are a grid. On smaller screens, they are a snap-scrolling flex container.
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-      {/* The animated element *is* the card — no wrapper. A wrapper would take
-          over as the grid item, and the cards would stop stretching to a common
-          height. Staggered so the row reads left to right as it arrives instead
-          of every card appearing at once; the stats are fetched after mount, so
-          this covers a real wait rather than decorating ready content. */}
-      {metrics.map((metric, index) => {
-        const Icon = metric.icon;
-        const numeric = asNumber(metric.value);
-        return (
-          <MotionEffect
-            key={metric.label}
-            delay={index * 70}
-            slide={{ direction: 'up', offset: 14 }}
-            className="group bg-white border border-[#F1F3F4] rounded-xl p-5 flex items-center justify-between shadow-sm shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.05),0px_2px_4px_-1px_rgba(0,0,0,0.03)] hover:-translate-y-1 hover:shadow-lg transition-all duration-300"
-          >
-            <div>
-              <p className="text-[14px] font-semibold text-[#6B7280] mb-1">{metric.label}</p>
-              <h4 className="text-[32px] font-bold text-[#1F2937] leading-none">
-                {numeric === null ? metric.value : <CountingNumber value={numeric} />}
-              </h4>
-            </div>
-            <div className={`w-16 h-16 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:-rotate-3 group-hover:shadow-md ${metric.iconBg}`}>
-              <Icon size={32} className={`${metric.iconColor} transition-transform duration-300`} />
-            </div>
-          </MotionEffect>
-        );
-      })}
+    <div className="relative">
+
+      <style>{`
+        .hide-scrollbar::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+        .hide-scrollbar::-webkit-scrollbar-track { display: none !important; }
+        .hide-scrollbar::-webkit-scrollbar-thumb { display: none !important; }
+        .hide-scrollbar { -ms-overflow-style: none !important; scrollbar-width: none !important; }
+      `}</style>
+      <div
+        ref={scrollRef}
+        className="flex xl:grid xl:grid-cols-5 gap-4 xl:gap-6 overflow-x-auto snap-x snap-mandatory scroll-smooth hide-scrollbar pb-2 xl:pb-1 px-1 xl:px-0"
+      >
+        {/* The animated element *is* the card — no wrapper. */}
+        {metrics.map((metric, index) => {
+          const Icon = metric.icon;
+          const numeric = asNumber(metric.value);
+          return (
+            <MotionEffect
+              key={metric.label}
+              delay={index * 70}
+              slide={{ direction: 'up', offset: 14 }}
+              className="group w-[85vw] sm:w-[320px] xl:w-auto shrink-0 snap-center xl:snap-align-none bg-white border border-[#F1F3F4] rounded-xl p-5 flex items-center justify-between shadow-sm shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.05),0px_2px_4px_-1px_rgba(0,0,0,0.03)] hover:-translate-y-1 hover:shadow-lg transition-all duration-300"
+            >
+              <div>
+                <p className="text-[14px] font-semibold text-[#6B7280] mb-1">{metric.label}</p>
+                <h4 className="text-[32px] font-bold text-[#1F2937] leading-none">
+                  {numeric === null ? metric.value : <CountingNumber value={numeric} />}
+                </h4>
+              </div>
+              <div className={`w-16 h-16 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:-rotate-3 group-hover:shadow-md ${metric.iconBg}`}>
+                <Icon size={32} className={`${metric.iconColor} transition-transform duration-300`} />
+              </div>
+            </MotionEffect>
+          );
+        })}
+      </div>
+
+      {/* Pagination Dots (Mobile & Tablet) */}
+      <div className="flex xl:hidden justify-center items-center gap-2 mt-4">
+        {[0, 1, 2].map((dotIndex) => {
+          // Map the 5 active states to 3 dots:
+          // Cards 0,1 -> Dot 0
+          // Card 2    -> Dot 1
+          // Cards 3,4 -> Dot 2
+          const isActive =
+            (dotIndex === 0 && activeIndex <= 1) ||
+            (dotIndex === 1 && activeIndex === 2) ||
+            (dotIndex === 2 && activeIndex >= 3);
+
+          return (
+            <button
+              key={dotIndex}
+              type="button"
+              onClick={() => scrollTo(dotIndex * 2)}
+              className={`transition-all duration-300 rounded-full ${isActive
+                  ? 'bg-[#16A34A] w-6 h-2'
+                  : 'bg-gray-300 w-2 h-2 hover:bg-gray-400'
+                }`}
+              aria-label={`Go to page ${dotIndex + 1}`}
+            />
+          );
+        })}
+      </div>
     </div>
   );
 }

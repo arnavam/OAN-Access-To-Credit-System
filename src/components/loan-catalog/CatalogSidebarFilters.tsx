@@ -227,12 +227,13 @@ export default function CatalogSidebarFilters({ facets, hasFailed = false, onRet
                     setDraft(next);
                   }}
                   aria-pressed={selected}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${selected
-                    ? 'bg-[#16A34A] text-white border-[#16A34A]'
+
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${selected
+                    ? 'bg-[#16A34A]/8 text-[#16A34A] border-[#16A34A]'
                     : 'bg-white text-gray-700 border-gray-200 hover:border-[#16A34A]'
                     }`}
                 >
-                  {option.label}
+                  <span className='font-semibold'> {option.label}</span>
                 </button>
               );
             })}
@@ -356,12 +357,12 @@ export default function CatalogSidebarFilters({ facets, hasFailed = false, onRet
                     setDraft(next);
                   }}
                   aria-pressed={selected}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${selected
-                    ? 'bg-[#16A34A] text-white border-[#16A34A]'
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${selected
+                    ? 'bg-[#16A34A]/8 text-[#16A34A] border-[#16A34A]'
                     : 'bg-white text-gray-700 border-gray-200 hover:border-[#16A34A]'
                     }`}
                 >
-                  {months} Mon
+                  <span className='font-medium'>{months} Mon</span>
                 </button>
               );
             })}
@@ -409,7 +410,7 @@ export default function CatalogSidebarFilters({ facets, hasFailed = false, onRet
                   />
                   {/* The label the farmer reads; `cat.id` above is what the
                       endpoint filters on. */}
-                  <span className="flex-1 group-hover:text-gray-900 transition-colors duration-200">{cat.name}</span>
+                  <span className="flex-1 group-hover:text-gray-900 transition-colors duration-200 text-sm font-medium">{cat.name}</span>
                   {cat.count !== undefined && (
                     <span className="text-xs font-bold text-gray-400">{cat.count}</span>
                   )}
@@ -426,8 +427,8 @@ export default function CatalogSidebarFilters({ facets, hasFailed = false, onRet
           with an empty catalog — the one filter that finds its archived
           products must stay applicable. */}
       {(hasAnyFacet || showBookmarkFilter || statusOptions.length > 0) && (
-        <Button onClick={() => onApply(draft)} className="w-full">
-          Apply Filters
+        <Button onClick={() => onApply(draft)} className="w-full rounded-lg">
+          <span className='font-semibold'>Apply Filters</span>
         </Button>
       )}
     </div>
