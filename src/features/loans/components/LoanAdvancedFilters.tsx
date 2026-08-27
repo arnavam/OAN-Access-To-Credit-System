@@ -362,7 +362,7 @@ export default function LoanAdvancedFilters({
                 value={region}
                 onChange={e => setRegion(e.target.value)}
                 placeholder="Enter Region"
-                className="w-full rounded-md border border-[#EDEFF1] bg-white py-3 px-4 text-sm text-[#232F34] placeholder:text-[#8E9AA0] focus:border-[#16A34A] focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20 shadow-sm"
+                className="w-full rounded-md border border-[#EDEFF1] bg-white py-3 px-4 text-[16px] md:text-sm text-[#232F34] placeholder:text-[#8E9AA0] focus:border-[#16A34A] focus:outline-none focus:ring-2 focus:ring-[#16A34A]/20 shadow-sm"
               />
               {/* One field, and it says which one. It used to invite "Region, Woreda
                   or Kebele" and send the lot as a `location` param that matches no
@@ -397,7 +397,7 @@ export default function LoanAdvancedFilters({
             onClick={handleApply}
             className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-[#16A34A] mb-3 py-3 text-sm font-semibold text-white transition hover:bg-[#10883c]"
           >
-
+            <span className='font-semibold'>Apply Filters</span>
             {activeCount > 0 && (
               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/25 text-xs">
                 {activeCount}

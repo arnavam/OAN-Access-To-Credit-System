@@ -48,6 +48,6 @@ body {
 }
 
 * {
-  scrollbar-width: auto;
+  scrollbar-width: thin;
   scrollbar-color: #16A34A #f1f3f4;
 }

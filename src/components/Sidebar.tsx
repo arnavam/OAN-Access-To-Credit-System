@@ -73,7 +73,7 @@ function Sidebar({ isCollapsed, isMobileOpen = false, sections = [] }: SidebarPr
       <div
         className={[
           'flex shrink-0 items-center gap-0 border-b border-white/[0.08]',
-          'px-[0.45rem] pb-0 pt-[0.9rem]',
+          'px-[0.45rem] pb-[1rem] pt-[1rem]',
           isCollapsed ? 'min-[900px]:justify-center min-[900px]:gap-0 min-[900px]:px-0' : '',
         ].join(' ')}
       >
@@ -104,7 +104,7 @@ function Sidebar({ isCollapsed, isMobileOpen = false, sections = [] }: SidebarPr
         {/* Right Side: Text */}
         <div
           className={[
-            'flex min-w-0 flex-col justify-center gap-[0.15rem]',
+            'flex min-w-0 flex-col justify-center gap-[.15rem]',
             isCollapsed ? 'min-[900px]:hidden' : 'flex',
           ].join(' ')}
         >

@@ -375,7 +375,7 @@ export default function LoanApplicationModal({ isOpen, onClose, data, stages = [
               onClick={onClose}
               className="w-full sm:w-auto px-6 py-2.5 border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold rounded-lg text-sm transition-colors flex justify-center"
             >
-              Close
+              <span className='font-semibold'>Close</span>
             </button>
 
             {!isChangingStatus && canChangeStatus && (

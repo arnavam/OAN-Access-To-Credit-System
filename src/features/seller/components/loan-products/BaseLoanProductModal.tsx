@@ -105,7 +105,7 @@ export function BaseLoanProductModal({
 
   return (
     <Portal>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="fixed inset-0 z-1000 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm animate-in fade-in duration-200">
         <div
           ref={dialogRef}
           role="dialog"

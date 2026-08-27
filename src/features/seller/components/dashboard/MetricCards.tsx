@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useCarouselScroll } from '@/hooks/useCarouselScroll';
 import { CountingNumber } from '@/components/motion/CountingNumber';
 import { MotionEffect } from '@/components/motion/MotionEffect';
 import { CheckCircle2, FileCheck, FileText, LucideIcon, Package, Users } from 'lucide-react';
@@ -52,60 +52,18 @@ export function MetricCards({
     { label: pendingLabel, value: pendingValue ?? '0', icon: FileCheck, iconBg: 'bg-orange-100', iconColor: 'text-orange-500' },
   ];
 
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [activeIndex, setActiveIndex] = useState(0);
-
-  useEffect(() => {
-    const container = scrollRef.current;
-    if (!container) return;
-
-    const handleScroll = () => {
-      const containerRect = container.getBoundingClientRect();
-      const containerCenter = containerRect.left + containerRect.width / 2;
-
-      let closestIndex = 0;
-      let minDistance = Infinity;
-
-      Array.from(container.children).forEach((child, index) => {
-        const childRect = child.getBoundingClientRect();
-        const childCenter = childRect.left + childRect.width / 2;
-        const distance = Math.abs(containerCenter - childCenter);
-
-        if (distance < minDistance) {
-          minDistance = distance;
-          closestIndex = index;
-        }
-      });
-
-      setActiveIndex(closestIndex);
-    };
-
-    container.addEventListener('scroll', handleScroll, { passive: true });
-    window.addEventListener('resize', handleScroll);
-    setTimeout(handleScroll, 100);
-
-    return () => {
-      container.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('resize', handleScroll);
-    };
-  }, []);
-
-  const scrollTo = (index: number) => {
-    if (!scrollRef.current) return;
-    const child = scrollRef.current.children[index] as HTMLElement;
-    if (child) {
-      child.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-    }
-  };
+  const { scrollRef, activeIndex, scrollTo } = useCarouselScroll({ enableWheelScroll: true });
 
   // Five cards: on xl and up they are a grid. On smaller screens, they are a snap-scrolling flex container.
   return (
     <div className="relative">
-      <style dangerouslySetInnerHTML={{
-        __html: `
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      `}} />
+
+      <style>{`
+        .hide-scrollbar::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+        .hide-scrollbar::-webkit-scrollbar-track { display: none !important; }
+        .hide-scrollbar::-webkit-scrollbar-thumb { display: none !important; }
+        .hide-scrollbar { -ms-overflow-style: none !important; scrollbar-width: none !important; }
+      `}</style>
       <div
         ref={scrollRef}
         className="flex xl:grid xl:grid-cols-5 gap-4 xl:gap-6 overflow-x-auto snap-x snap-mandatory scroll-smooth hide-scrollbar pb-2 xl:pb-1 px-1 xl:px-0"

@@ -400,7 +400,7 @@ export default function AdvancedFiltersDrawer({
             <p className="text-[12px] text-gray-400">Matched from the start of the region name.</p>
           </div>
 
-          <div className="pt-2">
+          <div className="pt-0">
             <h3 className="text-[14px] font-bold text-gray-700 mb-2">Date Range</h3>
             <DateRangeFilter
               dateFrom={filters.dateRange.from}

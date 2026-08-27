@@ -125,7 +125,7 @@ export function DashboardHeader({ onMenuClick, title = 'Dashboard', subtitle }: 
         </div>
 
         <div className="flex items-center gap-4">
-          <div>
+          <div className="relative">
             <button
               type="button"
               onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}

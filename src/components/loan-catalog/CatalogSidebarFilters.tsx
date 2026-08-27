@@ -227,12 +227,13 @@ export default function CatalogSidebarFilters({ facets, hasFailed = false, onRet
                     setDraft(next);
                   }}
                   aria-pressed={selected}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${selected
-                    ? 'bg-[#16A34A] text-white border-[#16A34A]'
+
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${selected
+                    ? 'bg-[#16A34A]/8 text-[#16A34A] border-[#16A34A]'
                     : 'bg-white text-gray-700 border-gray-200 hover:border-[#16A34A]'
                     }`}
                 >
-                  {option.label}
+                  <span className='font-semibold'> {option.label}</span>
                 </button>
               );
             })}
