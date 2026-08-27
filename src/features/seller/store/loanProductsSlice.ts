@@ -34,6 +34,11 @@ interface LoanProductsState {
   mutationFieldErrors: Record<string, string> | null;
   latestDetailRequestId: string | null;
   latestCommentRequestId: string | null;
+  /**
+   * Bumped whenever a product mutation lands, for views that read the catalog
+   * endpoint rather than `products` above. See `invalidateCatalog`.
+   */
+  catalogVersion: number;
 }
 
 const initialState: LoanProductsState = {
@@ -56,6 +61,7 @@ const initialState: LoanProductsState = {
   mutationFieldErrors: null,
   latestDetailRequestId: null,
   latestCommentRequestId: null,
+  catalogVersion: 0,
 };
 
 export const fetchProducts = createAsyncThunk(
@@ -181,6 +187,32 @@ async function autoApproveIfBankAdmin(
   return true;
 }
 
+/**
+ * Refreshes every view a product mutation invalidates.
+ *
+ * There are three, and missing one is how a page ends up showing pre-mutation
+ * data: the seller list this slice holds, the sidebar's pending-approval count,
+ * and the catalog. The catalog is the one that bites — the bank's own loan
+ * product page renders `farmer.catalog.list_catalog`, not the
+ * `seller.list_products` that lands in `products`, so refetching this slice
+ * leaves that page untouched.
+ *
+ * Called from exactly one place per mutation. `createProductCompound` and
+ * `updateProductCompound` delegate to `setProductStatus` when they
+ * auto-approve, and calling this on both sides would fire two catalog requests
+ * for one edit.
+ */
+async function refreshProductViews(
+  refetchParams: ListProductsParams | undefined,
+  dispatch: AppDispatch,
+): Promise<void> {
+  // Dispatched before the await so the catalog request goes out alongside the
+  // seller-list one rather than queueing behind it.
+  dispatch(invalidateCatalog());
+  await dispatch(fetchProducts(refetchParams));
+  dispatch(fetchDashboardStats());
+}
+
 export const createProductCompound = createAsyncThunk<
   { product_ids: string[] },
   CreateLoanProductCompoundInput,
@@ -207,13 +239,9 @@ export const createProductCompound = createAsyncThunk<
       }
 
       const approved = await autoApproveIfBankAdmin(productId, input.refetchParams, dispatch, getState);
-      // Skipped when approval succeeded: `setProductStatus` refetched already.
+      // Skipped when approval succeeded: `setProductStatus` refreshed already.
       if (!approved) {
-        await dispatch(fetchProducts(input.refetchParams));
-        // Sidebar's pending-approval count reads from `stats`, which this create
-        // doesn't otherwise touch — without this it stays frozen at whatever it
-        // was when the sidebar first mounted.
-        dispatch(fetchDashboardStats());
+        await refreshProductViews(input.refetchParams, dispatch);
       }
       return created.data;
     } catch (error) {
@@ -246,10 +274,9 @@ export const updateProductCompound = createAsyncThunk<
       }
 
       const approved = await autoApproveIfBankAdmin(productId, input.refetchParams, dispatch, getState);
-      // Skipped when approval succeeded: `setProductStatus` refetched already.
+      // Skipped when approval succeeded: `setProductStatus` refreshed already.
       if (!approved) {
-        await dispatch(fetchProducts(input.refetchParams));
-        dispatch(fetchDashboardStats());
+        await refreshProductViews(input.refetchParams, dispatch);
       }
 
       return updated.data;
@@ -261,16 +288,18 @@ export const updateProductCompound = createAsyncThunk<
   }
 );
 
-export const setProductStatus = createAsyncThunk(
+export const setProductStatus = createAsyncThunk<
+  null,
+  SetLoanProductStatusInput,
+  { state: RootState; dispatch: AppDispatch }
+>(
   'sellerProducts/setProductStatus',
-  async (input: SetLoanProductStatusInput, { dispatch, rejectWithValue }) => {
+  async (input, { dispatch, rejectWithValue }) => {
     try {
       const response = await loanProductsService.setProductStatus(input.productId, input.status, input.reason);
-      await dispatch(fetchProducts(input.refetchParams));
-      // Approving/rejecting moves a product out of "pending" — the sidebar's
-      // count won't reflect that without this (see the same fix on
-      // createProductCompound above).
-      dispatch(fetchDashboardStats());
+      // Approving/rejecting moves a product out of "pending" and changes the
+      // badge on its catalog card, so every view has to be told.
+      await refreshProductViews(input.refetchParams, dispatch);
       return response.data;
     } catch (error) {
       logger.error('setProductStatus thunk failed', { input, error });
@@ -279,16 +308,19 @@ export const setProductStatus = createAsyncThunk(
   }
 );
 
-export const archiveProduct = createAsyncThunk(
+export const archiveProduct = createAsyncThunk<
+  null,
+  string | ArchiveLoanProductInput,
+  { state: RootState; dispatch: AppDispatch }
+>(
   'sellerProducts/archiveProduct',
-  async (input: string | ArchiveLoanProductInput, { dispatch, rejectWithValue }) => {
+  async (input, { dispatch, rejectWithValue }) => {
     try {
       const productId = typeof input === 'string' ? input : input.productId;
       const reason = typeof input === 'string' ? DEFAULT_ARCHIVE_REASON : (input.reason?.trim() || DEFAULT_ARCHIVE_REASON);
       const refetchParams = typeof input === 'string' ? undefined : input.refetchParams;
       const response = await loanProductsService.archiveProduct(productId, reason);
-      await dispatch(fetchProducts(refetchParams));
-      dispatch(fetchDashboardStats());
+      await refreshProductViews(refetchParams, dispatch);
       return response.data;
     } catch (error) {
       logger.error('archiveProduct thunk failed', { input, error });
@@ -313,6 +345,16 @@ const loanProductsSlice = createSlice({
     clearProductComment(state) {
       state.productComment = null;
       state.commentStatus = 'idle';
+    },
+    /**
+     * Marks the shared loan-product catalog stale.
+     *
+     * A counter rather than a flag nobody would clear: views subscribe to the
+     * value and refetch when it moves, so there is no "who resets it" question
+     * and two views can react to the same mutation independently.
+     */
+    invalidateCatalog(state) {
+      state.catalogVersion += 1;
     },
   },
   extraReducers: (builder) => {
@@ -371,7 +413,7 @@ const loanProductsSlice = createSlice({
   },
 });
 
-export const { clearMutationError, clearSelectedProductDetail, clearProductComment } = loanProductsSlice.actions;
+export const { clearMutationError, clearSelectedProductDetail, clearProductComment, invalidateCatalog } = loanProductsSlice.actions;
 export const sellerProductsReducer = loanProductsSlice.reducer;
 export default loanProductsSlice.reducer;
 
@@ -390,3 +432,5 @@ export const selectDetailError = (state: RootState) => state.sellerProducts.deta
 export const selectMutationFieldErrors = (state: RootState) => state.sellerProducts.mutationFieldErrors;
 export const selectProductComment = (state: RootState) => state.sellerProducts.productComment;
 export const selectProductCommentStatus = (state: RootState) => state.sellerProducts.commentStatus;
+/** Pass to `CatalogBrowser.refreshToken` from any view that renders the catalog. */
+export const selectCatalogVersion = (state: RootState) => state.sellerProducts.catalogVersion;

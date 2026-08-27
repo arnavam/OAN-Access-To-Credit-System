@@ -3,6 +3,7 @@
 import { Send, FileText, AlertCircle, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { ErrorAlert } from '@/components/ui/ErrorAlert';
 import { toast } from '@/lib/toast';
 import { logger } from '@/lib/logger';
 import { useAppSelector } from '@/store/hooks';
@@ -164,14 +165,7 @@ export default function CreditInformation({ product }: CreditInformationProps) {
         </div>
       </div>
 
-      {actionError && (
-        <div className="flex items-start gap-2.5 p-3.5 mb-6 bg-red-50 border border-red-200 rounded-xl text-left w-full">
-          <AlertCircle className="text-red-500 shrink-0 mt-0.5" size={16} />
-          <p className="text-xs font-medium text-red-800 leading-5 m-0">
-            {actionError}
-          </p>
-        </div>
-      )}
+      {actionError && <ErrorAlert className="mb-6">{actionError}</ErrorAlert>}
 
       {/* Submission Actions Footer */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-gray-100">

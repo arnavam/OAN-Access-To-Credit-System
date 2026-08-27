@@ -9,6 +9,7 @@ import type {
   CatalogFilters,
   CatalogProduct,
   CatalogSortKey,
+  CatalogStatusOption,
 } from '@/types/loan-catalog';
 import { Search } from 'lucide-react';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
@@ -46,12 +47,22 @@ interface CatalogBrowserProps {
   /** Rendered above the top bar. The bank portals put their header card here. */
   header?: ReactNode;
   /**
-   * Applied to each page after it arrives — for rows the caller must not show
-   * but the endpoint has no parameter to exclude, such as archived products.
-   * The pager still counts them, which is the honest trade for not having a
-   * server-side filter.
+   * Bumped by the host when the catalog has changed underneath this view — a
+   * bank creating, editing or archiving one of its own products.
+   *
+   * The browser owns the page it drew, so nothing outside it can tell that the
+   * list is stale: a mutation dispatched from a modal several components away
+   * refreshes whatever store it writes to and leaves this grid showing the
+   * pre-mutation catalog until a reload. Any change to this value refetches the
+   * current page and the facet options.
    */
-  filterProducts?: (products: CatalogProduct[]) => CatalogProduct[];
+  refreshToken?: number;
+  /**
+   * Approval statuses this view may filter by, handed straight to the sidebar.
+   * Bank-side only — the farmer catalog is pinned to Active server-side, so
+   * offering the control there would be offering a filter with one legal value.
+   */
+  statusOptions?: ReadonlyArray<CatalogStatusOption>;
   emptyTitle?: string;
   emptySubtitle?: string;
 }
@@ -61,7 +72,8 @@ export default function CatalogBrowser({
   renderCard,
   onBookmarkToggle,
   header,
-  filterProducts,
+  refreshToken,
+  statusOptions,
   emptyTitle = 'No loans found',
   emptySubtitle = 'No loan products are available yet. Please check back soon.',
 }: CatalogBrowserProps) {
@@ -87,8 +99,9 @@ export default function CatalogBrowser({
   const [catalogAttempt, setCatalogAttempt] = useState(0);
 
   // Filter options come from the catalog itself, so the sidebar only ever offers
-  // choices that match something. Fetched once — the option set changes when a
-  // bank publishes a product, not while the user is browsing.
+  // choices that match something. Nothing a browsing user does can change the
+  // option set — publishing a product is what does, which is exactly what
+  // `refreshToken` reports, so that and a retry are the only refetches.
   //
   // A failure is reported as a failure. Substituting an all-empty facet set here
   // made the sidebar say "No filters available", which is a statement about the
@@ -113,7 +126,7 @@ export default function CatalogBrowser({
     return () => {
       isMounted = false;
     };
-  }, [facetsAttempt]);
+  }, [facetsAttempt, refreshToken]);
 
   // Clearing the failure here rather than at the top of the effect keeps the
   // reset in the event that caused it — an effect body that calls setState
@@ -151,7 +164,7 @@ export default function CatalogBrowser({
         if (!isMounted) return;
 
         const page = response.data.products || [];
-        setProducts(filterProducts ? filterProducts(page) : page);
+        setProducts(page);
         setTotalEntries(response.pagination.total);
 
         // Un-bookmarking the only row on the last page empties the page the
@@ -179,13 +192,13 @@ export default function CatalogBrowser({
     };
   }, [
     fetchProducts,
-    filterProducts,
     debouncedSearch,
     sortBy,
     filters,
     currentPage,
     entriesPerPage,
     catalogAttempt,
+    refreshToken,
   ]);
 
   const totalPages = Math.ceil(totalEntries / entriesPerPage) || 1;
@@ -229,6 +242,8 @@ export default function CatalogBrowser({
             filters={filters}
             onApply={setFilters}
             onReset={() => setFilters({})}
+            showBookmarkFilter={Boolean(onBookmarkToggle)}
+            {...(statusOptions ? { statusOptions } : {})}
           />
         </div>
 

@@ -1,4 +1,5 @@
 import { Portal } from '@/components/Portal';
+import { ErrorAlert } from '@/components/ui/ErrorAlert';
 import { SelectField } from '@/components/ui/SelectField';
 // eslint-disable-next-line boundaries/dependencies -- Lead creation modal consumes marketplace catalog to populate loan product dropdown
 import { getCatalog } from '@/features/(farmer-application)/api/farmerApi';
@@ -150,16 +151,7 @@ export function CreditInformationModal({ isOpen, onClose, onSubmit }: CreditInfo
             {/* Body */}
             <div className="flex flex-col items-start p-[24px_24px_0px] gap-[16px] w-full">
               {/* General Error Banner */}
-              {error && (
-                <div className="w-full flex items-start gap-2.5 p-3 rounded-lg bg-red-50 border border-red-200 text-red-800 text-sm font-roboto leading-5 animate-in fade-in slide-in-from-top-1 duration-200">
-                  <div className="shrink-0 mt-0.5">
-                    <svg className="w-4 h-4 text-red-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <span>{error}</span>
-                </div>
-              )}
+              {error && <ErrorAlert>{error}</ErrorAlert>}
 
               {/* Form Fields Container */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-[24px] w-full">
@@ -207,30 +199,6 @@ export function CreditInformationModal({ isOpen, onClose, onSubmit }: CreditInfo
                   )}
                 </div>
 
-                {/* Purpose Message Row */}
-                <div className="flex flex-col items-start p-0 gap-[6px] w-full sm:col-span-2">
-                  <label className="font-roboto font-medium text-[14px] leading-[20px] text-[#111827]">
-                    Purpose Message <span className="text-red-500">*</span>
-                  </label>
-                  <textarea
-                    placeholder="Enter purpose message"
-                    value={purposeMessage}
-                    onChange={(e) => {
-                      setPurposeMessage(e.target.value);
-                      clearFieldError('purpose_message', 'purposeMessage');
-                    }}
-                    className={`box-border flex flex-row justify-center items-start p-[12px_16px] w-full h-[140px] bg-white border rounded-[8px] font-roboto font-normal text-[14px] leading-[16px] text-[#111827] placeholder:text-[#C6C6C6] outline-none focus:ring-1 resize-none ${purposeError
-                      ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
-                      : 'border-[#D1D5DB] focus:border-[#3B82F6] focus:ring-[#3B82F6]'
-                  }`}
-                />
-                {amountError && (
-                  <span className="text-red-500 font-roboto text-xs mt-1">
-                    {amountError}
-                  </span>
-                )}
-              </div>
-
               {/* Product Details Card (Shown on Selection) */}
               {selectedProduct && (
                 <div className="w-full bg-[#F0FDF4] border border-[#BBF7D0] rounded-[8px] p-3.5 flex flex-col gap-2 animate-in fade-in duration-200">
@@ -277,29 +245,30 @@ export function CreditInformationModal({ isOpen, onClose, onSubmit }: CreditInfo
                 </div>
               )}
 
-              {/* Purpose Message Row */}
-              <div className="flex flex-col items-start p-0 gap-[6px] w-full">
-                <label className="font-roboto font-medium text-[14px] leading-[20px] text-[#111827]">
-                  Purpose Message <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  placeholder="Enter purpose message"
-                  value={purposeMessage}
-                  onChange={(e) => {
-                    setPurposeMessage(e.target.value);
-                    clearFieldError('purpose_message', 'purposeMessage');
-                  }}
-                  className={`box-border flex flex-row justify-center items-start p-[12px_16px] w-full h-[140px] bg-white border rounded-[8px] font-roboto font-normal text-[14px] leading-[16px] text-[#111827] placeholder:text-[#C6C6C6] outline-none focus:ring-1 resize-none ${
-                    purposeError
-                      ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
-                      : 'border-[#D1D5DB] focus:border-[#3B82F6] focus:ring-[#3B82F6]'
-                  }`}
-                />
-                {purposeError && (
-                  <span className="text-red-500 font-roboto text-xs mt-1">
-                    {purposeError}
-                  </span>
-                )}
+                {/* Purpose Message Row */}
+                <div className="flex flex-col items-start p-0 gap-[6px] w-full sm:col-span-2">
+                  <label className="font-roboto font-medium text-[14px] leading-[20px] text-[#111827]">
+                    Purpose Message <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    placeholder="Enter purpose message"
+                    value={purposeMessage}
+                    onChange={(e) => {
+                      setPurposeMessage(e.target.value);
+                      clearFieldError('purpose_message', 'purposeMessage');
+                    }}
+                    className={`box-border flex flex-row justify-center items-start p-[12px_16px] w-full h-[140px] bg-white border rounded-[8px] font-roboto font-normal text-[14px] leading-[16px] text-[#111827] placeholder:text-[#C6C6C6] outline-none focus:ring-1 resize-none ${
+                      purposeError
+                        ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+                        : 'border-[#D1D5DB] focus:border-[#3B82F6] focus:ring-[#3B82F6]'
+                    }`}
+                  />
+                  {purposeError && (
+                    <span className="text-red-500 font-roboto text-xs mt-1">
+                      {purposeError}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 

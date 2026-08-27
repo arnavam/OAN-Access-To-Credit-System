@@ -64,8 +64,15 @@ export type CatalogSortKey =
   | 'newest';
 
 export interface CatalogCategoryFacet {
+  /** The A2C Term Category id, which is what `list_catalog` filters on. Not the
+   *  label: `term_category` stores this id, so filtering by the display name
+   *  matches nothing and quietly returns an empty catalog. */
+  id: string;
+  /** The human label, from A2C Term.term_name. Display only. */
   name: string;
-  count: number;
+  /** How many products carry it. `get_catalog_facets` does not currently send
+   *  this, so the sidebar shows a count only where one arrives. */
+  count?: number;
 }
 
 /** Filter options derived from the live catalog. Every entry is backed by at
@@ -78,8 +85,37 @@ export interface CatalogFacets {
   max_interest_rate: number | null;
 }
 
+/** One selectable approval status, for the bank-side status filter. `value` is
+ *  the raw A2C Loan Product status the endpoint filters on; `label` is the
+ *  bank's wording for it, which is not always the same (Active reads as
+ *  "Approved"). Supplied by the hosting view rather than built here, so the
+ *  shared catalog components stay free of seller vocabulary. */
+export interface CatalogStatusOption {
+  value: string;
+  label: string;
+}
+
 export interface CatalogFilters {
-  category?: string;
+  /**
+   * Approval status to narrow to. Bank-side only: the farmer catalog is pinned
+   * to Active server-side and ignores this.
+   *
+   * Single-valued because `list_catalog` takes one status, which also decides
+   * what "no selection" means: the endpoint's own default for a bank user is
+   * every status except Archived. Selecting Archived is therefore how a bank
+   * reaches its retired products — the sidebar says so, because a default that
+   * silently omits a whole category of the bank's own catalog is otherwise
+   * indistinguishable from those products having been deleted outright.
+   */
+  status?: string;
+  /** Loan-type ids to keep, as a union: a product matching any of them stays.
+   *
+   *  A set rather than one value, because the sidebar ticks loan types instead
+   *  of picking one. Sent to `list_catalog` as a comma-separated `category`,
+   *  which is the multi-value encoding the rest of that API uses. Absent rather
+   *  than empty when nothing is ticked — an empty array reads as an active
+   *  filter to `hasActiveFilters`, which changes the empty-state wording. */
+  categories?: string[];
   /** One exact tenure, sent as both bounds of the endpoint's tenure range.
    *
    *  Single-valued, not a set: `list_catalog` filters tenure as a min/max span, so

@@ -5,6 +5,7 @@ import {
     selectOnboardingRegistrationError,
     selectOnboardingRegistrationStatus
 } from '@/features/seller/store/onboardingSlice';
+import { ErrorAlert } from '@/components/ui/ErrorAlert';
 import { PHONE_NUMBER_MAX_LENGTH } from '@/features/seller/constants/field-limits';
 import { registerSellerSchema } from '@/lib/api/api.schemas';
 import { toast } from '@/lib/toast';
@@ -70,11 +71,7 @@ export function CreateAccountForm() {
         </p>
       </div>
 
-      {displayError && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm font-medium">
-          {displayError}
-        </div>
-      )}
+      {displayError && <ErrorAlert className="mb-4">{displayError}</ErrorAlert>}
 
       {/* Form Fields */}
       <form className="space-y-4 mb-6" onSubmit={handleRegisterSubmit} autoComplete="off">

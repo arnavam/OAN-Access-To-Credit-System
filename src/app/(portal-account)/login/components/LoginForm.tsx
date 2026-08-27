@@ -1,145 +1,150 @@
 'use client';
 
+import { PartnerBanks } from '@/app/(portal-account)/components/PartnerBanks';
 import { SessionEndedNotice } from '@/components/SessionEndedNotice';
-import { ArrowRight, CheckCircle } from 'lucide-react';
-import Image from 'next/image';
+import { Button } from '@/components/ui/Button';
+import { MotionEffects } from '@/components/motion/MotionEffect';
+import { ArrowRight, CheckCircle, Landmark, Settings, Users, Tractor } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-const ROLE_ROUTES: Record<string, string> = {
-  farmer: '/login/farmer',
-  bank: '/login/bank-admin',
-  agent: '/login/bank-agent',
-  'dev-agent': '/login/development-agent',
-  admin: '/login/administrator',
-};
+/**
+ * The role chooser: the one page every sign-out lands on.
+ *
+ * Each card used to be written out in full — four copies of the same 30 lines,
+ * differing in an icon, two colours and three strings — with the routes kept in
+ * a separate map that had to be edited in step. They are one array now, so a
+ * card cannot exist without a destination and vice versa.
+ */
+interface RoleChoice {
+  id: string;
+  href: string;
+  icon: LucideIcon;
+  iconWrapper: string;
+  iconColor: string;
+  title: string;
+  description: string;
+}
+
+const ROLE_CHOICES: readonly RoleChoice[] = [
+  {
+    id: 'farmer',
+    href: '/login/farmer',
+    icon: Tractor,
+    iconWrapper: 'bg-[#E8F8EE]',
+    iconColor: 'text-[#16A34A]',
+    title: 'Farmer Applicant',
+    description: 'Ethiopia OAN Farmer Portal',
+  },
+  {
+    id: 'bank',
+    href: '/login/bank-admin',
+    icon: Landmark,
+    iconWrapper: 'bg-blue-50',
+    iconColor: 'text-blue-600',
+    title: 'Bank',
+    description: 'Manage system setting and user access',
+  },
+  {
+    id: 'dev-agent',
+    href: '/login/development-agent',
+    icon: Users,
+    iconWrapper: 'bg-[#FFF4E5]',
+    iconColor: 'text-orange-500',
+    title: 'Development Agent',
+    description: 'Support farmer outreach and data collection',
+  },
+  {
+    id: 'admin',
+    // There is no /login/administrator route and never has been — this card
+    // 404'd. The platform administrator is rbac's `marketplace` kind, and
+    // /login/bank-admin is the portal that admits it, so that is where it leads
+    // until an admin portal of its own exists.
+    href: '/login/bank-admin',
+    icon: Settings,
+    iconWrapper: 'bg-[#F5F3FF]',
+    iconColor: 'text-purple-600',
+    title: 'Administrator',
+    description: 'Monitor activity and manage system access',
+  },
+];
 
 export function LoginForm() {
   const router = useRouter();
-  const [role, setRole] = useState('farmer');
+  const [role, setRole] = useState(ROLE_CHOICES[0]!.id);
 
   const handleSignInSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    router.push(ROLE_ROUTES[role] ?? '/');
+    router.push(ROLE_CHOICES.find((choice) => choice.id === role)?.href ?? '/');
   };
 
   return (
-    <div className="max-w-[480px] mx-auto w-full flex-grow flex flex-col justify-center">
+    <div className="flex-1 flex flex-col items-center justify-center h-full px-0 sm:px-0 max-w-lg mx-auto w-full">
       {/* Every sign-out in the app lands here now, not on a per-role portal, so
           this is where an idle timeout or an expired session gets explained. */}
       <SessionEndedNotice />
 
-      <div className="text-center mb-10 overflow-hidden w-full px-2">
-        <h2 className="text-[28px] sm:text-[32px] font-extrabold text-gray-900 mb-3 tracking-tight">Welcome to the Portal</h2>
-        <p className="text-gray-500 text-[12px] sm:text-[13px] md:text-[15px] font-medium leading-relaxed whitespace-nowrap md:whitespace-normal overflow-hidden text-ellipsis max-w-full">Select your role to access the agricultural credit system network.</p>
+      <div className="w-full flex flex-col items-center text-center mb-8">
+        <h2 className="text-[28px] sm:text-[32px] font-bold text-[#1F2937] mb-2 tracking-tight">Welcome to the Portal</h2>
+        <p className="text-[#6B7280] text-[14px] sm:text-[15px] font-medium px-2 sm:px-0 w-full sm:w-auto sm:whitespace-nowrap md:whitespace-normal mx-auto">Select your role to access the agricultural credit system network.</p>
       </div>
 
       {/* Role Selectors */}
-      <div className="space-y-4 mb-8">
-        <label className={`flex items-center p-4 border rounded-xl cursor-pointer transition-all group focus-within:border-[#16A34A] focus-within:ring-1 focus-within:ring-[#16A34A] ${role === 'farmer' ? 'border-[#16A34A] bg-white ring-1 ring-[#16A34A]' : 'border-gray-200 hover:border-gray-300 bg-white'}`}>
-          <div className="w-12 h-12 rounded-full bg-[#E8F8EE] flex items-center justify-center mr-4 shrink-0 overflow-hidden">
-            <Image src="/images/icons/farmer-applicant.png" alt="Farmer Applicant" width={48} height={48} className="w-12 h-12 object-contain" />
-          </div>
-          <div className="flex-grow">
-            <div className="font-bold text-gray-900 text-[15px]">Farmer Applicant</div>
-            <div className="text-[14px] text-gray-500 font-medium mt-0.5">Ethiopia OAN Farmer Portal</div>
-          </div>
-          <input type="radio" name="role" value="farmer" checked={role === 'farmer'} onChange={() => setRole('farmer')} className="sr-only" />
-          {role === 'farmer' ? (
-            <CheckCircle className="w-6 h-6 text-[#16A34A]" />
-          ) : (
-            <div className="w-6 h-6 rounded-full border-2 border-gray-200" />
-          )}
-        </label>
+      <div className="w-full space-y-4 mb-8">
+        <MotionEffects fade zoom={{ initialScale: 0.98 }} stagger={40} transition={{ type: 'spring', stiffness: 500, damping: 30, mass: 0.8 }}>
+          {ROLE_CHOICES.map((choice) => {
+            const isSelected = role === choice.id;
+            const Icon = choice.icon;
 
-        <label className={`flex items-center p-4 border rounded-xl cursor-pointer transition-all group focus-within:border-[#16A34A] focus-within:ring-1 focus-within:ring-[#16A34A] ${role === 'bank' ? 'border-[#16A34A] bg-white ring-1 ring-[#16A34A]' : 'border-gray-200 hover:border-gray-300 bg-white'}`}>
-          <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mr-4 shrink-0 overflow-hidden">
-            <Image src="/images/icons/bank-admin.png" alt="Bank Admin" width={48} height={51} className="w-12 h-12 object-contain" />
-          </div>
-          <div className="flex-grow">
-            <div className="font-bold text-gray-900 text-[15px]">Bank </div>
-            <div className="text-[14px] text-gray-500 font-medium mt-0.5">Manage system setting and user access</div>
-          </div>
-          <input type="radio" name="role" value="bank" checked={role === 'bank'} onChange={() => setRole('bank')} className="sr-only" />
-          {role === 'bank' ? (
-            <CheckCircle className="w-6 h-6 text-[#16A34A]" />
-          ) : (
-            <div className="w-6 h-6 rounded-full border-2 border-gray-200" />
-          )}
-        </label>
-
-        {/* <label className={`flex items-center p-4 border rounded-xl cursor-pointer transition-all group focus-within:border-[#16A34A] focus-within:ring-1 focus-within:ring-[#16A34A] ${role === 'agent' ? 'border-[#16A34A] bg-white ring-1 ring-[#16A34A]' : 'border-gray-200 hover:border-gray-300 bg-white'}`}>
-          <div className="w-12 h-12 rounded-full bg-[#E8F8EE] flex items-center justify-center mr-4 shrink-0 overflow-hidden">
-            <Image src="/images/icons/bank-agent.png" alt="Bank Agent" width={48} height={51} className="w-12 h-12 object-contain" />
-          </div>
-          <div className="flex-grow">
-            <div className="font-bold text-gray-900 text-[15px]">Bank Agent</div>
-            <div className="text-[14px] text-gray-500 font-medium mt-0.5">Process and manage loan application</div>
-          </div>
-          <input type="radio" name="role" value="agent" checked={role === 'agent'} onChange={() => setRole('agent')} className="sr-only" />
-          {role === 'agent' ? (
-            <CheckCircle className="w-6 h-6 text-[#16A34A]" />
-          ) : (
-            <div className="w-6 h-6 rounded-full border-2 border-gray-200" />
-          )}
-        </label> */}
-
-        <label className={`flex items-center p-4 border rounded-xl cursor-pointer transition-all group focus-within:border-[#16A34A] focus-within:ring-1 focus-within:ring-[#16A34A] ${role === 'dev-agent' ? 'border-[#16A34A] bg-white ring-1 ring-[#16A34A]' : 'border-gray-200 hover:border-gray-300 bg-white'}`}>
-          <div className="w-12 h-12 rounded-full bg-[#FFF4E5] flex items-center justify-center mr-4 shrink-0 overflow-hidden">
-            <div className="text-2xl">🚜</div>
-          </div>
-          <div className="flex-grow">
-            <div className="font-bold text-gray-900 text-[15px]">Development Agent</div>
-            <div className="text-[14px] text-gray-500 font-medium mt-0.5">Support farmer outreach and data collection</div>
-          </div>
-          <input type="radio" name="role" value="dev-agent" checked={role === 'dev-agent'} onChange={() => setRole('dev-agent')} className="sr-only" />
-          {role === 'dev-agent' ? (
-            <CheckCircle className="w-6 h-6 text-[#16A34A]" />
-          ) : (
-            <div className="w-6 h-6 rounded-full border-2 border-gray-200" />
-          )}
-        </label>
-
-        <label className={`flex items-center p-4 border rounded-xl cursor-pointer transition-all group focus-within:border-[#16A34A] focus-within:ring-1 focus-within:ring-[#16A34A] ${role === 'admin' ? 'border-[#16A34A] bg-white ring-1 ring-[#16A34A]' : 'border-gray-200 hover:border-gray-300 bg-white'}`}>
-          <div className="w-12 h-12 rounded-full bg-[#F5F3FF] flex items-center justify-center mr-4 shrink-0 overflow-hidden">
-            <div className="text-2xl">⚙️</div>
-          </div>
-          <div className="flex-grow">
-            <div className="font-bold text-gray-900 text-[15px]">Administrator</div>
-            <div className="text-[14px] text-gray-500 font-medium mt-0.5">Monitor activity and manage system access</div>
-          </div>
-          <input type="radio" name="role" value="admin" checked={role === 'admin'} onChange={() => setRole('admin')} className="sr-only" />
-          {role === 'admin' ? (
-            <CheckCircle className="w-6 h-6 text-[#16A34A]" />
-          ) : (
-            <div className="w-6 h-6 rounded-full border-2 border-gray-200" />
-          )}
-        </label>
+            return (
+              <label
+                key={choice.id}
+                className={`flex items-center p-4 border rounded-xl cursor-pointer transition-all group focus-within:border-[#16A34A] focus-within:ring-1 focus-within:ring-[#16A34A] ${isSelected ? 'border-[#16A34A] bg-white ring-1 ring-[#16A34A]' : 'border-gray-200 hover:border-gray-300 bg-white'}`}
+              >
+                <div className={`w-12 h-12 rounded-full ${choice.iconWrapper} flex items-center justify-center mr-4 shrink-0 overflow-hidden`}>
+                  <Icon className={`w-6 h-6 ${choice.iconColor}`} aria-hidden="true" />
+                </div>
+                <div className="flex-grow">
+                  <div className="font-bold text-gray-900 text-[15px]">{choice.title}</div>
+                  <div className="text-[14px] text-gray-500 font-medium mt-0.5">{choice.description}</div>
+                </div>
+                <input
+                  type="radio"
+                  name="role"
+                  value={choice.id}
+                  checked={isSelected}
+                  onChange={() => setRole(choice.id)}
+                  className="sr-only"
+                />
+                <div className="relative w-6 h-6 flex items-center justify-center shrink-0" aria-hidden="true">
+                  <AnimatePresence initial={false}>
+                    {isSelected ? (
+                      <motion.div key="checked" className="absolute inset-0 flex items-center justify-center" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.5, opacity: 0 }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}>
+                        <CheckCircle className="w-6 h-6 text-[#16A34A]" />
+                      </motion.div>
+                    ) : (
+                      <motion.div key="unchecked" className="absolute inset-0 flex items-center justify-center" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.5, opacity: 0 }} transition={{ type: 'spring', stiffness: 400, damping: 25 }}>
+                        <div className="w-6 h-6 rounded-full border-2 border-gray-200" />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </label>
+            );
+          })}
+        </MotionEffects>
       </div>
 
-      {/* Login Form */}
-      <form className="mb-10" onSubmit={handleSignInSubmit}>
-        <button
-          type="submit"
-          className="w-full bg-[#16A34A] hover:bg-[#158e41] text-white text-base font-bold py-3.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 group shadow-sm cursor-pointer"
-        >
-          <span className='font-semibold'> Next Step</span>
-
-          <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-        </button>
+      <form className="w-full mb-10" onSubmit={handleSignInSubmit}>
+        <Button type="submit" size="none" className="w-full py-4 text-[14px] space-x-2 active:scale-[0.98]">
+          <span className="font-semibold">Next Step</span>
+          <ArrowRight size={18} strokeWidth={2.5} />
+        </Button>
       </form>
 
-      {/* Partner Banks */}
-      <div className="text-center mt-auto">
-        <div className="text-[12px] font-bold text-gray-400 capitalize mb-3">Partner Banks</div>
-        <div className="flex items-center justify-center flex-wrap gap-1.5">
-          {['CBE', 'Dashen', 'Awash', 'CBO', 'Abyssinia', 'OIB'].map((bank) => (
-            <span key={bank} className="px-4 py-1.5 rounded-full border border-[#16A34A]/30 text-[11px] font-bold text-[#16A34A] cursor-default bg-[#F7FFFB]">
-              {bank}
-            </span>
-          ))}
-        </div>
-      </div>
+      <PartnerBanks />
     </div>
   );
 }

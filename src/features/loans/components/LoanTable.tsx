@@ -2,21 +2,19 @@
 
 import { useModalA11y } from '@/hooks/useModalA11y';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { ArrowDown, ArrowUp, ArrowUpDown, Check, ChevronDown, Eye, Filter, Phone } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, Check, Eye, Filter, Phone } from 'lucide-react';
 import { memo, useEffect, useRef, useState } from 'react';
 // createPortal removed
-import { AnimatePresence, motion } from 'motion/react';
 import { getStageStyle } from '../utils/stageStyles';
 import { TableEmptyState } from '@/components/ui/TableEmptyState';
 import {
   advancedFilterValues,
   resetAllFilters,
-  selectActivityPage, selectAdvancedFilters, selectLoanSortBy, selectLoanSortOrder,
+  selectAdvancedFilters, selectLoanSortBy, selectLoanSortOrder,
   selectLoanStageOptions, selectLoanStages, selectLoanTypeOptions,
-  selectPagedRows, selectPageSize,
+  selectPagedRows,
   selectTableStatusFilters, selectTableTypeFilters,
-  setActivityPage,
-  setAdvancedFilters, setLoanSort, setPageSize,
+  setAdvancedFilters, setLoanSort,
   setTableStatusFilters,
   setTableTypeFilters
 } from '../store/loanDashboardSlice';
@@ -53,87 +51,8 @@ export interface LoanTableRow {
 
 interface LoanTableProps {
   onView?: (row: LoanTableRow) => void;
-  totalCount?: number;
   /** Stages the STATUS column filter offers; falls back to the bank's own list. */
   stageOptions?: readonly { label: string; value: string; color?: string; dot?: string }[];
-}
-
-function PaginationDropdown({
-  value,
-  onChange,
-}: {
-  value: number;
-  onChange: (val: number) => void;
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const options = [10, 20, 50];
-
-  return (
-    <div className="relative inline-block" ref={ref}>
-      <motion.button
-        type="button"
-        whileTap={{ scale: 0.95 }}
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs font-bold text-gray-700 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-colors hover:bg-gray-50"
-      >
-        {value}
-        <ChevronDown size={14} className={`transition-transform duration-200 ${isOpen ? 'rotate-180 text-emerald-600' : 'text-gray-400'}`} />
-      </motion.button>
-
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            exit="hidden"
-            variants={{
-              hidden: { opacity: 0, y: 10, scale: 0.95 },
-              visible: {
-                opacity: 1, y: 0, scale: 1,
-                transition: {
-                  type: "spring",
-                  stiffness: 300,
-                  damping: 24,
-                  staggerChildren: 0.05
-                }
-              }
-            }}
-            className="absolute bottom-full left-0 mb-1 z-50 min-w-[4rem] overflow-hidden rounded-md border border-gray-200 bg-white py-1 shadow-lg"
-          >
-            {options.map((opt) => (
-              <motion.button
-                key={opt}
-                variants={{
-                  hidden: { opacity: 0, x: -10 },
-                  visible: { opacity: 1, x: 0 }
-                }}
-                type="button"
-                onClick={() => {
-                  onChange(opt);
-                  setIsOpen(false);
-                }}
-                className={`w-full px-3 py-1.5 text-left text-xs font-bold transition-colors hover:bg-emerald-50 hover:text-emerald-700 ${value === opt ? 'bg-emerald-50 text-emerald-700' : 'text-gray-700'}`}
-              >
-                {opt}
-              </motion.button>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
 }
 
 type SortColumn = 'loan_amount' | 'creation';
@@ -157,7 +76,7 @@ function SortIndicator({ column, sortBy, sortOrder }: {
     : <ArrowDown size={14} className="text-emerald-600" />;
 }
 
-const LoanTable = memo(({ onView, totalCount = 0, stageOptions }: LoanTableProps) => {
+const LoanTable = memo(({ onView, stageOptions }: LoanTableProps) => {
   const dispatch = useAppDispatch();
   const rows: LoanTableRow[] = useAppSelector(selectPagedRows);
   const stages = useAppSelector(selectLoanStages);
@@ -175,8 +94,6 @@ const LoanTable = memo(({ onView, totalCount = 0, stageOptions }: LoanTableProps
   const sortBy = useAppSelector(selectLoanSortBy);
   const sortOrder = useAppSelector(selectLoanSortOrder);
 
-  const currentPage = useAppSelector(selectActivityPage);
-  const pageSize = useAppSelector(selectPageSize);
 
 
   const [statusFilterOpen, setStatusFilterOpen] = useState(false);
@@ -341,9 +258,6 @@ const LoanTable = memo(({ onView, totalCount = 0, stageOptions }: LoanTableProps
     setTempDateTo('');
     setTempQuickDate('');
   };
-
-  const effectiveTotal = totalCount || rows.length;
-  const totalPages = Math.max(1, Math.ceil(effectiveTotal / pageSize));
 
   return (
     <div className="flex flex-col min-h-[515px]">
@@ -821,50 +735,6 @@ const LoanTable = memo(({ onView, totalCount = 0, stageOptions }: LoanTableProps
         </table>
       </div>
 
-      {/* Pagination Footer */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-gray-100 px-0 pt-4 pb-0 text-sm text-gray-500">
-        <div className="flex items-center gap-2">
-          <span>Showing</span>
-          <PaginationDropdown
-            value={pageSize}
-            onChange={(val) => dispatch(setPageSize(val))}
-          />
-          <span>of {effectiveTotal} Applications</span>
-        </div>
-
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            disabled={currentPage <= 1}
-            onClick={() => dispatch(setActivityPage(currentPage - 1))}
-            className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 transition hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            &lt; Prev
-          </button>
-          {Array.from({ length: Math.min(totalPages, 5) }).map((_, idx) => {
-            const pageNum = idx + 1;
-            const isActive = pageNum === currentPage;
-            return (
-              <button
-                key={pageNum}
-                type="button"
-                onClick={() => dispatch(setActivityPage(pageNum))}
-                className={`h-8 w-8 rounded-lg text-xs font-bold transition ${isActive ? 'bg-[#16A34A] text-white shadow-sm' : 'border border-gray-200 text-gray-600 hover:bg-gray-50'}`}
-              >
-                {pageNum}
-              </button>
-            );
-          })}
-          <button
-            type="button"
-            disabled={currentPage >= totalPages}
-            onClick={() => dispatch(setActivityPage(currentPage + 1))}
-            className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 transition hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            Next &gt;
-          </button>
-        </div>
-      </div>
     </div>
   );
 });

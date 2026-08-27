@@ -58,10 +58,25 @@ export interface LoanProductCardProps {
   canDelete?: boolean;
 }
 
+/**
+ * Whether this product's terms may still be changed.
+ *
+ * Not a role check — agents author products too. What the status forbids it
+ * forbids for everyone: a live or in-review product would otherwise have its
+ * terms changed underneath farmers already applying, or underneath the admin's
+ * own approval queue.
+ *
+ * Archived counts as forbidden. It is a retired product, not a draft: it accepts
+ * no new applications, and rewriting the terms of a loan that has already been
+ * taken off the marketplace changes the record of what was once offered. This
+ * used to return true, which was harmless only for as long as archived products
+ * never appeared in a list — the bank catalog now shows them, so the Edit button
+ * would have been real.
+ */
 export function canEditLoanProduct(status: string | null | undefined): boolean {
   if (!status) return false;
   const s = status.toLowerCase();
-  return s !== 'active' && s !== 'pending approval';
+  return s !== 'active' && s !== 'pending approval' && s !== 'archived';
 }
 
 /**

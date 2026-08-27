@@ -2,8 +2,9 @@
 
 import { Portal } from '@/components/Portal';
 import { LOAN_AMOUNT_BUCKET_LABELS, loanAmountCeilingLabel } from '@/features/loans/constants/loans.constants';
-import { Check, Filter } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
+import { FilterCheckboxRow, FilterTrigger } from './FilterControls';
+import { useColumnFilterDropdown } from './useColumnFilterDropdown';
 
 interface LoanAmountFilterProps {
   selectedValues: string[];
@@ -17,11 +18,11 @@ interface LoanAmountFilterProps {
 const rangeOptions = LOAN_AMOUNT_BUCKET_LABELS;
 
 export default function LoanAmountFilter({ selectedValues, onChange }: LoanAmountFilterProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
   const [tempSelected, setTempSelected] = useState<string[]>(selectedValues);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const { isOpen, setIsOpen, dropdownRef, menuRef, triggerRef, dropdownPos, toggleDropdown: handleClick } = useColumnFilterDropdown({
+    menuWidth: 340, // 340px for LoanAmountFilter based on w-[340px] in portal
+    onOpen: () => setTempSelected(selectedValues),
+  });
   const sliderRef = useRef<HTMLDivElement>(null);
 
   const handleSliderInteraction = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -36,37 +37,7 @@ export default function LoanAmountFilter({ selectedValues, onChange }: LoanAmoun
     setTempSelected(rangeOptions.slice(0, newMaxIndex));
   };
 
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
-        menuRef.current && !menuRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false);
-      }
-    }
 
-    const updatePosition = () => {
-      if (dropdownRef.current) {
-        const rect = dropdownRef.current.getBoundingClientRect();
-        setDropdownPos({
-          top: rect.bottom + window.scrollY + 8,
-          left: rect.left + window.scrollX
-        });
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      window.addEventListener('scroll', updatePosition, true);
-      window.addEventListener('resize', updatePosition);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      window.removeEventListener('scroll', updatePosition, true);
-      window.removeEventListener('resize', updatePosition);
-    };
-  }, [isOpen]);
 
   const toggleOption = (option: string) => {
     if (option === 'All') {
@@ -94,23 +65,7 @@ export default function LoanAmountFilter({ selectedValues, onChange }: LoanAmoun
     setIsOpen(false);
   };
 
-  const handleClick = () => {
-    if (!isOpen && dropdownRef.current) {
-      // Opening: start the draft (and so the slider position) from the committed
-      // selection. Previously an effect on [isOpen, selectedValues] — which also
-      // re-ran on any `selectedValues` identity change, wiping an in-progress
-      // slider drag. Resetting draft state where the menu is opened is narrower
-      // and is the documented React pattern.
-      setTempSelected(selectedValues);
 
-      const rect = dropdownRef.current.getBoundingClientRect();
-      setDropdownPos({
-        top: rect.bottom + window.scrollY + 8,
-        left: rect.left + window.scrollX
-      });
-    }
-    setIsOpen(!isOpen);
-  };
 
   // Dynamic Slider Logic
   let displayMaxIndex = rangeOptions.length;
@@ -130,12 +85,13 @@ export default function LoanAmountFilter({ selectedValues, onChange }: LoanAmoun
 
   return (
     <div ref={dropdownRef} className="inline-block">
-      <div
-        className="flex items-center gap-1.5 cursor-pointer select-none text-gray-500 hover:text-gray-700 transition-colors"
+      <FilterTrigger
+        ref={triggerRef}
+        label="LOAN AMOUNT (ETB)"
+        isOpen={isOpen}
+        isActive={selectedValues.length > 0}
         onClick={handleClick}
-      >
-        LOAN AMOUNT (ETB) <Filter className={`w-3.5 h-3.5 transition-colors ${isOpen || selectedValues.length > 0 ? 'text-[#16A34A]' : ''}`} />
-      </div>
+      />
 
       {isOpen && (
         <Portal>
@@ -197,48 +153,25 @@ export default function LoanAmountFilter({ selectedValues, onChange }: LoanAmoun
             </div>
 
             {/* Range Options */}
-            <div className="flex flex-col py-2 max-h-[250px] overflow-y-auto">
-              {/* All Option */}
-              <div
-                onClick={() => toggleOption('All')}
-                className="flex items-center gap-4 px-6 py-3 hover:bg-gray-50 cursor-pointer text-[14px] font-medium text-gray-700 select-none group transition-colors"
+            <div role="group" aria-label="Loan amount" className="flex flex-col py-2 max-h-[250px] overflow-y-auto">
+              <FilterCheckboxRow
+                checked={tempSelected.length === rangeOptions.length}
+                onToggle={() => toggleOption('All')}
+                padding="px-6 py-3"
               >
-                <div
-                  className={`w-5 h-5 shrink-0 rounded-[4px] border flex items-center justify-center transition-all duration-200 ${tempSelected.length === rangeOptions.length ? 'bg-[#16A34A] border-[#16A34A]' : 'border-gray-300 group-hover:border-[#16A34A]/50'
-                    }`}
-                >
-                  <Check
-                    className={`w-3.5 h-3.5 text-white transition-all duration-200 ${tempSelected.length === rangeOptions.length ? 'scale-100 opacity-100' : 'scale-50 opacity-0'
-                      }`}
-                    strokeWidth={3}
-                  />
-                </div>
                 All
-              </div>
+              </FilterCheckboxRow>
 
-              {/* Individual Options */}
-              {rangeOptions.map(option => {
-                const isSelected = tempSelected.includes(option);
-                return (
-                  <div
-                    key={option}
-                    onClick={() => toggleOption(option)}
-                    className="flex items-center gap-4 px-6 py-3 hover:bg-gray-50 cursor-pointer text-[14px] font-medium text-gray-700 select-none group transition-colors"
-                  >
-                    <div
-                      className={`w-5 h-5 shrink-0 rounded-[4px] border flex items-center justify-center transition-all duration-200 ${isSelected ? 'bg-[#16A34A] border-[#16A34A]' : 'border-gray-300 group-hover:border-[#16A34A]/50'
-                        }`}
-                    >
-                      <Check
-                        className={`w-3.5 h-3.5 text-white transition-all duration-200 ${isSelected ? 'scale-100 opacity-100' : 'scale-50 opacity-0'
-                          }`}
-                        strokeWidth={3}
-                      />
-                    </div>
-                    {option}
-                  </div>
-                );
-              })}
+              {rangeOptions.map(option => (
+                <FilterCheckboxRow
+                  key={option}
+                  checked={tempSelected.includes(option)}
+                  onToggle={() => toggleOption(option)}
+                  padding="px-6 py-3"
+                >
+                  {option}
+                </FilterCheckboxRow>
+              ))}
             </div>
 
             {/* Footer */}

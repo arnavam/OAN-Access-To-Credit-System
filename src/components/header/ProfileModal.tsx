@@ -1,5 +1,5 @@
 'use client';
-import { selectBankName, selectOfficerName, setUserImage } from '@/features/auth/store/authSlice';
+import { selectBankName, selectOfficerName, selectUserKind, setUserImage } from '@/features/auth/store/authSlice';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { Camera, Eye, EyeOff, X, Loader2 } from 'lucide-react';
 import Image from 'next/image';
@@ -44,6 +44,29 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
 
   const fallbackOfficerName = useAppSelector(selectOfficerName) || 'User';
   const fallbackOrganization = useAppSelector(selectBankName) || 'Organization';
+  const userKind = useAppSelector(selectUserKind);
+
+  // A farmer's identity is not A2C's to edit. Name, gender, phone and photo come
+  // from the farmer registry and A2C holds a copy, so an edit made here would
+  // either be silently overwritten by the next sync or -- worse -- survive it and
+  // leave the platform disagreeing with the registry about who someone is.
+  //
+  // Personal Information only. Security below stays editable for everyone: a
+  // password is A2C's own credential, not a registry attribute.
+  //
+  // This is UX, not an authorization boundary. `oan_a2c.api.auth.update_profile`
+  // still accepts these fields from any signed-in user; closing that is a
+  // separate backend change.
+  const isProfileReadOnly = userKind === 'farmer';
+
+  // A locked field looks locked the way this modal already locks one -- the
+  // Account Information fields below have always rendered like this.
+  const editableFieldClass =
+    'w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-colors';
+  const lockedFieldClass = 'w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600';
+
+  /** A stored value, or an honest admission that there isn't one. */
+  const displayValue = (value: string) => value || 'Not provided';
 
   const officerName = profile?.personal_information.full_name || formData.full_name || fallbackOfficerName;
   const organization = profile?.account_information.organization || fallbackOrganization;
@@ -199,15 +222,27 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
               {/* Personal Information Section */}
               <section className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 mb-6">
-                  <h3 className="text-lg font-bold text-gray-800">Personal Information</h3>
-                  <button
-                    onClick={handleSaveProfile}
-                    disabled={isSaving}
-                    className="w-full sm:w-auto justify-center bg-[#16A34A] hover:bg-[#15803d] disabled:opacity-70 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center shrink-0"
-                  >
-                    {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                    <span className='font-semibold'>Save Change</span>
-                  </button>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-800">Personal Information</h3>
+                    {isProfileReadOnly && (
+                      <p className="text-sm text-gray-500 mt-1">
+                        These details come from the farmer registry and cannot be changed here.
+                      </p>
+                    )}
+                  </div>
+                  {/* No Save button in read-only mode. A disabled one would still
+                      say "there is a change to save here", which is the claim
+                      being withdrawn. */}
+                  {!isProfileReadOnly && (
+                    <button
+                      onClick={handleSaveProfile}
+                      disabled={isSaving}
+                      className="w-full sm:w-auto justify-center bg-[#16A34A] hover:bg-[#15803d] disabled:opacity-70 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center shrink-0"
+                    >
+                      {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                      <span className='font-semibold'>Save Change</span>
+                    </button>
+                  )}
                 </div>
 
                 <div className="flex flex-col md:flex-row gap-8">
@@ -230,88 +265,125 @@ export function ProfileModal({ isOpen, onClose, role = 'Admin' }: ProfileModalPr
                         </div>
                       )}
 
-                      <button
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={isUploading}
-                        className="absolute bottom-0 right-0 w-8 h-8 bg-[#16A34A] border-2 border-white rounded-full flex items-center justify-center hover:bg-[#15803d] transition-colors cursor-pointer shadow-sm disabled:opacity-70"
-                      >
-                        {isUploading ? <Loader2 className="w-3.5 h-3.5 text-white animate-spin" /> : <Camera className="w-3.5 h-3.5 text-white" />}
-                      </button>
-                      <input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={handlePhotoUpload}
-                        accept="image/*"
-                        className="hidden"
-                      />
+                      {!isProfileReadOnly && (
+                        <>
+                          <button
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={isUploading}
+                            className="absolute bottom-0 right-0 w-8 h-8 bg-[#16A34A] border-2 border-white rounded-full flex items-center justify-center hover:bg-[#15803d] transition-colors cursor-pointer shadow-sm disabled:opacity-70"
+                          >
+                            {isUploading ? <Loader2 className="w-3.5 h-3.5 text-white animate-spin" /> : <Camera className="w-3.5 h-3.5 text-white" />}
+                          </button>
+                          <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handlePhotoUpload}
+                            accept="image/*"
+                            className="hidden"
+                          />
+                        </>
+                      )}
                     </div>
                     <h4 className="mt-4 font-bold text-gray-900 text-center">{officerName}</h4>
                     <p className="text-xs text-gray-500 mt-1 text-center">
                       {profile?.account_information.user_role || role} &middot; {organization}
                     </p>
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={isUploading}
-                      className="mt-3 text-sm font-medium text-[#16A34A] hover:text-[#15803d] transition-colors disabled:opacity-70"
-                    >
-                      <span className='font-medium'>{isUploading ? 'Uploading...' : 'Upload new photo'}</span>
-                    </button>
+                    {!isProfileReadOnly && (
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploading}
+                        className="mt-3 text-sm font-medium text-[#16A34A] hover:text-[#15803d] transition-colors disabled:opacity-70"
+                      >
+                        <span className='font-medium'>{isUploading ? 'Uploading...' : 'Upload new photo'}</span>
+                      </button>
+                    )}
                   </div>
 
-                  {/* Form Column */}
+                  {/* Form Column.
+
+                      Read-only renders plain disabled inputs rather than disabled
+                      selects: a greyed-out dropdown still reads as a control that
+                      is temporarily unavailable, and an unset one would show
+                      "Select Gender" - a prompt to fill in a form that is not
+                      being offered. The required markers go too; nothing here is
+                      required of someone who cannot supply it. */}
                   <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
                     <div>
-                      <label className="block text-sm font-medium text-gray-900 mb-1.5">
-                        Full Name <span className="text-red-500">*</span>
+                      <label htmlFor="profile-full-name" className="block text-sm font-medium text-gray-900 mb-1.5">
+                        Full Name {!isProfileReadOnly && <span className="text-red-500">*</span>}
                       </label>
                       <input
+                        id="profile-full-name"
                         type="text"
-                        value={formData.full_name}
+                        value={isProfileReadOnly ? displayValue(formData.full_name) : formData.full_name}
                         onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-colors"
+                        disabled={isProfileReadOnly}
+                        className={isProfileReadOnly ? lockedFieldClass : editableFieldClass}
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-900 mb-1.5">
-                        Gender <span className="text-red-500">*</span>
+                      <label htmlFor="profile-gender" className="block text-sm font-medium text-gray-900 mb-1.5">
+                        Gender {!isProfileReadOnly && <span className="text-red-500">*</span>}
                       </label>
-                      <SelectField
-                        value={formData.gender}
-                        onChange={(val) => setFormData({ ...formData, gender: val })}
-                        options={[
-                          { label: 'Male', value: 'Male' },
-                          { label: 'Female', value: 'Female' },
-                          { label: 'Other', value: 'Other' }
-                        ]}
-                        placeholder="Select Gender"
-                      />
+                      {isProfileReadOnly ? (
+                        <input
+                          id="profile-gender"
+                          type="text"
+                          value={displayValue(formData.gender)}
+                          disabled
+                          className={lockedFieldClass}
+                        />
+                      ) : (
+                        <SelectField
+                          value={formData.gender}
+                          onChange={(val) => setFormData({ ...formData, gender: val })}
+                          options={[
+                            { label: 'Male', value: 'Male' },
+                            { label: 'Female', value: 'Female' },
+                            { label: 'Other', value: 'Other' }
+                          ]}
+                          placeholder="Select Gender"
+                        />
+                      )}
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-900 mb-1.5">
-                        Phone Number <span className="text-red-500">*</span>
+                      <label htmlFor="profile-phone" className="block text-sm font-medium text-gray-900 mb-1.5">
+                        Phone Number {!isProfileReadOnly && <span className="text-red-500">*</span>}
                       </label>
                       <input
+                        id="profile-phone"
                         type="tel"
-                        value={formData.phone_number}
+                        value={isProfileReadOnly ? displayValue(formData.phone_number) : formData.phone_number}
                         onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
                         placeholder="Enter Phone Number"
-                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-colors"
+                        disabled={isProfileReadOnly}
+                        className={isProfileReadOnly ? lockedFieldClass : editableFieldClass}
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-900 mb-1.5">
-                        Language <span className="text-red-500">*</span>
+                      <label htmlFor="profile-language" className="block text-sm font-medium text-gray-900 mb-1.5">
+                        Language {!isProfileReadOnly && <span className="text-red-500">*</span>}
                       </label>
-                      <SelectField
-                        value={formData.language}
-                        onChange={(val) => setFormData({ ...formData, language: val })}
-                        options={[
-                          { label: 'English', value: 'English' },
-                          { label: 'Swahili', value: 'Swahili' },
-                          { label: 'Amharic', value: 'Amharic' }
-                        ]}
-                        placeholder="Select Language"
-                      />
+                      {isProfileReadOnly ? (
+                        <input
+                          id="profile-language"
+                          type="text"
+                          value={displayValue(formData.language)}
+                          disabled
+                          className={lockedFieldClass}
+                        />
+                      ) : (
+                        <SelectField
+                          value={formData.language}
+                          onChange={(val) => setFormData({ ...formData, language: val })}
+                          options={[
+                            { label: 'English', value: 'English' },
+                            { label: 'Swahili', value: 'Swahili' },
+                            { label: 'Amharic', value: 'Amharic' }
+                          ]}
+                          placeholder="Select Language"
+                        />
+                      )}
                     </div>
                   </div>
                 </div>
