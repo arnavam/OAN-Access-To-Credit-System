@@ -148,7 +148,7 @@ export function ConsentManagementSection({ leadId: leadIdProp, audience = 'agent
 
             {/* Bottom Redo Action Footer */}
             <div className="w-full pt-3 mt-1 border-t border-gray-100 flex items-center justify-between">
-              <span className="text-xs text-gray-500">
+              <span className="text-sm text-gray-500">
                 {isApproved ? 'Need to update permissions or re-verify?' : 'Need to use a different ID?'}
               </span>
               <button
@@ -157,7 +157,8 @@ export function ConsentManagementSection({ leadId: leadIdProp, audience = 'agent
                 className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold text-xs rounded-lg shadow-sm transition-colors"
               >
                 <RotateCcw size={13} />
-                {isApproved ? 'Redo Consent' : 'Restart Verification'}
+                <span className='font-medium'>{isApproved ? 'Redo Consent' : 'Restart Verification'}</span>
+
               </button>
             </div>
           </div>
@@ -182,7 +183,7 @@ export function ConsentManagementSection({ leadId: leadIdProp, audience = 'agent
                 value={farmerId}
                 onChange={(e) => dispatch(setFarmerId(e.target.value))}
                 placeholder={isFarmer ? "Enter your Fayda ID or National ID" : "Search by Farmer ID or National ID"}
-                className="flex-1 h-[42px] rounded-md border border-[#D1D5DB] px-4 text-[15px] shadow-sm placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 bg-white min-w-0"
+                className="flex w-full items-center justify-between rounded-lg border px-4 py-3 text-sm shadow-sm transition-all focus:outline-none focus-visible:ring-[0.02rem] focus-visible:ring-green-600 focus-visible:ring-offset-0 border-gray-200 hover:border-green-600 bg-white ring-1 ring-green-600/15"
               />
               <button
                 type="button"
@@ -192,7 +193,7 @@ export function ConsentManagementSection({ leadId: leadIdProp, audience = 'agent
                   }
                 }}
                 disabled={!farmerId?.trim() || isLoadingConsent || isSearchingFarmer}
-                className="h-[42px] px-6 rounded-md border border-[#16A34A] text-[15px] font-bold text-[#16A34A] hover:bg-[#F0FDFA] transition-colors bg-white shadow-sm flex items-center justify-center shrink-0 disabled:opacity-50"
+                className="w-full sm:w-auto h-[44px] min-h-[42px] px-6 rounded-md border border-[#16A34A] text-[15px] font-bold text-[#16A34A] hover:bg-[#F0FDFA] transition-colors bg-white shadow-sm flex items-center justify-center shrink-0 disabled:opacity-50"
               >
                 {isSearchingFarmer ? 'Searching...' : 'Search'}
               </button>
@@ -208,7 +209,8 @@ export function ConsentManagementSection({ leadId: leadIdProp, audience = 'agent
               disabled={!searchedFarmer?.firstName || isLoadingConsent || isSearchingFarmer}
               className="w-full h-[42px] rounded-md bg-[#16A34A] text-[15px] font-bold text-white hover:bg-[#15803d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm flex items-center justify-center"
             >
-              {isLoadingConsent ? 'Sending...' : 'Send OTP'}
+              <span className='font-semibold'>{isLoadingConsent ? 'Sending...' : 'Send OTP'}</span>
+
             </button>
             {(consentError || searchError) && (
               <div role="alert" aria-live="assertive" className="flex items-start gap-2 w-full mt-1 bg-[#FEF2F2] text-[#DC2626] p-3 rounded-md border border-[#FECACA]">

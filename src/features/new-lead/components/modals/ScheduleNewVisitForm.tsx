@@ -192,7 +192,7 @@ export const ScheduleNewVisitForm = ({
               rows={4}
               value={agenda}
               onChange={(e) => setAgenda(e.target.value)}
-              className="w-full px-3 py-2 bg-white border border-[#D1D5DC] rounded-md text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-1 focus:ring-[#3B82F6] focus:border-[#3B82F6] resize-none"
+              className="w-full px-3 py-2 bg-white border border-[#16A34A] rounded-md text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-1 focus:ring-[#16A34A] focus:border-[#16A34A] resize-none"
             />
           </div>
 

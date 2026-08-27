@@ -83,11 +83,10 @@ export default function CatalogTopBar({ searchQuery, onSearchChange, sortBy, onS
                     onSortChange(opt.value);
                     setIsDropdownOpen(false);
                   }}
-                  className={`w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${
-                    sortBy === opt.value
+                  className={`w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${sortBy === opt.value
                       ? 'bg-green-50/50 text-green-700 font-bold'
                       : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900 font-medium'
-                  }`}
+                    }`}
                 >
                   {opt.label}
                   {sortBy === opt.value && <Check className="w-4 h-4 text-green-600" strokeWidth={3} />}

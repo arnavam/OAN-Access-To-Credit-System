@@ -83,9 +83,9 @@ export function ActivitySection() {
             type="button"
             onClick={handleAddNote}
             disabled={!note.trim() || !leadId || isSubmitting}
-            className="flex flex-row justify-center items-center px-4 py-1.5 bg-white border border-[#16335A] rounded-lg text-[#16335A] font-roboto font-medium text-sm hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex flex-row justify-center items-center px-4 py-1.5 bg-white border border-[#16335A] rounded-lg text-[#16335A] font-roboto font-medium text-sm hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-2"
           >
-            {isSubmitting ? 'Adding...' : 'Add Note'}
+            <span className='font-semibold'>{isSubmitting ? 'Adding...' : 'Add Note'}</span>
           </button>
         </div>
       </div>

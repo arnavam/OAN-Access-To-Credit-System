@@ -168,7 +168,7 @@ export default function AssignOwnerModal({
                         key={user.id}
                         onClick={() => setSelectedUser(user)}
                         className={`box-border flex flex-row items-center p-[12px] gap-[12px] w-full h-[54px] rounded-[10px] transition-colors shrink-0 ${isSelected
-                          ? 'bg-[#F4F9FF] border border-[#2B7FFF]'
+                          ? 'bg-[#16A34A]/5 border border-[#16A34A]'
                           : 'bg-white border border-[#E5E7EB] hover:bg-gray-50'
                           }`}
                       >

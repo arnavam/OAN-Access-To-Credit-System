@@ -91,26 +91,16 @@ export function NewLoanOrchestrator({ leadId }: { leadId?: string }) {
       )}
 
       {/* Header Container */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl bg-white px-4 sm:px-6 py-5 shadow-sm border border-gray-200 space-y-4 sm:space-y-0">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-          <div className="flex items-center gap-4">
-            <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-lg font-bold text-white ${currentStep === 4 ? 'bg-[#509f6e]' : 'bg-[#475569]'}`}>
-              {currentStep === 4 ? <Check strokeWidth={3} className="h-6 w-6" /> : currentStep}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white px-4 sm:px-6 py-5 border border-[#F1F3F4] rounded-xl shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.05),0px_2px_4px_-1px_rgba(0,0,0,0.03)] hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className={`flex h-10 w-10 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-full text-base sm:text-lg font-bold text-white ${currentStep === 4 ? 'bg-[#509f6e]' : 'bg-[#475569]'}`}>
+              {currentStep === 4 ? <Check strokeWidth={3} className="h-5 w-5 sm:h-6 sm:w-6" /> : currentStep}
             </div>
-            <div className="sm:hidden">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-xl font-bold text-gray-900">{meta.title}</h1>
-              </div>
+            <div>
+              <h1 className="text-[17px] sm:text-xl font-bold leading-tight sm:leading-normal text-gray-900">{meta.title}</h1>
+              <p className="text-[13px] sm:text-sm text-gray-500 mt-0.5 sm:mt-0">{meta.subtitle}</p>
             </div>
           </div>
-          <div className="hidden sm:block">
-            <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-xl font-bold text-gray-900">{meta.title}</h1>
-            </div>
-            <p className="text-sm text-gray-500">{meta.subtitle}</p>
-          </div>
-          <p className="sm:hidden text-sm text-gray-500 mt-1">{meta.subtitle}</p>
-        </div>
       </div>
 
       <NewLoanProgressBar currentStep={currentStep} />

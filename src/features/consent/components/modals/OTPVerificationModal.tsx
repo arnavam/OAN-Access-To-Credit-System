@@ -226,7 +226,7 @@ export function OTPVerificationModal({ isOpen, onClose, farmerId: _farmerId, mas
                 disabled={isVerifyingOtp}
                 className="flex flex-row justify-center items-center px-4 py-[10px] w-full h-[42px] bg-[#16A34A] hover:bg-[#15803D] shadow-[0px_1px_2px_rgba(0,0,0,0.05)] rounded-md font-inter font-medium text-[14px] leading-5 text-white transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                {isVerifyingOtp ? 'Verifying...' : 'Verify OTP'}
+                <span className='font-semibold'>{isVerifyingOtp ? 'Verifying...' : 'Verify OTP'}</span>
               </button>
 
               {/* Resend */}
