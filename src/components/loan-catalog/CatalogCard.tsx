@@ -162,8 +162,7 @@ export default function CatalogCard({
           </div>
         )}
 
-        {/* Floating Bottom Left: caller-supplied badge (bank status). Opposite
-            the category so the two never overlap on a narrow card. */}
+        {/* Floating Top Right: caller-supplied badge (bank status). */}
         {badge && <div className="absolute top-3 right-3.5 z-20">{badge}</div>}
       </div>
 

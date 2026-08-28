@@ -24,8 +24,11 @@ export function ResetMemberPasswordModal({ member, onClose, onReset }: ResetMemb
   const [fieldError, setFieldError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const passwordInputRef = useRef<HTMLInputElement>(null);
-  const containerRef = useModalA11y<HTMLDivElement>(true, onClose, passwordInputRef);
+  const containerRef = useModalA11y<HTMLDivElement>(mounted, onClose, passwordInputRef);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,9 +53,6 @@ export function ResetMemberPasswordModal({ member, onClose, onReset }: ResetMemb
       setIsLoading(false);
     }
   };
-
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
 
   if (!mounted) return null;
 

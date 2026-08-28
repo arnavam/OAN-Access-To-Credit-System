@@ -121,7 +121,7 @@ function Sidebar({ isCollapsed, isMobileOpen = false, sections = [] }: SidebarPr
       <nav
         className={[
           'flex flex-1 flex-col gap-4 py-3',
-          isCollapsed ? 'min-[900px]:px-[0.35rem]' : 'min-[900px]:px-[0.65rem]'
+          isCollapsed ? 'px-[0.35rem]' : 'px-[0.65rem]'
         ].join(' ')}
         aria-label="Dashboard navigation"
       >
