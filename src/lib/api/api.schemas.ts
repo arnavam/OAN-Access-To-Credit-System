@@ -29,11 +29,16 @@ export const sendOtpAndCreateConsentResponseSchema = z.object({
 });
 export type SendOtpAndCreateConsentResponse = z.infer<typeof sendOtpAndCreateConsentResponseSchema>;
 
+export const loanApplicationStatusSchema = z
+  .string()
+  .nullish()
+  .transform((val) => (val && val.trim() ? val : 'Unknown'));
+
 // 4. loan_applications.get_full_profile
 export const loanApplicationFullSchema = z.object({
   application_id: z.string(),
   lead_id: z.string().nullable().optional(),
-  status: z.string().nullish().transform((val) => (val && val.trim() ? val : 'Unknown')),
+  status: loanApplicationStatusSchema,
   stage_id: z.string().nullable().optional(),
   creation: z.string().nullable().optional(),
   farmer_profile: z.string().nullish().transform(val => val ?? undefined),
@@ -107,7 +112,7 @@ export const loanApplicationSummarySchema = z.object({
    * client renders it rather than mapping it. Falls back to 'Unknown' when omitted
    * or null (e.g. during backend stage migrations).
    */
-  status: z.string().nullish().transform((val) => (val && val.trim() ? val : 'Unknown')),
+  status: loanApplicationStatusSchema,
   stage_id: z.string().nullable().optional(),
   // `get_all_loans` sends `step`; the farmer's `list_applications` rows do not,
   // so it cannot be required without failing every farmer-side parse.

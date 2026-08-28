@@ -167,7 +167,7 @@ export function ConsentManagementSection({ leadId: leadIdProp, audience = 'agent
           </div>
         ) : (
           <div className="flex flex-col gap-3 w-full">
-            {isRedoingConsent && !isFarmer && (
+            {isRedoingConsent && isApproved && (
               <div className="flex items-center justify-between p-2.5 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800 mb-1">
                 <span>Re-authorizing consent will update your registry permissions.</span>
                 <button

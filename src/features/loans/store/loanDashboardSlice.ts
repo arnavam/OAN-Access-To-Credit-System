@@ -1,8 +1,8 @@
 import { GetLoansParams, LoanApplicationSummary, loanService, LoanSummaryMetrics } from '@/features/loans/api/loan.service';
-import { archetypeOf, bucketStagesByArchetype, toPseudoStages } from '@/features/loans/utils/archetype';
+import { bucketStagesByArchetype, toPseudoStages } from '@/features/loans/utils/archetype';
 import { loanStagesService } from '@/features/loans/api/loanStages.service';
 import { formatLocation } from '@/features/loans/utils/formatLocation';
-import { getStageStyle, toStageFilterOptions } from '@/features/loans/utils/stageStyles';
+import { buildStageKpiCards, compareStageSequence, getStageStyle, toStageFilterOptions } from '@/features/loans/utils/stageStyles';
 import { selectUserEmail } from '@/features/auth/store/authSlice';
 import type { LoanStage, LoanStatusMeta } from '@/lib/api/api.schemas';
 import { withCurrentSort } from '@/lib/filterSort';
@@ -487,7 +487,7 @@ export const selectBankPipelineStagesError = (state: RootState) => state.loanDas
  */
 export const selectOrderedBankPipelineStages = createSelector(
   [selectBankPipelineStages],
-  (stages) => [...stages].sort((a, b) => a.sequence - b.sequence)
+  (stages) => [...stages].sort(compareStageSequence)
 );
 
 // --- Derived Memoized Selectors ---
@@ -519,7 +519,7 @@ export const selectPagedRowsData = createSelector(
         id: formattedId,
         applicant: applicantName,
         phone: row.phone_number || '',
-        loanAmount: row.loan_amount ? row.loan_amount.toLocaleString() : '—',
+        loanAmount: row.loan_amount != null ? row.loan_amount.toLocaleString() : '—',
         type: row.loan_type || 'Unknown Type',
         // A dash, not an empty cell: the record genuinely carries no location yet.
         location: location || '—',
@@ -590,30 +590,8 @@ export const selectLiveMetrics = createSelector(
  */
 export const selectLoanStageCards = createSelector(
   [selectLoanStatusMeta, selectRawSummaryData],
-  (statusMeta, rawSummaryData) => {
-    const counts = rawSummaryData?.data?.stages ?? {};
-    const byLabel = new Map(
-      Object.entries(counts).map(([label, count]) => [label.toLowerCase(), count])
-    );
-
-    const seenKeys = new Map<string, number>();
-
-    return [...statusMeta]
-      .sort((a, b) => (a.sequence ?? Number.MAX_SAFE_INTEGER) - (b.sequence ?? Number.MAX_SAFE_INTEGER))
-      .map((meta, index) => {
-        const rawKey = meta.stage_id || meta.status || `status-${index}`;
-        const occurrence = seenKeys.get(rawKey) ?? 0;
-        seenKeys.set(rawKey, occurrence + 1);
-        const key = occurrence === 0 ? rawKey : `${rawKey}-${occurrence}`;
-
-        return {
-          key,
-          label: meta.status,
-          archetype: archetypeOf(meta),
-          value: byLabel.get(meta.status.toLowerCase()) ?? 0,
-        };
-      });
-  }
+  (statusMeta, rawSummaryData) =>
+    buildStageKpiCards(toPseudoStages(statusMeta), rawSummaryData?.data?.stages)
 );
 
 export const selectTabCounts = createSelector(

@@ -268,6 +268,20 @@ describe('selectBankApplicationRows', () => {
     });
   });
 
+  it('formats a $0 loan amount as "0" rather than missing data "—"', () => {
+    const store = createTestStore();
+    seed(store, {
+      application_id: 'APP-0003',
+      status: 'Active',
+      loan_amount: 0,
+      creation: '2026-05-28T10:42:00',
+    });
+
+    const rows = selectBankApplicationRows(asRootState(store.getState()));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.loanAmount).toBe('0');
+  });
+
   it('populates dynamic stages and derives stage options', () => {
     const store = createTestStore();
     store.dispatch({
