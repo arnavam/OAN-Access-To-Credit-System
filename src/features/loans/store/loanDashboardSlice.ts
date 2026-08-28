@@ -596,14 +596,23 @@ export const selectLoanStageCards = createSelector(
       Object.entries(counts).map(([label, count]) => [label.toLowerCase(), count])
     );
 
+    const seenKeys = new Map<string, number>();
+
     return [...statusMeta]
       .sort((a, b) => (a.sequence ?? Number.MAX_SAFE_INTEGER) - (b.sequence ?? Number.MAX_SAFE_INTEGER))
-      .map((meta) => ({
-        key: meta.stage_id || meta.status,
-        label: meta.status,
-        archetype: archetypeOf(meta),
-        value: byLabel.get(meta.status.toLowerCase()) ?? 0,
-      }));
+      .map((meta, index) => {
+        const rawKey = meta.stage_id || meta.status || `status-${index}`;
+        const occurrence = seenKeys.get(rawKey) ?? 0;
+        seenKeys.set(rawKey, occurrence + 1);
+        const key = occurrence === 0 ? rawKey : `${rawKey}-${occurrence}`;
+
+        return {
+          key,
+          label: meta.status,
+          archetype: archetypeOf(meta),
+          value: byLabel.get(meta.status.toLowerCase()) ?? 0,
+        };
+      });
   }
 );
 

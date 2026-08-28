@@ -72,9 +72,8 @@ export async function getMyApplications(
 
   // Validated, not cast. `fetchApi` returns `any`, so the declared return type
   // was an assertion nothing checked — a row arriving without `status` (which
-  // the backend does send as null mid stage-migration) type-checked fine and
-  // then threw on the first `.toLowerCase()`. Same schema and same helper the
-  // bank list has always run `get_all_loans` through.
+  // the backend does send as null mid stage-migration) falls back to 'Unknown'
+  // via farmerLoanApplicationSchema rather than failing the whole list.
   return {
     ...response,
     data: validateResponse(

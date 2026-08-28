@@ -118,13 +118,28 @@ describe('api.schemas validation', () => {
 
       expect(parsed).not.toHaveProperty('location');
     });
+
+    it('should fall back to "Unknown" when status is null or missing', () => {
+      const parsedNull = loanApplicationSummarySchema.parse({
+        application_id: 'APP-123',
+        creation: '2026-06-24',
+        status: null,
+      });
+      expect(parsedNull.status).toBe('Unknown');
+
+      const parsedUndefined = loanApplicationSummarySchema.parse({
+        application_id: 'APP-123',
+        creation: '2026-06-24',
+      });
+      expect(parsedUndefined.status).toBe('Unknown');
+    });
   });
 
   describe('loanApplicationFullSchema', () => {
-    it('should transform nullish name and reason fields', () => {
+    it('should transform nullish name, reason and status fields', () => {
       const inputData = {
         application_id: 'APP-123',
-        status: 'Draft' as const,
+        status: null,
         phone_number: '1234567890',
         loan_type: 'Agri',
         loan_amount: 1000,
@@ -139,6 +154,7 @@ describe('api.schemas validation', () => {
       };
 
       const result = loanApplicationFullSchema.parse(inputData);
+      expect(result.status).toBe('Unknown');
       expect(result.loan_reason).toBe('');
       expect(result.first_name).toBeUndefined();
       expect(result.last_name).toBeUndefined();
@@ -161,41 +177,41 @@ describe('api.schemas validation', () => {
       bank: 'Coop Bank',
     };
 
-    it('accepts a farmer row and defaults the farmer-only fields', () => {
+    it('accepts a farmer row and leaves missing optional fields undefined', () => {
       const result = farmerLoanApplicationSchema.parse({
         application_id: 'APP-123',
         status: 'Active',
         creation: '2026-01-01 10:00:00',
       });
 
-      // Every farmer-side consumer renders these unguarded — `ApplicationList`
-      // calls `.toLocaleString()` straight on `requested_amount` — so a missing
-      // one has to arrive as a value, not as undefined.
-      expect(result.requested_amount).toBe(0);
-      expect(result.loan_product).toBe('');
-      expect(result.loan_product_name).toBe('');
-      expect(result.bank).toBe('');
+      expect(result.requested_amount).toBeUndefined();
+      expect(result.loan_product).toBeUndefined();
+      expect(result.loan_product_name).toBeUndefined();
+      expect(result.bank).toBeUndefined();
     });
 
-    it('keeps null interest_rate and tenure_months as null', () => {
-      // Applications created before the terms snapshot existed carry no rate.
-      // The card shows a placeholder for them, so null must survive parsing
-      // rather than collapsing to 0 and inventing a rate that was never agreed.
+    it('keeps null amounts, product names, banks and terms as null without fake defaults', () => {
       const result = farmerLoanApplicationSchema.parse({
         ...validRow,
+        requested_amount: null,
+        loan_product_name: null,
+        bank: null,
         interest_rate: null,
         tenure_months: null,
       });
+      expect(result.requested_amount).toBeNull();
+      expect(result.loan_product_name).toBeNull();
+      expect(result.bank).toBeNull();
       expect(result.interest_rate).toBeNull();
       expect(result.tenure_months).toBeNull();
     });
 
-    it('rejects a row whose status is null', () => {
-      // This is the whole point of parsing the farmer endpoint: the backend has
-      // been observed sending a null status mid stage-migration, and the list
-      // reads `status.toLowerCase()` to build its tab counts. Failing here
-      // surfaces a contract violation instead of throwing a TypeError in render.
-      expect(() => farmerLoanApplicationSchema.parse({ ...validRow, status: null })).toThrow();
+    it('falls back to "Unknown" when status is null or missing', () => {
+      const resultNull = farmerLoanApplicationSchema.parse({ ...validRow, status: null });
+      expect(resultNull.status).toBe('Unknown');
+
+      const resultUndefined = farmerLoanApplicationSchema.parse({ ...validRow, status: undefined });
+      expect(resultUndefined.status).toBe('Unknown');
     });
 
     it('inherits the summary schema fields', () => {

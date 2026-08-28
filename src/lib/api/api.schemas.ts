@@ -33,7 +33,7 @@ export type SendOtpAndCreateConsentResponse = z.infer<typeof sendOtpAndCreateCon
 export const loanApplicationFullSchema = z.object({
   application_id: z.string(),
   lead_id: z.string().nullable().optional(),
-  status: z.string(),
+  status: z.string().nullish().transform((val) => (val && val.trim() ? val : 'Unknown')),
   stage_id: z.string().nullable().optional(),
   creation: z.string().nullable().optional(),
   farmer_profile: z.string().nullish().transform(val => val ?? undefined),
@@ -43,7 +43,7 @@ export const loanApplicationFullSchema = z.object({
   farmer_id: z.string().nullable().optional(),
   consent_id: z.string().nullable().optional(),
   loan_type: z.string().nullish().transform(val => val ?? undefined),
-  loan_amount: z.number().nullish().transform(val => val ?? 0),
+  loan_amount: z.number().nullable().optional(),
   profile_data: z.record(z.string(), z.unknown()).nullish(),
   loan_product: z.string().nullish().transform(val => val ?? undefined),
   loan_product_name: z.string().nullish().transform(val => val ?? undefined),
@@ -104,16 +104,16 @@ export const loanApplicationSummarySchema = z.object({
   /**
    * The owning bank's name for the step the application has reached. Tenant free
    * text, resolved by the backend — not an archetype and not a fixed set, so the
-   * client renders it rather than mapping it. Non-nullable: the endpoint always
-   * sends a status.
+   * client renders it rather than mapping it. Falls back to 'Unknown' when omitted
+   * or null (e.g. during backend stage migrations).
    */
-  status: z.string(),
+  status: z.string().nullish().transform((val) => (val && val.trim() ? val : 'Unknown')),
   stage_id: z.string().nullable().optional(),
   // `get_all_loans` sends `step`; the farmer's `list_applications` rows do not,
   // so it cannot be required without failing every farmer-side parse.
   step: z.number().nullish().transform((val) => val ?? undefined),
   lead_id: z.string().nullable().optional(),
-  loan_amount: z.number().nullish().transform((val) => val ?? 0),
+  loan_amount: z.number().nullable().optional(),
   loan_type: z.string().nullish().transform((val) => val ?? undefined),
   loan_product: z.string().nullish().transform((val) => val ?? undefined),
   loan_product_name: z.string().nullish().transform((val) => val ?? undefined),
@@ -148,16 +148,12 @@ export type LoanApplicationSummary = z.infer<typeof loanApplicationSummarySchema
  * stage placement fields — plus the four the farmer's own views need and the
  * bank list has no use for. Extended rather than redeclared so the two endpoints
  * cannot drift: a field added to the summary is a field the farmer list gets too.
- *
- * `loan_product`, `loan_product_name` and `bank` are widened back to required
- * strings because every farmer-side consumer renders them unguarded; a missing
- * one becomes '' here rather than `undefined` reaching a `.toLocaleString()`.
  */
 export const farmerLoanApplicationSchema = loanApplicationSummarySchema.extend({
-  requested_amount: z.number().nullish().transform((val) => val ?? 0),
-  loan_product: z.string().nullish().transform((val) => val ?? ''),
-  loan_product_name: z.string().nullish().transform((val) => val ?? ''),
-  bank: z.string().nullish().transform((val) => val ?? ''),
+  requested_amount: z.number().nullable().optional(),
+  loan_product: z.string().nullable().optional(),
+  loan_product_name: z.string().nullable().optional(),
+  bank: z.string().nullable().optional(),
   loan_reason: z.string().nullish().transform((val) => val ?? undefined),
   // Snapshotted from the product at creation time. Null for applications made
   // before the snapshot existed — the card shows a placeholder rather than

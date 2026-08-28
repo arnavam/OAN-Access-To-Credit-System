@@ -359,18 +359,27 @@ export const selectBankStageCards = createSelector(
       Object.entries(counts).map(([label, count]) => [label.toLowerCase(), count])
     );
 
+    const seenKeys = new Map<string, number>();
+
     return [...stages]
       .sort((a, b) => (a.sequence ?? Number.MAX_SAFE_INTEGER) - (b.sequence ?? Number.MAX_SAFE_INTEGER))
-      .map((stage) => ({
-        key: stage.stage_id || stage.name || stage.label,
-        label: stage.label,
-        archetype: stage.archetype_state,
-        value:
-          byLabel.get(stage.label.toLowerCase()) ??
-          (stage.stage_id ? byLabel.get(stage.stage_id.toLowerCase()) : undefined) ??
-          stage.application_count ??
-          0,
-      }));
+      .map((stage, index) => {
+        const rawKey = stage.stage_id || stage.name || stage.label || `stage-${index}`;
+        const occurrence = seenKeys.get(rawKey) ?? 0;
+        seenKeys.set(rawKey, occurrence + 1);
+        const key = occurrence === 0 ? rawKey : `${rawKey}-${occurrence}`;
+
+        return {
+          key,
+          label: stage.label,
+          archetype: stage.archetype_state,
+          value:
+            byLabel.get(stage.label.toLowerCase()) ??
+            (stage.stage_id ? byLabel.get(stage.stage_id.toLowerCase()) : undefined) ??
+            stage.application_count ??
+            0,
+        };
+      });
   }
 );
 

@@ -1,7 +1,7 @@
 "use client";
 import { DiscoverLoansCta } from '@/components/DiscoverLoansCta';
 import { useMemo } from 'react';
-import { NO_VALUE, formatRate, formatTenure } from '../../format';
+import { NO_VALUE, formatAmount, formatRate, formatTenure } from '../../format';
 import type { FarmerLoanApplication } from '../../types';
 import { ALL_TAB, filterByTab, type StageTab } from '../counts';
 import ApplicationCard from './ApplicationCard';
@@ -74,9 +74,9 @@ export default function ApplicationList({
               key={app.application_id}
               applicationId={app.application_id}
               application={app}
-              title={app.loan_product_name}
-              subtitle={`Created on ${app.creation.split(' ')[0]}`}
-              maxAmount={`ETB ${app.requested_amount.toLocaleString()}`}
+              title={app.loan_product_name || 'Unknown Product'}
+              subtitle={app.creation ? `Created on ${app.creation.split(' ')[0]}` : NO_VALUE}
+              maxAmount={formatAmount(app.requested_amount)}
               // The application's own snapshotted terms — never the product's
               // current ones, and never a stand-in pulled from another field.
               // These two slots used to be filled with `app.bank` and a second

@@ -392,4 +392,38 @@ describe('selectBankStageCards & selectBankMetrics', () => {
       cancelled: 0,
     });
   });
+
+  it('disambiguates keys when two stages share the same stage_id or label', () => {
+    const store = createTestStore();
+
+    store.dispatch({
+      type: 'bankApplications/fetchStages/fulfilled',
+      payload: [
+        {
+          name: 'stg-1',
+          bank: 'Bank A',
+          stage_id: 'under_review',
+          label: 'Under Review',
+          archetype_state: 'In Transition',
+          sequence: 1,
+          application_count: 5,
+        },
+        {
+          name: 'stg-2',
+          bank: 'Bank B',
+          stage_id: 'under_review',
+          label: 'Under Review',
+          archetype_state: 'In Transition',
+          sequence: 2,
+          application_count: 8,
+        },
+      ],
+    });
+
+    const cards = selectBankStageCards(asRootState(store.getState()));
+    expect(cards).toHaveLength(2);
+    expect(cards[0]?.key).toBe('under_review');
+    expect(cards[1]?.key).toBe('under_review-1');
+    expect(cards[0]?.key).not.toBe(cards[1]?.key);
+  });
 });
