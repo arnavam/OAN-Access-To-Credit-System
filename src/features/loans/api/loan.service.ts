@@ -236,21 +236,16 @@ export const loanService = {
   /**
    * Submits a drafted application into the owning bank's pipeline.
    *
-   * Posts the archetype, not a stage label: 'In Transition' is the workflow's
-   * Submit target, and `resolve_bank_stage` maps it onto whatever the bank calls
-   * its own first step. The literal 'Processing' this used to send matches
-   * neither the archetype states nor any bank stage, so every submit threw a
-   * ValidationError.
-   *
-   * Not `farmer.applications.submit_application`, which is the farmer's own
-   * route into the same transition: this service backs the Development Agent's
-   * new-loan flow, and that endpoint is gated `@require_role([FARMER_ROLE])`.
-   * `update_loan_status` accepts `A2C Development Agent`.
+   * Uses `farmer.applications.submit_application`, which is accessible to both
+   * Farmer and Development Agent roles. The backend automatically looks up the
+   * bank's initial pipeline stage, checks prerequisites (e.g. approved consent),
+   * stamps `stage_id` and `stage_label`, and transitions the application into
+   * the active pipeline.
    */
   async submitApplication(application_id: string): Promise<ApiResponse<null>> {
-    return fetchApi('oan_a2c.api.v1.loan_applications.update_loan_status', {
+    return fetchApi('oan_a2c.api.v1.farmer.applications.submit_application', {
       method: 'POST',
-      body: JSON.stringify({ application_id, status: 'In Transition' }),
+      body: JSON.stringify({ application_id }),
     }) as Promise<ApiResponse<null>>;
   },
 
