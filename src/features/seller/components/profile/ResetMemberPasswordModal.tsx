@@ -6,8 +6,9 @@ import { useModalA11y } from '@/hooks/useModalA11y';
 import { logger } from '@/lib/logger';
 import { toast } from '@/lib/toast';
 import type { TeamUser } from '@/lib/api/api.schemas';
-import { RefreshCw, XCircle } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { RefreshCw, X } from 'lucide-react';
+import { useRef, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 interface ResetMemberPasswordModalProps {
   member: TeamUser;
@@ -50,7 +51,12 @@ export function ResetMemberPasswordModal({ member, onClose, onReset }: ResetMemb
     }
   };
 
-  return (
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted) return null;
+
+  return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
       <div
         ref={containerRef}
@@ -60,12 +66,12 @@ export function ResetMemberPasswordModal({ member, onClose, onReset }: ResetMemb
         tabIndex={-1}
         className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200"
       >
-        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50/50">
           <h3 id="reset-password-title" className="font-bold text-gray-900">
             Reset password
           </h3>
-          <button onClick={onClose} aria-label="Close" className="text-gray-400 hover:text-gray-600">
-            <XCircle className="w-5 h-5" />
+          <button onClick={onClose} aria-label="Close" className="text-gray-400 hover:text-gray-600 transition-colors">
+            <X className="w-5 h-5" />
           </button>
         </div>
 
@@ -92,9 +98,8 @@ export function ResetMemberPasswordModal({ member, onClose, onReset }: ResetMemb
                 onChange={(e) => setPassword(e.target.value)}
                 aria-invalid={fieldError ? true : undefined}
                 aria-describedby={fieldError ? 'reset-temp-password-error' : undefined}
-                className={`flex-1 px-3 py-2 bg-white border ${
-                  fieldError ? 'border-red-500' : 'border-gray-300'
-                } rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-green/20 focus:border-brand-green`}
+                className={`flex-1 px-3 py-2 bg-white border ${fieldError ? 'border-red-500' : 'border-gray-300'
+                  } rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-green/20 focus:border-brand-green`}
               />
               <button
                 type="button"
@@ -113,24 +118,25 @@ export function ResetMemberPasswordModal({ member, onClose, onReset }: ResetMemb
             )}
           </div>
 
-          <div className="pt-4 flex justify-end gap-3">
+          <div className="-mx-6 px-6 pt-4 flex justify-end gap-3 border-t border-gray-200">
             <button
               type="button"
               onClick={onClose}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
             >
-              Cancel
+              <span className='font-semibold'>Cancel</span>
             </button>
             <button
               type="submit"
               disabled={isLoading}
               className="px-4 py-2 text-sm font-medium text-white bg-brand-green rounded-lg hover:bg-brand-green-hover disabled:opacity-50"
             >
-              {isLoading ? 'Issuing…' : 'Issue password'}
+              <span className='font-semibold'>{isLoading ? 'Issuing…' : 'Issue password'}</span>
             </button>
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

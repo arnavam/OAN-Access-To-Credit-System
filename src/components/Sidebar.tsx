@@ -65,15 +65,15 @@ function Sidebar({ isCollapsed, isMobileOpen = false, sections = [] }: SidebarPr
         'min-[900px]:h-screen min-[900px]:translate-x-0 min-[900px]:overflow-y-auto',
         'min-[900px]:shadow-[inset_-1px_0_0_rgba(255,255,255,0.08)]',
         isCollapsed
-          ? 'min-[900px]:w-[var(--dashboard-sidebar-width-collapsed)] min-[900px]:px-[0.35rem]'
-          : 'min-[900px]:w-[var(--dashboard-sidebar-width)] min-[900px]:px-[0.65rem]',
+          ? 'min-[900px]:w-[var(--dashboard-sidebar-width-collapsed)]'
+          : 'min-[900px]:w-[var(--dashboard-sidebar-width)]',
       ].join(' ')}
     >
       {/* ── Brand ────────────────────────────────────────────────────────── */}
       <div
         className={[
-          'flex shrink-0 items-center gap-0 border-b border-white/[0.08]',
-          'px-[0.45rem] pb-[1rem] pt-[1rem]',
+          'flex shrink-0 items-center h-20 gap-3 border-b border-white/[0.08]',
+          'px-4',
           isCollapsed ? 'min-[900px]:justify-center min-[900px]:gap-0 min-[900px]:px-0' : '',
         ].join(' ')}
       >
@@ -119,7 +119,10 @@ function Sidebar({ isCollapsed, isMobileOpen = false, sections = [] }: SidebarPr
 
       {/* ── Navigation ───────────────────────────────────────────────────── */}
       <nav
-        className="flex flex-1 flex-col gap-4 px-0 py-3"
+        className={[
+          'flex flex-1 flex-col gap-4 py-3',
+          isCollapsed ? 'min-[900px]:px-[0.35rem]' : 'min-[900px]:px-[0.65rem]'
+        ].join(' ')}
         aria-label="Dashboard navigation"
       >
         {sections.map((section) => (
