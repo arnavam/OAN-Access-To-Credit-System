@@ -52,7 +52,7 @@ function Sidebar({ isCollapsed, isMobileOpen = false, sections = [] }: SidebarPr
         // ── Mobile (<900px): fixed off-canvas drawer ─────────────────────
         // top-0 + bottom-0 stretches to the true full screen height without
         // any explicit height value (avoids 100vh/100dvh browser quirks).
-        'fixed top-0 bottom-0 left-0 z-[200] w-[calc(100vw-1rem)] max-w-[20rem] overflow-x-hidden overflow-y-auto',
+        'fixed top-0 bottom-0 left-0 z-[200] min-[900px]:z-30 w-[calc(100vw-1rem)] max-w-[20rem] overflow-x-hidden overflow-y-auto',
         'transition-all duration-[280ms] ease-[cubic-bezier(0.4,0,0.2,1)]',
         isMobileOpen
           ? 'translate-x-0 shadow-[8px_0_40px_rgba(0,0,0,0.3)]'
