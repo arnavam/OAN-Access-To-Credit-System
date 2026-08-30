@@ -54,7 +54,7 @@ export function DiscoverLoansCta({
   }
 
   return (
-    <div className="flex flex-col items-start gap-4 rounded-2xl border border-[#F1F3F4] bg-gradient-to-r from-[#E6F9F3] via-white to-white p-6 shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.05),0px_2px_4px_-1px_rgba(0,0,0,0.03)] transition-all hover:-translate-y-1 hover:shadow-lg sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col items-start gap-4 rounded-2xl border border-[#F1F3F4] bg-gradient-to-r from-[#E6F9F3] via-white to-white p-6 shadow-[0px_4px_6px_-1px_rgba(0,0,0,0.05),0px_2px_4px_-1px_rgba(0,0,0,0.03)] transition-all hover:-translate-y-1 hover:shadow-lg sm:flex-row sm:items-center sm:justify-between mb-6">
       <div className="flex items-center gap-4 flex-1 min-w-0 pr-0 sm:pr-4 w-full">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-[#16A34A] shadow-sm">
           <Compass className="h-6 w-6" />

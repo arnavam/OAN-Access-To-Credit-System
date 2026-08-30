@@ -117,7 +117,7 @@ export function TablePagination({
       </div>
 
       {/* Right: page navigation */}
-      <div className="flex flex-wrap items-center justify-center md:justify-end gap-1.5 sm:gap-2 w-full md:w-auto">
+      <div className="flex flex-nowrap items-center justify-center md:justify-end gap-1.5 sm:gap-2 w-full md:w-auto">
         <button
           type="button"
           disabled={currentPage <= 1}
