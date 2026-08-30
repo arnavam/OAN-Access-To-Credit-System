@@ -45,7 +45,7 @@ export function DiscoverLoansCta({
         <p className="max-w-sm text-[14px] leading-relaxed text-gray-500">{description}</p>
         <Link
           href={href}
-          className="mt-2 inline-flex items-center gap-2 rounded-xl bg-[#16A34A] px-5 py-2.5 text-sm font-bold !text-white shadow-sm transition-colors hover:bg-green-700"
+          className="mt-2 inline-flex items-center gap-2 rounded-xl bg-[#16A34A] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-green-700"
         >
           {actionLabel} <ArrowRight className="h-4 w-4" />
         </Link>
@@ -66,9 +66,9 @@ export function DiscoverLoansCta({
       </div>
       <Link
         href={href}
-        className="inline-flex w-full sm:w-auto justify-center shrink-0 items-center gap-2 rounded-lg bg-[#16A34A] px-5 py-3 text-md font-bold !text-white shadow-sm transition-colors hover:bg-green-700"
+        className="inline-flex w-full sm:w-auto justify-center shrink-0 items-center rounded-lg bg-[#16A34A] px-5 py-3 text-base font-bold text-white shadow-sm transition-colors hover:bg-green-700"
       >
-        {actionLabel} <ArrowRight className="h-4 w-4" />
+        <span className="inline-flex items-center gap-2 text-white whitespace-nowrap">{actionLabel} <ArrowRight className="h-4 w-4" /></span>
       </Link>
     </div>
   );
