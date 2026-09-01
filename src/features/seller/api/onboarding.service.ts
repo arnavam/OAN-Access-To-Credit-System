@@ -5,7 +5,6 @@ import type {
     RegisterBankPayload,
     RegisterSellerPayload,
     SaveOrgContactsPayload,
-    UpdateBankStatusPayload,
     UploadKycDocumentPayload
 } from '../types/onboarding.types';
 
@@ -81,12 +80,6 @@ export const onboardingService = {
     }) as Promise<ApiResponse<{ message: string; file_url: string }>>;
   },
 
-  async updateBankStatus(payload: UpdateBankStatusPayload): Promise<ApiResponse<{ message: string }>> {
-    return fetchApi('oan_a2c.api.v1.seller.onboarding.update_bank_status', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    }) as Promise<ApiResponse<{ message: string }>>;
-  },
 
   async getBankProfile(): Promise<ApiResponse<BankProfile>> {
     const res = await fetchApi('oan_a2c.api.v1.seller.onboarding.get_bank_profile', {
