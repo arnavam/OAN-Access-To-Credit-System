@@ -80,7 +80,6 @@ export const onboardingService = {
     }) as Promise<ApiResponse<{ message: string; file_url: string }>>;
   },
 
-
   async getBankProfile(): Promise<ApiResponse<BankProfile>> {
     const res = await fetchApi('oan_a2c.api.v1.seller.onboarding.get_bank_profile', {
       method: 'GET',
