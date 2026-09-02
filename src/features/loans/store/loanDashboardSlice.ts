@@ -7,7 +7,7 @@ import type { LoanStage, LoanStatusMeta } from '@/lib/api/api.schemas';
 import { withCurrentSort } from '@/lib/filterSort';
 import type { ApiResponse } from '@/types/api';
 import { createAsyncThunk, createSelector, createSlice, PayloadAction } from '@reduxjs/toolkit';
-import type { RootState } from '../../../store';
+import { selectUserEmail, type RootState } from '../../../store';
 
 export const fetchLoans = createAsyncThunk(
   'loanDashboard/fetchLoans',
@@ -602,10 +602,8 @@ export const selectTabCounts = createSelector(
 );
 
 
-const selectCurrentUserEmail = (state: RootState) => state.auth.user?.email ?? null;
-
 export const selectQueryParams = createSelector(
-  [selectActivityPage, selectPageSize, selectSearchQuery, selectActiveTab, selectTableStatusFilters, selectTableTypeFilters, selectAdvancedFilters, selectLoanStatusMeta, selectCurrentUserEmail],
+  [selectActivityPage, selectPageSize, selectSearchQuery, selectActiveTab, selectTableStatusFilters, selectTableTypeFilters, selectAdvancedFilters, selectLoanStatusMeta, selectUserEmail],
   (activityPage, pageSize, searchQuery, activeTab, tableStatusFilters, tableTypeFilters, advancedFilters, statusMeta, userEmail) => {
     const params: GetLoansParams = {
       page: activityPage,
