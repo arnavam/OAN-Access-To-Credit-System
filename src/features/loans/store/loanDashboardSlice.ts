@@ -3,7 +3,6 @@ import { bucketStagesByArchetype, toPseudoStages } from '@/features/loans/utils/
 import { loanStagesService } from '@/features/loans/api/loanStages.service';
 import { formatLocation } from '@/features/loans/utils/formatLocation';
 import { buildStageKpiCards, compareStageSequence, getStageStyle, toStageFilterOptions } from '@/features/loans/utils/stageStyles';
-import { selectUserEmail } from '@/features/auth/store/authSlice';
 import type { LoanStage, LoanStatusMeta } from '@/lib/api/api.schemas';
 import { withCurrentSort } from '@/lib/filterSort';
 import type { ApiResponse } from '@/types/api';
@@ -603,8 +602,10 @@ export const selectTabCounts = createSelector(
 );
 
 
+const selectCurrentUserEmail = (state: RootState) => state.auth.user?.email ?? null;
+
 export const selectQueryParams = createSelector(
-  [selectActivityPage, selectPageSize, selectSearchQuery, selectActiveTab, selectTableStatusFilters, selectTableTypeFilters, selectAdvancedFilters, selectLoanStatusMeta, selectUserEmail],
+  [selectActivityPage, selectPageSize, selectSearchQuery, selectActiveTab, selectTableStatusFilters, selectTableTypeFilters, selectAdvancedFilters, selectLoanStatusMeta, selectCurrentUserEmail],
   (activityPage, pageSize, searchQuery, activeTab, tableStatusFilters, tableTypeFilters, advancedFilters, statusMeta, userEmail) => {
     const params: GetLoansParams = {
       page: activityPage,
